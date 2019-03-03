@@ -10,7 +10,7 @@
 #include <math.h>
 #include "Application.h"
 #include "Platform.h"
-#include "ConfigManager/IndividualConfigManager.h"
+// #include "ConfigManager/IndividualConfigManager.h"
 #ifndef M_PI
 #define M_PI       3.14159265358979323846
 #endif
@@ -18,7 +18,7 @@
 #ifdef _MSC_VER
 #pragma comment(lib,"freetype.lib")
 #endif
-#include "platform/CCFileUtils.h"
+// #include "platform/CCFileUtils.h"
 #include "StorageImpl.h"
 #include "BinaryStream.h"
 
@@ -118,6 +118,7 @@ static int TVPInternalEnumFonts(FT_Byte* pBuf, int buflen, const ttstr &FontPath
 				info.Path = FontPath;
 				info.Index = i;
 				info.Getter = getter;
+				TVPAddLog(ttstr(TJS_W("Got Font \"") + fontname + "\" "));
 				TVPFontNames.Add(fontname, info);
 				addCount = 1;
 			}
@@ -127,6 +128,7 @@ static int TVPInternalEnumFonts(FT_Byte* pBuf, int buflen, const ttstr &FontPath
 				info.Path = FontPath;
 				info.Index = i;
 				info.Getter = getter;
+				TVPAddLog(ttstr(TJS_W("Got Font \"") + fontname + "\" "));
 				TVPFontNames.Add(fontname, info);
 			}
 			++faceCount;
@@ -139,6 +141,7 @@ static int TVPInternalEnumFonts(FT_Byte* pBuf, int buflen, const ttstr &FontPath
 
 int TVPEnumFontsProc(const ttstr &FontPath)
 {
+	TVPAddLog(ttstr(TJS_W("Load Font \"") + FontPath + "\" "));
     if(!TVPIsExistentStorageNoSearch(FontPath)) {
         return 0;
     }
@@ -179,53 +182,54 @@ void TVPInitFontNames()
     // enumlate all fonts
     if(TVPFontNamesInit) return;
 	TVPFontNamesInit = true;
-#ifdef __ANDROID__
-	std::vector<ttstr> pathlist = Android_GetExternalStoragePath();
-#endif
+// #ifdef __ANDROID__
+// 	std::vector<ttstr> pathlist = Android_GetExternalStoragePath();
+// #endif
 	do {
-		ttstr userFont = IndividualConfigManager::GetInstance()->GetValue<std::string>("default_font", "");
+		ttstr userFont = "";//IndividualConfigManager::GetInstance()->GetValue<std::string>("default_font", "");
 		if (!userFont.IsEmpty() && TVPEnumFontsProc(userFont)) break;
 
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.ttf")) break;
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.ttc")) break;
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.otf")) break;
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.otc")) break;
-#if defined(__ANDROID__)
-		int fontCount = 0;
-		for (const ttstr &path : pathlist) {
-			fontCount += TVPEnumFontsProc(path + "/default.ttf");
-			if (fontCount) break;
-		}
-		if (fontCount) break;
+// #if defined(__ANDROID__)
+// 		int fontCount = 0;
+// 		for (const ttstr &path : pathlist) {
+// 			fontCount += TVPEnumFontsProc(path + "/default.ttf");
+// 			if (fontCount) break;
+// 		}
+// 		if (fontCount) break;
 		
-		if (TVPEnumFontsProc(Android_GetInternalStoragePath() + "/default.ttf")) break;
+// 		if (TVPEnumFontsProc(Android_GetInternalStoragePath() + "/default.ttf")) break;
 
-		{	// from internal storage
-			auto data = cocos2d::FileUtils::getInstance()->getDataFromFile("DroidSansFallback.ttf");
-			if (TVPInternalEnumFonts(data.getBytes(), data.getSize(), "DroidSansFallback.ttf", [](TVPFontNamePathInfo* info)->tTJSBinaryStream* {
-				auto data = cocos2d::FileUtils::getInstance()->getDataFromFile(info->Path.AsStdString());
-				tTVPMemoryStream *ret = new tTVPMemoryStream();
-				ret->WriteBuffer(data.getBytes(), data.getSize());
-				ret->SetPosition(0);
-				return ret;
-			})) break;
-		}
-		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/DroidSansFallback.ttf"))) break;
-		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/NotoSansHans-Regular.otf"))) break;
-		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/DroidSans.ttf"))) break;
-#elif defined(WIN32)
-		if (TVPEnumFontsProc(TJS_W("file://./c/windows/fonts/msyh.ttf"))) break;
-		if (TVPEnumFontsProc(TJS_W("file://./c/windows/fonts/simhei.ttf"))) break;
-#endif
+// 		{	// from internal storage
+// 			auto data = cocos2d::FileUtils::getInstance()->getDataFromFile("DroidSansFallback.ttf");
+// 			if (TVPInternalEnumFonts(data.getBytes(), data.getSize(), "DroidSansFallback.ttf", [](TVPFontNamePathInfo* info)->tTJSBinaryStream* {
+// 				auto data = cocos2d::FileUtils::getInstance()->getDataFromFile(info->Path.AsStdString());
+// 				tTVPMemoryStream *ret = new tTVPMemoryStream();
+// 				ret->WriteBuffer(data.getBytes(), data.getSize());
+// 				ret->SetPosition(0);
+// 				return ret;
+// 			})) break;
+// 		}
+// 		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/DroidSansFallback.ttf"))) break;
+// 		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/NotoSansHans-Regular.otf"))) break;
+// 		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/DroidSans.ttf"))) break;
+// #elif defined(WIN32)
+// 		if (TVPEnumFontsProc(TJS_W("file://./c/windows/fonts/msyh.ttf"))) break;
+// 		if (TVPEnumFontsProc(TJS_W("file://./c/windows/fonts/simhei.ttf"))) break;
+// #endif
         
-        std::string fullPath = cocos2d::FileUtils::getInstance()->fullPathForFilename("DroidSansFallback.ttf");
-        if (TVPEnumFontsProc(fullPath)) break;
+        // std::string fullPath = cocos2d::FileUtils::getInstance()->fullPathForFilename("DroidSansFallback.ttf");
+        // if (TVPEnumFontsProc(fullPath)) break;
 	} while (false);
     if(TVPFontNames.GetCount() > 0)
     {
         // set default fontface name
         TVPDefaultFontName = TVPFontNames.GetLast().GetKey();
     }
+    TVPDefaultFontName = "MS PMincho";
 
     // check exePath + "/fonts/*.ttf"
 	{

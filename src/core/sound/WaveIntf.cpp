@@ -747,13 +747,13 @@ struct tTVPWaveDecoderManager
 	std::vector<tTVPWaveDecoderCreator *> Creators;
 	tTVPWDC_RIFFWave RIFFWaveDecoderCreator;
     VorbisWaveDecoderCreator vorbisWaveDecoderCreator;
-    FFWaveDecoderCreator ffWaveDecoderCreator;
+    // FFWaveDecoderCreator ffWaveDecoderCreator;
     OpusWaveDecoderCreator opusWaveDecoderCreator;
 
 	tTVPWaveDecoderManager()
 	{
 		TVPWaveDecoderManagerAvail = true;
-        TVPRegisterWaveDecoderCreator(&ffWaveDecoderCreator);
+        // TVPRegisterWaveDecoderCreator(&ffWaveDecoderCreator);
         TVPRegisterWaveDecoderCreator(&opusWaveDecoderCreator);
 		TVPRegisterWaveDecoderCreator(&RIFFWaveDecoderCreator);
         TVPRegisterWaveDecoderCreator(&vorbisWaveDecoderCreator);

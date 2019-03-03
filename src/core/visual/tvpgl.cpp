@@ -16,7 +16,7 @@
 #include <math.h>
 #include "tjsTypes.h"
 #include "tvpgl.h"
-#include "Protect.h"
+// #include "Protect.h"
 #include <float.h>
 
 #define __cdecl
@@ -12309,7 +12309,7 @@ TVP_GL_FUNC_PTR_DECL(void, TVPUpscale65_255, (tjs_uint8 *dest, tjs_int len));
 TVP_GL_FUNC_PTR_DECL(void, TVPConvert32BitTo24Bit, (tjs_uint8 *dest, const tjs_uint8 *buf, tjs_int len));
 
 /* suffix "_c" : function is written in C */
-#include "tvpgl_route.h"
+// #include "tvpgl_route.h"
 
 /*export*/
 TVP_GL_FUNC_DECL(void, TVPInitTVPGL, ())

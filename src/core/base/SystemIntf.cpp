@@ -22,7 +22,7 @@
 #include "Random.h"
 #include "ScriptMgnIntf.h"
 #include "DebugIntf.h"
-#include "ConfigManager/LocaleConfigManager.h"
+// #include "ConfigManager/LocaleConfigManager.h"
 #include "Platform.h"
 
 extern bool TVPStartupSuccess;
@@ -145,8 +145,8 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/inputString)
 	// return false if the user selects "cancel", otherwise return true.
 	// implement in each platform.
 	std::vector<ttstr> btns;
-	btns.emplace_back(LocaleConfigManager::GetInstance()->GetText("msgbox_ok"));
-	btns.emplace_back(LocaleConfigManager::GetInstance()->GetText("cancel"));
+	btns.emplace_back("OK");
+	btns.emplace_back("Cancel");
 	int ret = TVPShowSimpleInputBox(value, caption, prompt, btns);
 	bool b = ret == 0; // the left button clicked
 

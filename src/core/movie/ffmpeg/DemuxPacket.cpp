@@ -40,7 +40,7 @@ DemuxPacket * DemuxPacket::Allocate(int iDataSize /*= 0*/)
 			* Note, if the first 23 bits of the additional bytes are not 0 then damaged
 			* MPEG bitstreams could cause overread and segfault
 			*/
-			pPacket->pData = (uint8_t*)TJSAlignedAlloc(iDataSize + FF_INPUT_BUFFER_PADDING_SIZE, 4);
+			pPacket->pData = (uint8_t*)TJSAlignedAlloc(iDataSize + AV_INPUT_BUFFER_PADDING_SIZE, 4);
 			if (!pPacket->pData)
 			{
 				Free(pPacket);
@@ -48,7 +48,7 @@ DemuxPacket * DemuxPacket::Allocate(int iDataSize /*= 0*/)
 			}
 
 			// reset the last 8 bytes to 0;
-			memset(pPacket->pData + iDataSize, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+			memset(pPacket->pData + iDataSize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 		}
 
 		// setup defaults

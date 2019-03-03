@@ -12,7 +12,7 @@
 #include "Application.h"
 #include <cstdlib>
 #include <iterator>
-#include "platform/CCPlatformConfig.h"
+// #include "platform/CCPlatformConfig.h"
 #include "AEStream.h"
 #include "WaveMixer.h"
 

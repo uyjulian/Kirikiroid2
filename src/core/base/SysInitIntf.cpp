@@ -18,7 +18,7 @@
 #include "SysInitIntf.h"
 #include "ScriptMgnIntf.h"
 #include "tvpgl.h"
-#include "Protect.h"
+// #include "Protect.h"
 
 
 //---------------------------------------------------------------------------

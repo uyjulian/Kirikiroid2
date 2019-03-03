@@ -50,7 +50,7 @@
 #include <thread>
 #undef uint32_t
 #include "Platform.h"
-#include "ConfigManager/IndividualConfigManager.h"
+// #include "ConfigManager/IndividualConfigManager.h"
 
 //---------------------------------------------------------------------------
 // global data
@@ -1020,49 +1020,50 @@ void TVPBeforeSystemInit()
 				TJSObjectHashBitsLimit = 4;
 		}
 #endif
-		TVPMemoryInfo meminf;
-		TVPGetMemoryInfo(meminf);
-		TVPPushEnvironNoise(&meminf, sizeof(meminf));
+		TVPTotalPhysMemory = 128 * 1024 * 1024;
+		// TVPMemoryInfo meminf;
+		// TVPGetMemoryInfo(meminf);
+		// TVPPushEnvironNoise(&meminf, sizeof(meminf));
 		
-		TVPTotalPhysMemory = meminf.MemTotal * 1024;
-		if (TVPTotalPhysMemory > 768 * 1024 * 1024) {
-			TVPTotalPhysMemory -= 512 * 1024 * 1024; // assume that system reserved 512M memory
-		} else {
-			TVPTotalPhysMemory /= 2; // use half memory in small memory devices
-		}
+		// TVPTotalPhysMemory = meminf.MemTotal * 1024;
+		// if (TVPTotalPhysMemory > 768 * 1024 * 1024) {
+		// 	TVPTotalPhysMemory -= 512 * 1024 * 1024; // assume that system reserved 512M memory
+		// } else {
+		// 	TVPTotalPhysMemory /= 2; // use half memory in small memory devices
+		// }
 
-		TVPAddImportantLog(TVPFormatMessage(TVPInfoTotalPhysicalMemory, tjs_int64(TVPTotalPhysMemory)));
-		if (TVPTotalPhysMemory > 256 * 1024 * 1024) {
-			std::string str = IndividualConfigManager::GetInstance()->GetValue<std::string>("memusage", "unlimited");
-			if (str == ("low"))
-				TVPTotalPhysMemory = 0; // assumes zero
-			else if (str == ("medium"))
-				TVPTotalPhysMemory = 128 * 1024 * 1024;
-			else if (str == ("high"))
-				TVPTotalPhysMemory = 256 * 1024 * 1024;
-		} else { // use minimum memory usage if less than 256M(512M physics)
-			TVPTotalPhysMemory = 0;
-		}
+		// TVPAddImportantLog(TVPFormatMessage(TVPInfoTotalPhysicalMemory, tjs_int64(TVPTotalPhysMemory)));
+		// if (TVPTotalPhysMemory > 256 * 1024 * 1024) {
+		// 	std::string str = "high"; //IndividualConfigManager::GetInstance()->GetValue<std::string>("memusage", "unlimited");
+		// 	if (str == ("low"))
+		// 		TVPTotalPhysMemory = 0; // assumes zero
+		// 	else if (str == ("medium"))
+		// 		TVPTotalPhysMemory = 128 * 1024 * 1024;
+		// 	else if (str == ("high"))
+		// 		TVPTotalPhysMemory = 256 * 1024 * 1024;
+		// } else { // use minimum memory usage if less than 256M(512M physics)
+		// 	TVPTotalPhysMemory = 0;
+		// }
 
-		if (TVPTotalPhysMemory < 128 * 1024 * 1024)
-		{
-			// very very low memory, forcing to assume zero memory
-			TVPTotalPhysMemory = 0;
-		}
+		// if (TVPTotalPhysMemory < 128 * 1024 * 1024)
+		// {
+		// 	// very very low memory, forcing to assume zero memory
+		// 	TVPTotalPhysMemory = 0;
+		// }
 
-		if (TVPTotalPhysMemory < 128 * 1024 * 1024)
-		{
-			// extra low memory
-			if (TJSObjectHashBitsLimit > 0)
-				TJSObjectHashBitsLimit = 0;
-			TVPSegmentCacheLimit = 0;
-			TVPFreeUnusedLayerCache = true; // in LayerIntf.cpp
-		} else if (TVPTotalPhysMemory < 256 * 1024 * 1024)
-		{
-			// low memory
-			if (TJSObjectHashBitsLimit > 4)
-				TJSObjectHashBitsLimit = 4;
-		}
+		// if (TVPTotalPhysMemory < 128 * 1024 * 1024)
+		// {
+		// 	// extra low memory
+		// 	if (TJSObjectHashBitsLimit > 0)
+		// 		TJSObjectHashBitsLimit = 0;
+		// 	TVPSegmentCacheLimit = 0;
+		// 	TVPFreeUnusedLayerCache = true; // in LayerIntf.cpp
+		// } else if (TVPTotalPhysMemory < 256 * 1024 * 1024)
+		// {
+		// 	// low memory
+		// 	if (TJSObjectHashBitsLimit > 4)
+		// 		TJSObjectHashBitsLimit = 4;
+		// }
 	}
 #if 0
 
@@ -1339,11 +1340,11 @@ void TVPAfterSystemInit()
 		}
 	}
 	// check TVPGraphicSplitOperation option
-	std::string _val = IndividualConfigManager::GetInstance()->GetValue<std::string>("renderer", "software");
+	std::string _val = "software";//IndividualConfigManager::GetInstance()->GetValue<std::string>("renderer", "software");
 	if (_val != "software") {
 		TVPGraphicSplitOperationType = gsotNone;
 	} else {
-		TVPDrawThreadNum = IndividualConfigManager::GetInstance()->GetValue<int>("software_draw_thread", 0);
+		TVPDrawThreadNum = 0;//IndividualConfigManager::GetInstance()->GetValue<int>("software_draw_thread", 0);
 		if (TVPGetCommandLine(TJS_W("-gsplit"), &opt))
 		{
 			ttstr str(opt);
@@ -1392,7 +1393,7 @@ void TVPAfterSystemInit()
 #endif
 	TVPGL_SSE2_Init();
 #endif
-	TVPGL_ASM_Init();
+	// TVPGL_ASM_Init();
 
 	// timer precision
 	uint32_t prectick = 1;

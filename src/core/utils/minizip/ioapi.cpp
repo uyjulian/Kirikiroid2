@@ -121,7 +121,7 @@ static uLong ZCALLBACK fwrite_file_func (voidpf opaque, voidpf stream, const voi
 
 static ZPOS64_T ZCALLBACK ftell64_file_func (voidpf opaque, voidpf stream)
 {
-    return (ZPOS64_T)lseek64((int64_t)stream, 0, SEEK_CUR);
+    return (ZPOS64_T)lseek((int64_t)stream, 0, SEEK_CUR);
 }
 
 static long ZCALLBACK ftell_file_func (voidpf opaque, voidpf stream)
@@ -147,7 +147,7 @@ static long ZCALLBACK fseek_file_func (voidpf  opaque, voidpf stream, uLong offs
     default: return -1;
     }
     ret = 0;
-	lseek64((int64_t)stream, offset, fseek_origin);
+	lseek((int64_t)stream, offset, fseek_origin);
     return ret;
 }
 
@@ -167,7 +167,7 @@ static long ZCALLBACK fseek64_file_func (voidpf  opaque, voidpf stream, ZPOS64_T
         break;
     default: return -1;
     }
-	lseek64((int64_t)stream, offset, fseek_origin);
+	lseek((int64_t)stream, offset, fseek_origin);
     return 0;
 }
 

@@ -28,7 +28,7 @@
 #include "tjsDictionary.h"
 #include "ScriptMgnIntf.h"
 #include "RenderManager.h"
-#include "ConfigManager/LocaleConfigManager.h"
+// #include "ConfigManager/LocaleConfigManager.h"
 #include <mutex>
 #include <thread>
 #include <condition_variable>
@@ -65,18 +65,18 @@ static void TVPLoadGraphicRouter(void* formatdata, void *callbackdata, tTVPGraph
 			header[3] >= 0xE0 && header[3] <= 0xEF ) {
 			return CALL_LOAD_FUNC(TVPLoadJPEG);
 		}
-		if (!memcmp(header, "BPG", 3)) {
-			return CALL_LOAD_FUNC(TVPLoadBPG);
-		}
+		// if (!memcmp(header, "BPG", 3)) {
+		// 	return CALL_LOAD_FUNC(TVPLoadBPG);
+		// }
 		if (!memcmp(header, "RIFF", 4) && !memcmp(header + 8, "WEBPVP8", 7)) {
 			return CALL_LOAD_FUNC(TVPLoadWEBP);
 		}
-		if (!memcmp(header, "\x49\x49\xbc\x01", 4)) {
-			return CALL_LOAD_FUNC(TVPLoadJXR);
-		}
-		if (!memcmp(header, "PVR\3", 4)) {
-			return CALL_LOAD_FUNC(TVPLoadPVRv3);
-		}
+		// if (!memcmp(header, "\x49\x49\xbc\x01", 4)) {
+		// 	return CALL_LOAD_FUNC(TVPLoadJXR);
+		// }
+		// if (!memcmp(header, "PVR\3", 4)) {
+		// 	return CALL_LOAD_FUNC(TVPLoadPVRv3);
+		// }
 #undef CALL_LOAD_FUNC
 	}
 	TVPThrowExceptionMessage(TVPImageLoadError, TJS_W("Invalid image"));
@@ -101,18 +101,18 @@ static void TVPLoadHeaderRouter(void* formatdata, tTJSBinaryStream *src, iTJSDis
 			header[3] >= 0xE0 && header[3] <= 0xEF) {
 			return CALL_LOAD_FUNC(TVPLoadHeaderJPG);
 		}
-		if (!memcmp(header, "BPG", 3)) {
-			return CALL_LOAD_FUNC(TVPLoadHeaderBPG);
-		}
+		// if (!memcmp(header, "BPG", 3)) {
+		// 	return CALL_LOAD_FUNC(TVPLoadHeaderBPG);
+		// }
 		if (!memcmp(header, "RIFF", 4) && !memcmp(header + 8, "WEBPVP8", 7)) {
 			return CALL_LOAD_FUNC(TVPLoadHeaderWEBP);
 		}
-		if (!memcmp(header, "\x49\x49\xbc\x01", 4)) {
-			return CALL_LOAD_FUNC(TVPLoadHeaderJXR);
-		}
-		if (!memcmp(header, "PVR\3", 4)) {
-			return CALL_LOAD_FUNC(TVPLoadHeaderPVRv3);
-		}
+		// if (!memcmp(header, "\x49\x49\xbc\x01", 4)) {
+		// 	return CALL_LOAD_FUNC(TVPLoadHeaderJXR);
+		// }
+		// if (!memcmp(header, "PVR\3", 4)) {
+		// 	return CALL_LOAD_FUNC(TVPLoadHeaderPVRv3);
+		// }
 #undef CALL_LOAD_FUNC
 	}
 	TVPThrowExceptionMessage(TVPImageLoadError, TJS_W("Invalid image"));
@@ -156,12 +156,12 @@ public:
 	tTVPGraphicType()
 	{
 		// register some native-supported formats
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".pvr"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".jxr"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsJXR, TVPAcceptSaveAsJXR, NULL));
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".bpg"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));
+		// Handlers.push_back(tTVPGraphicHandlerType(
+		// 	TJS_W(".pvr"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));
+		// Handlers.push_back(tTVPGraphicHandlerType(
+		// 	TJS_W(".jxr"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsJXR, TVPAcceptSaveAsJXR, NULL));
+		// Handlers.push_back(tTVPGraphicHandlerType(
+		// 	TJS_W(".bpg"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));
 		Handlers.push_back(tTVPGraphicHandlerType(
 			TJS_W(".webp"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));
 		Handlers.push_back(tTVPGraphicHandlerType(
@@ -1706,8 +1706,8 @@ tTVPGraphicHandlerType* TVPFindGraphicLoadHandler(ttstr &_name, ttstr *maskname,
 		if (i.IsNull())
 		{
 			// not found
-			ttstr fmt = LocaleConfigManager::GetInstance()->GetText("err_cannot_suggest_graph_ext");
-			TVPThrowExceptionMessage(fmt.c_str(), name);
+			// ttstr fmt = LocaleConfigManager::GetInstance()->GetText("err_cannot_suggest_graph_ext");
+			TVPThrowExceptionMessage(TJS_W("Can't find graphics extension"), name);
 		}
 
 		handler = &i.GetValue();
@@ -1882,20 +1882,20 @@ static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
 }
 //---------------------------------------------------------------------------
 iTVPTexture2D* TVPLoadPVRv3(tTJSBinaryStream *s, const std::function<void(const ttstr&, const tTJSVariant&)> &cb);
-static iTVPTexture2D *TVPInternalLoadTexture(const ttstr &_name,
-	std::vector<tTVPGraphicMetaInfoPair> * * MetaInfo, ttstr *provincename) {
-	ttstr name(_name), maskname;
-	tTVPGraphicHandlerType * handler = TVPFindGraphicLoadHandler(name, &maskname, provincename);
-	if (!maskname.IsEmpty()) {
-		// mask merge is not supported
-		return nullptr;
-	}
-	tTVPStreamHolder holder(name);
-	return TVPLoadPVRv3(holder.Get(), [MetaInfo](const ttstr& k, const tTJSVariant& v) {
-		if (!*MetaInfo) *MetaInfo = new std::vector<tTVPGraphicMetaInfoPair>;
-		(*MetaInfo)->emplace_back(k, v);
-	});
-}
+// static iTVPTexture2D *TVPInternalLoadTexture(const ttstr &_name,
+// 	std::vector<tTVPGraphicMetaInfoPair> * * MetaInfo, ttstr *provincename) {
+// 	ttstr name(_name), maskname;
+// 	tTVPGraphicHandlerType * handler = TVPFindGraphicLoadHandler(name, &maskname, provincename);
+// 	if (!maskname.IsEmpty()) {
+// 		// mask merge is not supported
+// 		return nullptr;
+// 	}
+// 	tTVPStreamHolder holder(name);
+// 	return TVPLoadPVRv3(holder.Get(), [MetaInfo](const ttstr& k, const tTJSVariant& v) {
+// 		if (!*MetaInfo) *MetaInfo = new std::vector<tTVPGraphicMetaInfoPair>;
+// 		(*MetaInfo)->emplace_back(k, v);
+// 	});
+// }
 
 void TVPLoadGraphicProvince(tTVPBaseBitmap *dest, const ttstr &name, tjs_int keyidx,
     tjs_uint desw, tjs_uint desh)
@@ -2012,9 +2012,9 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 	{
 		tTVPBitmap *bmp = nullptr;
 		iTVPTexture2D *texture = nullptr;
-		if (mode == glmNormal && keyidx == TVP_clNone && !desw && !desh) {
-			texture = TVPInternalLoadTexture(nname, &mi, &pn);
-		}
+		// if (mode == glmNormal && keyidx == TVP_clNone && !desw && !desh) {
+		// 	texture = TVPInternalLoadTexture(nname, &mi, &pn);
+		// }
 		if (!texture) {
 			bmp = TVPInternalLoadBitmap(nname, keyidx, desw, desh, &mi, mode, &pn);
 		}

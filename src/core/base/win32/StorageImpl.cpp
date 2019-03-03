@@ -32,7 +32,7 @@
 #include "StringUtil.h"
 #include "FilePathUtil.h"
 #include "Platform.h"
-#include "platform/CCPlatformConfig.h"
+// #include "platform/CCPlatformConfig.h"
 #include "dirent.h"
 #include "TickCount.h"
 #include <fcntl.h>
@@ -230,27 +230,27 @@ static int _utf8_strcasecmp(const char *a, const char *b) {
     return *a - *b;
 }
 
-#if CC_TARGET_PLATFORM == CC_PLATFORM_IOS
-const std::vector<std::string> &TVPGetApplicationHomeDirectory();
-const std::vector<ttstr> &_getPrefixPath() {
-	static std::vector<ttstr> ret;
-	if (ret.empty()) {
-		for (const std::string &path : TVPGetApplicationHomeDirectory()) {
-			ret.emplace_back(path);
-		}
-	}
-	return ret;
-}
-const std::vector<std::string> &_getHomeDir() {
-	static std::vector<std::string> ret;
-	if (ret.empty()) {
-		for (const std::string &path : TVPGetApplicationHomeDirectory()) {
-			ret.emplace_back(path + "/");
-		}
-	}
-	return ret;
-}
-#endif
+// #if CC_TARGET_PLATFORM == CC_PLATFORM_IOS
+// const std::vector<std::string> &TVPGetApplicationHomeDirectory();
+// const std::vector<ttstr> &_getPrefixPath() {
+// 	static std::vector<ttstr> ret;
+// 	if (ret.empty()) {
+// 		for (const std::string &path : TVPGetApplicationHomeDirectory()) {
+// 			ret.emplace_back(path);
+// 		}
+// 	}
+// 	return ret;
+// }
+// const std::vector<std::string> &_getHomeDir() {
+// 	static std::vector<std::string> ret;
+// 	if (ret.empty()) {
+// 		for (const std::string &path : TVPGetApplicationHomeDirectory()) {
+// 			ret.emplace_back(path + "/");
+// 		}
+// 	}
+// 	return ret;
+// }
+// #endif
 
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPFileMedia::GetLocallyAccessibleName(ttstr &name)
@@ -302,25 +302,25 @@ void TJS_INTF_METHOD tTVPFileMedia::GetLocallyAccessibleName(ttstr &name)
         ptr += 2;  // skip "./"
         newname.Clear();
     }
-#if CC_TARGET_PLATFORM == CC_PLATFORM_IOS
-    {
-        std::string prefix = "/";
-        prefix += tTJSNarrowStringHolder(ptr).Buf;
-        static const std::vector<ttstr> &prefixPath = _getPrefixPath();
-		static const std::vector<std::string> &homeDir = _getHomeDir();
-		for (int i = 0; i < prefixPath.size(); ++i) {
-			const std::string &dir = homeDir[i];
-			if (prefix.length() < dir.length()) continue;
-			std::string actualPrefix = prefix.substr(0, dir.length());
-			if (!_utf8_strcasecmp(actualPrefix.c_str(), dir.c_str())) {
-				newname = prefixPath[i];
-				ptr += prefixPath[i].length();
-				while (*ptr && *ptr == TJS_W('/')) ++ptr;
-				break;
-			}
-		}
-    }
-#endif
+// #if CC_TARGET_PLATFORM == CC_PLATFORM_IOS
+//     {
+//         std::string prefix = "/";
+//         prefix += tTJSNarrowStringHolder(ptr).Buf;
+//         static const std::vector<ttstr> &prefixPath = _getPrefixPath();
+// 		static const std::vector<std::string> &homeDir = _getHomeDir();
+// 		for (int i = 0; i < prefixPath.size(); ++i) {
+// 			const std::string &dir = homeDir[i];
+// 			if (prefix.length() < dir.length()) continue;
+// 			std::string actualPrefix = prefix.substr(0, dir.length());
+// 			if (!_utf8_strcasecmp(actualPrefix.c_str(), dir.c_str())) {
+// 				newname = prefixPath[i];
+// 				ptr += prefixPath[i].length();
+// 				while (*ptr && *ptr == TJS_W('/')) ++ptr;
+// 				break;
+// 			}
+// 		}
+//     }
+// #endif
     while(*ptr) {
     	const tjs_char *ptr_end = ptr;
     	while(*ptr_end && *ptr_end != TJS_W('/')) ++ptr_end;
@@ -586,11 +586,11 @@ bool TVPCheckExistentLocalFolder(const ttstr &name)
 
 
 tTVPArchive * TVPOpenZIPArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
-tTVPArchive * TVPOpen7ZArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
+// tTVPArchive * TVPOpen7ZArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
 tTVPArchive * TVPOpenTARArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
 static tTVPArchive*(*ArchiveCreators[])(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName) = {
-	TVPOpenZIPArchive,
-	TVPOpen7ZArchive,
+	// TVPOpenZIPArchive,
+	// TVPOpen7ZArchive,
 	TVPOpenTARArchive,
 	tTVPXP3Archive::Create
 };
@@ -823,7 +823,7 @@ tjs_uint64 TJS_INTF_METHOD tTVPLocalFileStream::Seek(tjs_int64 offset, tjs_int w
     if(MemBuffer) {
         return MemBuffer->Seek(offset, whence);
 	}
-	return lseek64(Handle, offset, whence);
+	return lseek(Handle, offset, whence);
 }
 //---------------------------------------------------------------------------
 tjs_uint TJS_INTF_METHOD tTVPLocalFileStream::Read(void *buffer, tjs_uint read_size)
@@ -847,7 +847,7 @@ void TJS_INTF_METHOD tTVPLocalFileStream::SetEndOfStorage()
     if(MemBuffer) {
         return MemBuffer->SetEndOfStorage();
 	}
-    lseek64(Handle, 0, SEEK_END);
+    lseek(Handle, 0, SEEK_END);
 }
 //---------------------------------------------------------------------------
 tjs_uint64 TJS_INTF_METHOD tTVPLocalFileStream::GetSize()
@@ -856,9 +856,9 @@ tjs_uint64 TJS_INTF_METHOD tTVPLocalFileStream::GetSize()
         return MemBuffer->GetSize();
     }
 	tjs_uint64 ret;
-    tjs_int64 curpos = lseek64(Handle, 0, SEEK_CUR);
-    ret = lseek64(Handle, 0, SEEK_END);
-    lseek64(Handle, curpos, SEEK_SET);
+    tjs_int64 curpos = lseek(Handle, 0, SEEK_CUR);
+    ret = lseek(Handle, 0, SEEK_END);
+    lseek(Handle, curpos, SEEK_SET);
 	return ret;
 }
 //---------------------------------------------------------------------------
@@ -981,9 +981,9 @@ tTVPIStreamAdapter::~tTVPIStreamAdapter()
 	delete Stream;
 }
 //---------------------------------------------------------------------------
-extern "C" const IID IID_IUnknown;
-extern "C" const IID IID_IStream;
-extern "C" const IID IID_ISequentialStream;
+	const IID IID_IUnknown = {0,0,0,{0, 0xc0, 0, 0, 0, 0x46}};//00000000-0000-0000-C000-000000000046
+	const IID IID_IStream = {0xC,0,0,{0, 0xc0, 0, 0, 0, 0x46}};//0000000C-0000-0000-C000-000000000046
+	const IID IID_ISequentialStream = {0x0c733a30,0x2a1c,0x11ce,{0xad,0xe5,0x00,0xaa,0x00,0x44,0x77,0x3d}};
 HRESULT STDMETHODCALLTYPE tTVPIStreamAdapter::QueryInterface(REFIID riid,
 		void **ppvObject)
 {

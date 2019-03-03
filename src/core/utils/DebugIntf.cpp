@@ -373,64 +373,67 @@ void tTVPLogStreamHolder::Log(const ttstr & text)
 //---------------------------------------------------------------------------
 void TVPAddLog(const ttstr &line, bool appendtoimportant)
 {
-	// add a line to the log.
-	// exceeded lines over TVPLogMaxLines are eliminated.
-	// this function is not thread-safe ...
+// 	// add a line to the log.
+// 	// exceeded lines over TVPLogMaxLines are eliminated.
+// 	// this function is not thread-safe ...
 
-	TVPEnsureLogObjects();
-	if(!TVPLogDeque) return; // log system is shuttingdown
-	if(!TVPImportantLogs) return; // log system is shuttingdown
+// 	TVPEnsureLogObjects();
+// 	if(!TVPLogDeque) return; // log system is shuttingdown
+// 	if(!TVPImportantLogs) return; // log system is shuttingdown
 
-	static time_t prevlogtime = 0;
-	static ttstr prevtimebuf;
-	static tjs_char timebuf[40];
+// 	static time_t prevlogtime = 0;
+// 	static ttstr prevtimebuf;
+// 	static tjs_char timebuf[40];
 
-	tm *struct_tm;
-	time_t timer;
-	timer = time(&timer);
+// 	tm *struct_tm;
+// 	time_t timer;
+// 	timer = time(&timer);
 
-	if(prevlogtime != timer)
-	{
-		struct_tm = localtime(&timer);
-		TJS_strftime(timebuf, 39, TJS_W("%H:%M:%S"), struct_tm);
-		prevlogtime = timer;
-		prevtimebuf = timebuf;
-	}
+// 	if(prevlogtime != timer)
+// 	{
+// 		struct_tm = localtime(&timer);
+// 		TJS_strftime(timebuf, 39, TJS_W("%H:%M:%S"), struct_tm);
+// 		prevlogtime = timer;
+// 		prevtimebuf = timebuf;
+// 	}
 
-	TVPLogDeque->push_back(tTVPLogItem(line, prevtimebuf));
+// 	TVPLogDeque->push_back(tTVPLogItem(line, prevtimebuf));
 
-	if(appendtoimportant)
-	{
-#ifdef TJS_TEXT_OUT_CRLF
-		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\r\n");
-#else
-		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\n");
-#endif
-	}
-	while(TVPLogDeque->size() >= TVPLogMaxLines+100)
-	{
-		std::deque<tTVPLogItem>::iterator i = TVPLogDeque->begin();
-		TVPLogDeque->erase(i, i+100);
-	}
+// 	if(appendtoimportant)
+// 	{
+// #ifdef TJS_TEXT_OUT_CRLF
+// 		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\r\n");
+// #else
+// 		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\n");
+// #endif
+// 	}
+// 	while(TVPLogDeque->size() >= TVPLogMaxLines+100)
+// 	{
+// 		std::deque<tTVPLogItem>::iterator i = TVPLogDeque->begin();
+// 		TVPLogDeque->erase(i, i+100);
+// 	}
 
-	tjs_int timebuflen = (tjs_int)TJS_strlen(timebuf);
-	ttstr buf((tTJSStringBufferLength)(timebuflen + 1 + line.GetLen()));
-	tjs_char * p = buf.Independ();
-	TJS_strcpy(p, timebuf);
-	p += timebuflen;
-	*p = TJS_W(' ');
-	p++;
-	TJS_strcpy(p, line.c_str());
-	if(TVPOnLog) TVPOnLog(buf);
-#ifdef ENABLE_DEBUGGER
-	if( TJSEnableDebugMode ) TJSDebuggerLog(buf,appendtoimportant);
-	//OutputDebugStringW( buf.c_str() );
-	//OutputDebugStringW( L"\n" );
-#endif	// ENABLE_DEBUGGER
+// 	tjs_int timebuflen = (tjs_int)TJS_strlen(timebuf);
+// 	ttstr buf((tTJSStringBufferLength)(timebuflen + 1 + line.GetLen()));
+// 	tjs_char * p = buf.Independ();
+// 	TJS_strcpy(p, timebuf);
+// 	p += timebuflen;
+// 	*p = TJS_W(' ');
+// 	p++;
+// 	TJS_strcpy(p, line.c_str());
+// 	if(TVPOnLog) TVPOnLog(buf);
+// #ifdef ENABLE_DEBUGGER
+// 	if( TJSEnableDebugMode ) TJSDebuggerLog(buf,appendtoimportant);
+// 	//OutputDebugStringW( buf.c_str() );
+// 	//OutputDebugStringW( L"\n" );
+// #endif	// ENABLE_DEBUGGER
 
-	Application->PrintConsole( buf, appendtoimportant );
+// 	Application->PrintConsole( buf, appendtoimportant );
 
-	if(TVPLoggingToFile) TVPLogStreamHolder.Log(buf);
+// 	if(TVPLoggingToFile) TVPLogStreamHolder.Log(buf);
+
+	Application->PrintConsole( line.c_str(), appendtoimportant );
+	Application->PrintConsole( "\n", appendtoimportant );
 }
 //---------------------------------------------------------------------------
 void TVPAddLog(const ttstr &line)

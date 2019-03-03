@@ -279,15 +279,15 @@ size_t TJS_strlen(const tjs_char *d)
 	return d-p;
 }
 //---------------------------------------------------------------------------
-tjs_int TJS_sprintf(tjs_char *s, const tjs_char *format, ...)
-{
-	tjs_int r;
-	va_list param;
-	va_start(param, format);
-	r = TJS_vsnprintf(s, INT_MAX, format, param);
-	va_end(param);
-	return r;
-}
+// tjs_int TJS_sprintf(tjs_char *s, const tjs_char *format, ...)
+// {
+// 	tjs_int r;
+// 	va_list param;
+// 	va_start(param, format);
+// 	r = TJS_vsnprintf(s, INT_MAX, format, param);
+// 	va_end(param);
+// 	return r;
+// }
 //---------------------------------------------------------------------------
 
 void TVPConsoleLog(const tjs_char *l);
@@ -1873,7 +1873,12 @@ static int printf_core(_tFILE *f, const tjs_char *fmt, va_list *ap, union arg *n
         case 's':
         case 'S':
             z = a = arg.p ? (tjs_char*)arg.p : (tjs_char*)TJS_W("(null)");
-            while(*z) z++;
+            try {
+            	while(*z) z++;
+            }
+            catch (...) {
+
+            }
             //z = (tjs_char*)memchr(a, 0, p);
             if (!z) z=a+p;
             else p=z-a;
@@ -2706,21 +2711,21 @@ size_t TJS_strftime( tjs_char *wstring, size_t maxsize, const tjs_char *wformat,
     return __strftime_l(wstring, maxsize, wformat, (tm*)timeptr);
 }
 
-int TJS_vsnprintf( tjs_char *string, size_t count, const tjs_char *format, va_list ap )
-{
+// int TJS_vsnprintf( tjs_char *string, size_t count, const tjs_char *format, va_list ap )
+// {
     
-    return _vsnprintf(string, count, format, ap);
-}
+//     return _vsnprintf(string, count, format, ap);
+// }
 
-tjs_int TJS_snprintf(tjs_char *s, size_t count, const tjs_char *format, ...)
-{
-	tjs_int r;
-	va_list param;
-	va_start(param, format);
-	r = TJS_vsnprintf(s, count, format, param);
-	va_end(param);
-	return r;
-}
+// tjs_int TJS_snprintf(tjs_char *s, size_t count, const tjs_char *format, ...)
+// {
+// 	tjs_int r;
+// 	va_list param;
+// 	va_start(param, format);
+// 	r = TJS_vsnprintf(s, count, format, param);
+// 	va_end(param);
+// 	return r;
+// }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 } // namespace TJS

@@ -371,8 +371,8 @@ tjs_uint64 TJS_INTF_METHOD tTVPPartialStream::GetSize()
 
 
 extern "C" {
-#include "libarchive/archive.h"
-#include "libarchive/archive_entry.h"
+#include <archive.h>
+#include <archive_entry.h>
 }
 #if 0
 class LibArchive_Archive : public tTVPArchive {
@@ -759,225 +759,225 @@ const char * tTVPUnpackArchiveImplLibArchive::_onPassphraseCallback(struct archi
 	return psw.c_str();
 }
 
-extern "C" {
-#include "7zip/C/7z.h"
-#include "7zip/C/7zFile.h"
-#include "7zip/C/7zCrc.h"
-}
-#include <fcntl.h>
-#include <unistd.h>
-#include "win32io.h"
+// extern "C" {
+// #include "7zip/C/7z.h"
+// #include "7zip/C/7zFile.h"
+// #include "7zip/C/7zCrc.h"
+// }
+// #include <fcntl.h>
+// #include <unistd.h>
+// #include "win32io.h"
 
-static ISzAlloc allocImp = {
-	[](void *p, size_t size) -> void * { return malloc(size); },
-	[](void *p, void *addr) { free(addr); }
-};
-class tTVPUnpackArchiveImpl7Zip : public tTVPUnpackArchiveImplLibArchive {
-	int _stream;
-	CLookToRead lookStream;
-	struct CSeekInStream : public ISeekInStream {
-		tTVPUnpackArchiveImpl7Zip *Host;
-	} archiveStream;
+// static ISzAlloc allocImp = {
+// 	[](void *p, size_t size) -> void * { return malloc(size); },
+// 	[](void *p, void *addr) { free(addr); }
+// };
+// class tTVPUnpackArchiveImpl7Zip : public tTVPUnpackArchiveImplLibArchive {
+// 	int _stream;
+// 	CLookToRead lookStream;
+// 	struct CSeekInStream : public ISeekInStream {
+// 		tTVPUnpackArchiveImpl7Zip *Host;
+// 	} archiveStream;
 
-	SRes StreamRead(void *buf, size_t *size) {
-		*size = read(_stream, buf, *size);
-		return SZ_OK;
-	}
-	SRes StreamSeek(Int64 *pos, ESzSeek origin) {
-		int whence = SEEK_SET;
-		switch (origin) {
-		case SZ_SEEK_CUR: whence = SEEK_CUR; break;
-		case SZ_SEEK_END: whence = SEEK_END; break;
-		case SZ_SEEK_SET: whence = SEEK_SET; break;
-		default: break;
-		}
+// 	SRes StreamRead(void *buf, size_t *size) {
+// 		*size = read(_stream, buf, *size);
+// 		return SZ_OK;
+// 	}
+// 	SRes StreamSeek(Int64 *pos, ESzSeek origin) {
+// 		int whence = SEEK_SET;
+// 		switch (origin) {
+// 		case SZ_SEEK_CUR: whence = SEEK_CUR; break;
+// 		case SZ_SEEK_END: whence = SEEK_END; break;
+// 		case SZ_SEEK_SET: whence = SEEK_SET; break;
+// 		default: break;
+// 		}
 
-		*pos = lseek64(_stream, *pos, whence);
-		return SZ_OK;
-	}
+// 		*pos = lseek64(_stream, *pos, whence);
+// 		return SZ_OK;
+// 	}
 
-public:
-	tTVPUnpackArchiveImpl7Zip() {
-		archiveStream.Host = this;
-		archiveStream.Read = [](void *p, void *buf, size_t *size)->SRes {return ((CSeekInStream*)p)->Host->StreamRead(buf, size); };
-		archiveStream.Seek = [](void *p, Int64 *pos, ESzSeek origin)->SRes {return ((CSeekInStream*)p)->Host->StreamSeek(pos, origin); };
-		LookToRead_CreateVTable(&lookStream, false);
-		lookStream.realStream = &archiveStream;
-		if (!g_CrcTable[1]) CrcGenerateTable();
-	}
+// public:
+// 	tTVPUnpackArchiveImpl7Zip() {
+// 		archiveStream.Host = this;
+// 		archiveStream.Read = [](void *p, void *buf, size_t *size)->SRes {return ((CSeekInStream*)p)->Host->StreamRead(buf, size); };
+// 		archiveStream.Seek = [](void *p, Int64 *pos, ESzSeek origin)->SRes {return ((CSeekInStream*)p)->Host->StreamSeek(pos, origin); };
+// 		LookToRead_CreateVTable(&lookStream, false);
+// 		lookStream.realStream = &archiveStream;
+// 		if (!g_CrcTable[1]) CrcGenerateTable();
+// 	}
 
-	virtual bool Open(const std::string &path) override {
-		// FpIn = fopen(path.c_str(), "rb");
-		_filepath = path;
-		CSzArEx db;
-		SzArEx_Init(&db);
-		_stream = open(path.c_str(), O_RDONLY, 0666);
-		if (!_stream)
-			return false;
+// 	virtual bool Open(const std::string &path) override {
+// 		// FpIn = fopen(path.c_str(), "rb");
+// 		_filepath = path;
+// 		CSzArEx db;
+// 		SzArEx_Init(&db);
+// 		_stream = open(path.c_str(), O_RDONLY, 0666);
+// 		if (!_stream)
+// 			return false;
 
-		SRes res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocImp);
-		if (res != SZ_OK) return false;
-		_totalFileCount = 0;
-		_totalSize = 0;
-		for (int i = 0; i < db.NumFiles; i++) {
-			size_t offset = 0;
-			size_t outSizeProcessed = 0;
-			bool isDir = SzArEx_IsDir(&db, i);
-			if (isDir) continue;
-			++_totalFileCount;
-			_totalSize += SzArEx_GetFileSize(&db, i);
-		}
-		SzArEx_Free(&db, &allocImp);
-		close(_stream);
-		return true;
-	}
-};
+// 		SRes res = SzArEx_Open(&db, &lookStream.s, &allocImp, &allocImp);
+// 		if (res != SZ_OK) return false;
+// 		_totalFileCount = 0;
+// 		_totalSize = 0;
+// 		for (int i = 0; i < db.NumFiles; i++) {
+// 			size_t offset = 0;
+// 			size_t outSizeProcessed = 0;
+// 			bool isDir = SzArEx_IsDir(&db, i);
+// 			if (isDir) continue;
+// 			++_totalFileCount;
+// 			_totalSize += SzArEx_GetFileSize(&db, i);
+// 		}
+// 		SzArEx_Free(&db, &allocImp);
+// 		close(_stream);
+// 		return true;
+// 	}
+// };
 
-#include "unrar/raros.hpp"
-#include "unrar/dll.hpp"
-class tTVPUnpackArchiveImplUnRAR : public iTVPUnpackArchiveImpl {
-	std::string _archivePath;
-	tjs_int _filecount;
-	tjs_int64 _totalSize, _totalProcessedBytes, _curProcessedBytes;
-	std::string _lastUsedPassword;
-	std::mutex _mutex;
-	std::condition_variable _cond;
+// #include "unrar/raros.hpp"
+// #include "unrar/dll.hpp"
+// class tTVPUnpackArchiveImplUnRAR : public iTVPUnpackArchiveImpl {
+// 	std::string _archivePath;
+// 	tjs_int _filecount;
+// 	tjs_int64 _totalSize, _totalProcessedBytes, _curProcessedBytes;
+// 	std::string _lastUsedPassword;
+// 	std::mutex _mutex;
+// 	std::condition_variable _cond;
 	
-	bool _reqBreak = false;
-	struct RARArc {
-		RAROpenArchiveDataEx _archiveData;
-		void *_handle = nullptr;
-		RARArc() {}
-		~RARArc() {
-			Close();
-		}
-		bool Open(const std::string &path, int mode) {
-			memset(&_archiveData, 0, sizeof(_archiveData));
-#ifdef _MSC_VER
-			ttstr _path(path);
-			_archiveData.ArcNameW = (wchar_t*)_path.c_str();
-#else
-			_archiveData.ArcName = (char *)path.c_str();
-#endif
-			_archiveData.OpenMode = mode;
-			_handle = RAROpenArchiveEx(&_archiveData);
-			return !!_handle;
-		}
-		void Close() {
-			if (_handle) RARCloseArchive(_handle);
-			_handle = nullptr;
-		}
-	};
-	int OnCallback(UINT msg, LPARAM P1, LPARAM P2) {
-		switch (msg) {
-		case UCM_CHANGEVOLUME:
-		case UCM_CHANGEVOLUMEW:
-			return -1; // manual change multi-volume file name is not supported yet
-		case UCM_NEEDPASSWORD: {
-			bool hasPsw = !_lastUsedPassword.empty();
-			if (!hasPsw) {
-				_lastUsedPassword = _callbacks->FuncPassword();
-			}
-			if (_lastUsedPassword.empty()) {
-				return -1;
-			}
-			int len = _lastUsedPassword.size();
-			if (len > P2) len = P2;
-			strncpy((char*)P1, _lastUsedPassword.c_str(), len);
-			if (hasPsw)
-				_lastUsedPassword.clear();
-			return 0;
-		}
-		case UCM_PROCESSDATA:
-			_totalProcessedBytes += P2;
-			_curProcessedBytes += P2;
-			_callbacks->FuncOnProgress(_totalProcessedBytes, _curProcessedBytes);
-			return _reqBreak ? -1 : 0;
-		}
-		return -1;
-	}
-public:
-	virtual ~tTVPUnpackArchiveImplUnRAR() {
-	}
-	virtual bool Open(const std::string &path) override {
-		_archivePath = path;
-		RARArc arc;
-		if (!arc.Open(_archivePath, RAR_OM_LIST)) {
-			return false;
-		}
-		RARSetCallback(arc._handle, [](UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)->int {
-			return ((tTVPUnpackArchiveImplUnRAR*)UserData)->OnCallback(msg, P1, P2);
-		}, (LPARAM)this);
+// 	bool _reqBreak = false;
+// 	struct RARArc {
+// 		RAROpenArchiveDataEx _archiveData;
+// 		void *_handle = nullptr;
+// 		RARArc() {}
+// 		~RARArc() {
+// 			Close();
+// 		}
+// 		bool Open(const std::string &path, int mode) {
+// 			memset(&_archiveData, 0, sizeof(_archiveData));
+// #ifdef _MSC_VER
+// 			ttstr _path(path);
+// 			_archiveData.ArcNameW = (wchar_t*)_path.c_str();
+// #else
+// 			_archiveData.ArcName = (char *)path.c_str();
+// #endif
+// 			_archiveData.OpenMode = mode;
+// 			_handle = RAROpenArchiveEx(&_archiveData);
+// 			return !!_handle;
+// 		}
+// 		void Close() {
+// 			if (_handle) RARCloseArchive(_handle);
+// 			_handle = nullptr;
+// 		}
+// 	};
+// 	int OnCallback(UINT msg, LPARAM P1, LPARAM P2) {
+// 		switch (msg) {
+// 		case UCM_CHANGEVOLUME:
+// 		case UCM_CHANGEVOLUMEW:
+// 			return -1; // manual change multi-volume file name is not supported yet
+// 		case UCM_NEEDPASSWORD: {
+// 			bool hasPsw = !_lastUsedPassword.empty();
+// 			if (!hasPsw) {
+// 				_lastUsedPassword = _callbacks->FuncPassword();
+// 			}
+// 			if (_lastUsedPassword.empty()) {
+// 				return -1;
+// 			}
+// 			int len = _lastUsedPassword.size();
+// 			if (len > P2) len = P2;
+// 			strncpy((char*)P1, _lastUsedPassword.c_str(), len);
+// 			if (hasPsw)
+// 				_lastUsedPassword.clear();
+// 			return 0;
+// 		}
+// 		case UCM_PROCESSDATA:
+// 			_totalProcessedBytes += P2;
+// 			_curProcessedBytes += P2;
+// 			_callbacks->FuncOnProgress(_totalProcessedBytes, _curProcessedBytes);
+// 			return _reqBreak ? -1 : 0;
+// 		}
+// 		return -1;
+// 	}
+// public:
+// 	virtual ~tTVPUnpackArchiveImplUnRAR() {
+// 	}
+// 	virtual bool Open(const std::string &path) override {
+// 		_archivePath = path;
+// 		RARArc arc;
+// 		if (!arc.Open(_archivePath, RAR_OM_LIST)) {
+// 			return false;
+// 		}
+// 		RARSetCallback(arc._handle, [](UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)->int {
+// 			return ((tTVPUnpackArchiveImplUnRAR*)UserData)->OnCallback(msg, P1, P2);
+// 		}, (LPARAM)this);
 		
-		arc._handle;
-		RARHeaderData headerData;
-		_totalSize = 0;
-		_filecount = 0;
-		while (1) {
-			RARHeaderDataEx headerData;
-			memset(&headerData, 0, sizeof(headerData));
-			int result = RARReadHeaderEx(arc._handle, &headerData);
-			if (result != 0) {
-				if (result != ERAR_END_ARCHIVE) {
-					return false;
-				}
-				break;
-			}
+// 		arc._handle;
+// 		RARHeaderData headerData;
+// 		_totalSize = 0;
+// 		_filecount = 0;
+// 		while (1) {
+// 			RARHeaderDataEx headerData;
+// 			memset(&headerData, 0, sizeof(headerData));
+// 			int result = RARReadHeaderEx(arc._handle, &headerData);
+// 			if (result != 0) {
+// 				if (result != ERAR_END_ARCHIVE) {
+// 					return false;
+// 				}
+// 				break;
+// 			}
 
-			_totalSize += ((tjs_int64)headerData.UnpSizeHigh << 32) | headerData.UnpSize;
-			++_filecount;
-			// Find next file
-			result = RARProcessFile(arc._handle, RAR_SKIP, NULL, NULL);
-			if (result != 0) {
-				return false;
-			}
-		}
-		return true;
-	}
-	virtual int GetFileCount() override { return _filecount; }
-	virtual tjs_int64 GetTotalSize() override { return _totalSize; }
-	virtual void ExtractTo(const std::string &path) override {
-		RARArc arc;
-		if (!arc.Open(_archivePath, RAR_OM_EXTRACT)) {
-			_callbacks->FuncOnError(1001, "Cannot open file");
-			return;
-		}
-		RARSetCallback(arc._handle, [](UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)->int {
-			return ((tTVPUnpackArchiveImplUnRAR*)UserData)->OnCallback(msg, P1, P2);
-		}, (LPARAM)this);
-		RARHeaderData headerData;
+// 			_totalSize += ((tjs_int64)headerData.UnpSizeHigh << 32) | headerData.UnpSize;
+// 			++_filecount;
+// 			// Find next file
+// 			result = RARProcessFile(arc._handle, RAR_SKIP, NULL, NULL);
+// 			if (result != 0) {
+// 				return false;
+// 			}
+// 		}
+// 		return true;
+// 	}
+// 	virtual int GetFileCount() override { return _filecount; }
+// 	virtual tjs_int64 GetTotalSize() override { return _totalSize; }
+// 	virtual void ExtractTo(const std::string &path) override {
+// 		RARArc arc;
+// 		if (!arc.Open(_archivePath, RAR_OM_EXTRACT)) {
+// 			_callbacks->FuncOnError(1001, "Cannot open file");
+// 			return;
+// 		}
+// 		RARSetCallback(arc._handle, [](UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)->int {
+// 			return ((tTVPUnpackArchiveImplUnRAR*)UserData)->OnCallback(msg, P1, P2);
+// 		}, (LPARAM)this);
+// 		RARHeaderData headerData;
 		
-		for (int counter = 0; ;++counter) {
-			RARHeaderDataEx headerData;
-			memset(&headerData, 0, sizeof(headerData));
-			int result = RARReadHeaderEx(arc._handle, &headerData);
-			if (result != 0) {
-				if (result != ERAR_END_ARCHIVE) {
-					_callbacks->FuncOnError(result, "Extraction Fail");
-					return;
-				}
-				break;
-			}
+// 		for (int counter = 0; ;++counter) {
+// 			RARHeaderDataEx headerData;
+// 			memset(&headerData, 0, sizeof(headerData));
+// 			int result = RARReadHeaderEx(arc._handle, &headerData);
+// 			if (result != 0) {
+// 				if (result != ERAR_END_ARCHIVE) {
+// 					_callbacks->FuncOnError(result, "Extraction Fail");
+// 					return;
+// 				}
+// 				break;
+// 			}
 
-			// _filelist.emplace_back(headerData.FileName);
-			_callbacks->FuncOnNewFile(counter, headerData.FileName, ((tjs_int64)headerData.UnpSizeHigh << 32) | headerData.UnpSize);
-			_curProcessedBytes = 0;
-			// Find next file
-#ifdef _MSC_VER
-			ttstr _path(path);
-			result = RARProcessFileW(arc._handle, RAR_EXTRACT, (wchar_t*)_path.c_str(), NULL);
-#else
-			result = RARProcessFile(arc._handle, RAR_EXTRACT, (char*)path.c_str(), NULL);
-#endif
-			if (result != 0) {
-				_callbacks->FuncOnError(result, "Extraction Fail");
-				return;
-			}
-		}
+// 			// _filelist.emplace_back(headerData.FileName);
+// 			_callbacks->FuncOnNewFile(counter, headerData.FileName, ((tjs_int64)headerData.UnpSizeHigh << 32) | headerData.UnpSize);
+// 			_curProcessedBytes = 0;
+// 			// Find next file
+// #ifdef _MSC_VER
+// 			ttstr _path(path);
+// 			result = RARProcessFileW(arc._handle, RAR_EXTRACT, (wchar_t*)_path.c_str(), NULL);
+// #else
+// 			result = RARProcessFile(arc._handle, RAR_EXTRACT, (char*)path.c_str(), NULL);
+// #endif
+// 			if (result != 0) {
+// 				_callbacks->FuncOnError(result, "Extraction Fail");
+// 				return;
+// 			}
+// 		}
 
-		_callbacks->FuncOnEnded();
-	}
-};
+// 		_callbacks->FuncOnEnded();
+// 	}
+// };
 
 int tTVPUnpackArchive::Prepare(const std::string &path, const std::string &_outpath, tjs_uint64 *totalSize) {
 	FILE *FpIn = fopen(path.c_str(), "rb");
@@ -989,9 +989,10 @@ int tTVPUnpackArchive::Prepare(const std::string &path, const std::string &_outp
 	}
 	OutPath = _outpath + "/";
 	fclose(FpIn);
-	if (!memcmp(signature, "Rar!", 4)) {
-		_impl = new tTVPUnpackArchiveImplUnRAR();
-	} else if (!memcmp(signature, "PK", 2)) {
+	// if (!memcmp(signature, "Rar!", 4)) {
+	// 	_impl = new tTVPUnpackArchiveImplUnRAR();
+	// } else 
+	if (!memcmp(signature, "PK", 2)) {
 		_impl = new tTVPUnpackArchiveImplLibArchive();
 	} else if (!memcmp(signature, "7z", 2)) {
 		// _impl = new tTVPUnpackArchiveImpl7Zip();

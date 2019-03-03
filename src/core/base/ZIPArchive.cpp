@@ -7,8 +7,8 @@
         #define NOUNCRYPT
 #endif
 
-#include "unzip/ioapi_mem.h"
-#include "unzip/unzip.h"
+// #include <ioapi_mem.h>
+#include <unzip.h>
 #undef ZEXPORT
 #define ZEXPORT
 

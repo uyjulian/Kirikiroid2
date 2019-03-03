@@ -4,7 +4,7 @@
 #include "tjsDictionary.h"
 #include <memory>
 
-#include "decode.h"
+#include <webp/decode.h>
 void TVPLoadWEBP(void* formatdata, void *callbackdata,
 	tTVPGraphicSizeCallback sizecallback, tTVPGraphicScanLineCallback scanlinecallback,
 	tTVPMetaInfoPushCallback metainfopushcallback, tTJSBinaryStream *src, tjs_int keyidx,

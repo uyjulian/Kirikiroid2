@@ -9,8 +9,8 @@
 #define GL_UNPACK_ROW_LENGTH 0x0CF2
 #endif
 #ifdef __APPLE__
-#include <OpenGLES/ES2/gl.h>
-#include <OpenGLES/ES2/glext.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
 #else
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>

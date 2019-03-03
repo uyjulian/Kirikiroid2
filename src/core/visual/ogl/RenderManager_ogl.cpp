@@ -1,7 +1,7 @@
-#include "renderer/CCTexture2D.h"
-#include "renderer/CCGLProgramCache.h"
-#include "renderer/CCGLProgram.h"
-#include "renderer/ccGLStateCache.h"
+// #include "renderer/CCTexture2D.h"
+// #include "renderer/CCGLProgramCache.h"
+// #include "renderer/CCGLProgram.h"
+// #include "renderer/ccGLStateCache.h"
 #include "ogl_common.h"
 #include "tjsCommHead.h"
 #include "../RenderManager.h"
@@ -12,13 +12,13 @@
 #include "SysInitIntf.h"
 #include <assert.h>
 #include <sstream>
-#include "base/CCDirector.h"
-#include "base/CCEventListenerCustom.h"
-#include "base/CCEventDispatcher.h"
-#include "base/CCEventType.h"
+// #include "base/CCDirector.h"
+// #include "base/CCEventListenerCustom.h"
+// #include "base/CCEventDispatcher.h"
+// #include "base/CCEventType.h"
 #include "Platform.h"
 #include "ConfigManager/IndividualConfigManager.h"
-#include "opencv2/opencv.hpp"
+#include <opencv2/opencv.hpp>
 #include <deque>
 #include <algorithm>
 #include <unordered_set>

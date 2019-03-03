@@ -38,7 +38,7 @@
 #include "RectItf.h"
 #include "FontSystem.h"
 #include "tjsDictionary.h"
-#include "ConfigManager/IndividualConfigManager.h"
+//#include "ConfigManager/IndividualConfigManager.h"
 #include "vkdefine.h"
 #include "RenderManager.h"
 #include <cstdlib>
@@ -59,9 +59,9 @@ bool TVPFreeUnusedLayerCache = false;
 //---------------------------------------------------------------------------
 
 static bool IsGPU() {
-	static bool isGPU = !TVPIsSoftwareRenderManager()
-		&& !IndividualConfigManager::GetInstance()->GetValue<bool>("ogl_accurate_render", false);
-	return isGPU;
+	// static bool isGPU = !TVPIsSoftwareRenderManager()
+	// 	&& !IndividualConfigManager::GetInstance()->GetValue<bool>("ogl_accurate_render", false);
+	return false;
 }
 
 //---------------------------------------------------------------------------

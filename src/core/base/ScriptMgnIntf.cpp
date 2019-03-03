@@ -52,7 +52,7 @@
 #include "BitmapLayerTreeOwner.h"
 #include "Extension.h"
 #include "Platform.h"
-#include "ConfigManager/LocaleConfigManager.h"
+// #include "ConfigManager/LocaleConfigManager.h"
 
 //---------------------------------------------------------------------------
 // Script system initialization script
@@ -910,17 +910,18 @@ void TVPExecuteStartupScript()
 		strPatchError = e;
 	}
 
-	if (!strPatchError.IsEmpty()) {
-		ttstr msg = LocaleConfigManager::GetInstance()->GetText("startup_patch_fail");
-		msg += "\n";
-		msg += strPatchError;
-		std::vector<ttstr> btns;
-		btns.emplace_back(LocaleConfigManager::GetInstance()->GetText("msgbox_ok"));
-		btns.emplace_back(LocaleConfigManager::GetInstance()->GetText("browse_patch_lib"));
-		if (TVPShowSimpleMessageBox(msg, TVPGetPackageVersionString(), btns) == 1) {
-			TVPOpenPatchLibUrl();
-		}
-	}
+	// if (!strPatchError.IsEmpty()) {
+	// 	ttstr msg = LocaleConfigManager::GetInstance()->GetText("startup_patch_fail");
+	// 	msg += "\n";
+	// 	msg += strPatchError;
+	// 	std::vector<ttstr> btns;
+	// 	btns.emplace_back(LocaleConfigManager::GetInstance()->GetText("msgbox_ok"));
+	// 	btns.emplace_back(LocaleConfigManager::GetInstance()->GetText("browse_patch_lib"));
+	// 	// TODO: Patch URL
+	// 	// if (TVPShowSimpleMessageBox(msg, TVPGetPackageVersionString(), btns) == 1) {
+	// 	// 	TVPOpenPatchLibUrl();
+	// 	// }
+	// }
 
 	// execute "startup.tjs"
 // 	try

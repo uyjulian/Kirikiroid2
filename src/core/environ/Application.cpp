@@ -28,7 +28,7 @@
 #include "Platform.h"
 #include "EventIntf.h"
 #include <thread>
-#include "ConfigManager/LocaleConfigManager.h"
+// #include "ConfigManager/LocaleConfigManager.h"
 #include "StorageIntf.h"
 extern "C" {
 #include <libavutil/avstring.h>
@@ -98,144 +98,144 @@ ttstr TVPGetErrorDialogTitle() {
 }
 
 #ifdef HOOK_MALLOC
-extern "C" {
-	void* tc_malloc(size_t size);
-	void tc_free(void* ptr);
-	void* tc_realloc(void* ptr, size_t size);
-	void* tc_calloc(size_t nmemb, size_t size);
+// extern "C" {
+// 	void* tc_malloc(size_t size);
+// 	void tc_free(void* ptr);
+// 	void* tc_realloc(void* ptr, size_t size);
+// 	void* tc_calloc(size_t nmemb, size_t size);
 
-	void *__real_malloc(size_t);
-	void __real_free(void*);
-	void* __real_realloc(void*, size_t);
-	void* __real_calloc(size_t nmemb, size_t size);
-#ifdef WIN32
-	void* tc_malloc(size_t size) { return nullptr; }
-	void tc_free(void* ptr) {}
-	void* tc_realloc(void* ptr, size_t size){ return nullptr; }
-	void* tc_calloc(size_t nmemb, size_t size){ return nullptr; }
+// 	void *__real_malloc(size_t);
+// 	void __real_free(void*);
+// 	void* __real_realloc(void*, size_t);
+// 	void* __real_calloc(size_t nmemb, size_t size);
+// #ifdef WIN32
+// 	void* tc_malloc(size_t size) { return nullptr; }
+// 	void tc_free(void* ptr) {}
+// 	void* tc_realloc(void* ptr, size_t size){ return nullptr; }
+// 	void* tc_calloc(size_t nmemb, size_t size){ return nullptr; }
 
-	void *__real_malloc(size_t) { return nullptr; }
-	void __real_free(void*) { return; }
-	void* __real_realloc(void*, size_t) { return nullptr; }
-	void* __real_calloc(size_t nmemb, size_t size){ return nullptr; }
-#endif
+// 	void *__real_malloc(size_t) { return nullptr; }
+// 	void __real_free(void*) { return; }
+// 	void* __real_realloc(void*, size_t) { return nullptr; }
+// 	void* __real_calloc(size_t nmemb, size_t size){ return nullptr; }
+// #endif
 
-	static void *__func_malloc(void *, size_t c) {
-#ifdef TC_MALLOC
-		int *ptr;
-		if (tc_malloc_startup) {
-			ptr = (int *)tc_malloc(c + sizeof(int));
-			if (ptr) {
-				*ptr++ = 1;
-			}
-		} else {
-			ptr = (int *)__real_malloc(c + sizeof(int));
-			if (ptr) {
-				*ptr++ = 0;
-			}
-		}
-		return ptr;
-#else
-		return __real_malloc(c);
-#endif
-	}
+// 	static void *__func_malloc(void *, size_t c) {
+// #ifdef TC_MALLOC
+// 		int *ptr;
+// 		if (tc_malloc_startup) {
+// 			ptr = (int *)tc_malloc(c + sizeof(int));
+// 			if (ptr) {
+// 				*ptr++ = 1;
+// 			}
+// 		} else {
+// 			ptr = (int *)__real_malloc(c + sizeof(int));
+// 			if (ptr) {
+// 				*ptr++ = 0;
+// 			}
+// 		}
+// 		return ptr;
+// #else
+// 		return __real_malloc(c);
+// #endif
+// 	}
 
-	void *__wrap_malloc(size_t c)
-	{
-#ifdef HOOK_MALLOC_FOR_OVERRUN
-		try {
-			return __real_malloc(c);
-		}
-		catch (...) {
-			TVPExitApplication(-1);
-		}
-#else
-		return __do_alloc_func(__func_malloc, nullptr, c);
-#endif
-	}
+// 	void *__wrap_malloc(size_t c)
+// 	{
+// #ifdef HOOK_MALLOC_FOR_OVERRUN
+// 		try {
+// 			return __real_malloc(c);
+// 		}
+// 		catch (...) {
+// 			TVPExitApplication(-1);
+// 		}
+// #else
+// 		return __do_alloc_func(__func_malloc, nullptr, c);
+// #endif
+// 	}
 
-	static void *__func_realloc(void *p, size_t c) {
-#ifdef TC_MALLOC
-		if (!p) return __func_malloc(p, c);
-		int *ptr = (int *)p;
-		if (ptr[-1]) {
-			ptr = (int *)tc_realloc(ptr - 1, c + sizeof(int));
-		} else {
-			ptr = (int *)__real_realloc(ptr - 1, c + sizeof(int));
-		}
-		return ptr;
-#else
-		return __real_realloc(p, c);
-#endif
-	}
+// 	static void *__func_realloc(void *p, size_t c) {
+// #ifdef TC_MALLOC
+// 		if (!p) return __func_malloc(p, c);
+// 		int *ptr = (int *)p;
+// 		if (ptr[-1]) {
+// 			ptr = (int *)tc_realloc(ptr - 1, c + sizeof(int));
+// 		} else {
+// 			ptr = (int *)__real_realloc(ptr - 1, c + sizeof(int));
+// 		}
+// 		return ptr;
+// #else
+// 		return __real_realloc(p, c);
+// #endif
+// 	}
 
-	void *__wrap_realloc(void *p, size_t c) {
-#ifdef HOOK_MALLOC_FOR_OVERRUN
-		try {
-			return __real_realloc(p, c);
-		}
-		catch (...) {
-			TVPExitApplication(-1);
-		}
-#else
-		return __do_alloc_func(__func_realloc, p, c);
-#endif
-	}
+// 	void *__wrap_realloc(void *p, size_t c) {
+// #ifdef HOOK_MALLOC_FOR_OVERRUN
+// 		try {
+// 			return __real_realloc(p, c);
+// 		}
+// 		catch (...) {
+// 			TVPExitApplication(-1);
+// 		}
+// #else
+// 		return __do_alloc_func(__func_realloc, p, c);
+// #endif
+// 	}
 
-	static void *__func_calloc(void *p, size_t c) {
-#ifdef TC_MALLOC
-		int *ptr;
-		if (tc_malloc_startup) {
-			ptr = (int *)tc_calloc(c + sizeof(int), 1);
-			if (ptr) {
-				*ptr++ = 1;
-			}
-		} else {
-			ptr = (int *)__real_calloc(c + sizeof(int), 1);
-			if (ptr) {
-				*ptr++ = 0;
-			}
-		}
-		if (ptr) memset(ptr, 0, c);
-		return ptr;
-#else
-		return __real_calloc(c, 1);
-#endif
-	}
+// 	static void *__func_calloc(void *p, size_t c) {
+// #ifdef TC_MALLOC
+// 		int *ptr;
+// 		if (tc_malloc_startup) {
+// 			ptr = (int *)tc_calloc(c + sizeof(int), 1);
+// 			if (ptr) {
+// 				*ptr++ = 1;
+// 			}
+// 		} else {
+// 			ptr = (int *)__real_calloc(c + sizeof(int), 1);
+// 			if (ptr) {
+// 				*ptr++ = 0;
+// 			}
+// 		}
+// 		if (ptr) memset(ptr, 0, c);
+// 		return ptr;
+// #else
+// 		return __real_calloc(c, 1);
+// #endif
+// 	}
 
-	void *__wrap_calloc(size_t nmemb, size_t size) {
-#ifdef HOOK_MALLOC_FOR_OVERRUN
-		try {
-			return __real_calloc(nmemb, size);
-		}
-		catch (...) {
-			TVPExitApplication(-1);
-		}
-#else
-		size *= nmemb;
-		void* p = __do_alloc_func(__func_malloc, nullptr, size);
-		if (p) memset(p, 0, size);
-		return p;
-#endif
-	}
+// 	void *__wrap_calloc(size_t nmemb, size_t size) {
+// #ifdef HOOK_MALLOC_FOR_OVERRUN
+// 		try {
+// 			return __real_calloc(nmemb, size);
+// 		}
+// 		catch (...) {
+// 			TVPExitApplication(-1);
+// 		}
+// #else
+// 		size *= nmemb;
+// 		void* p = __do_alloc_func(__func_malloc, nullptr, size);
+// 		if (p) memset(p, 0, size);
+// 		return p;
+// #endif
+// 	}
 
-	void __wrap_free(void *p) {
-#ifdef HOOK_MALLOC_FOR_OVERRUN
-		try {
-			return __real_free(p);
-		}
-		catch (...) {
-			TVPExitApplication(-1);
-		}
-#elif defined(TC_MALLOC)
-		int *ptr = (int *)p;
-		if (ptr[-1] == 0) __real_free(ptr - 1);
-		else tc_free(ptr - 1);
-#else
-		__real_free(p);
-#endif
-	}
-}
+// 	void __wrap_free(void *p) {
+// #ifdef HOOK_MALLOC_FOR_OVERRUN
+// 		try {
+// 			return __real_free(p);
+// 		}
+// 		catch (...) {
+// 			TVPExitApplication(-1);
+// 		}
+// #elif defined(TC_MALLOC)
+// 		int *ptr = (int *)p;
+// 		if (ptr[-1] == 0) __real_free(ptr - 1);
+// 		else tc_free(ptr - 1);
+// #else
+// 		__real_free(p);
+// #endif
+// 	}
+// }
 #endif
 
 #if 0
@@ -289,20 +289,20 @@ void TVPCheckMemory() {
 }
 
 int TVPShowSimpleMessageBox(const ttstr & text, const ttstr & caption) {
-	std::vector<ttstr> normal; normal.emplace_back(LocaleConfigManager::GetInstance()->GetText("msgbox_ok"));
+	std::vector<ttstr> normal; normal.emplace_back("OK");
 	return TVPShowSimpleMessageBox(text, caption, normal);
 }
 
 int TVPShowSimpleMessageBoxYesNo(const ttstr & text, const ttstr & caption) {
 	std::vector<ttstr> normal;
-	LocaleConfigManager *mgr = LocaleConfigManager::GetInstance();
-	normal.emplace_back(mgr->GetText("msgbox_yes"));
-	normal.emplace_back(mgr->GetText("msgbox_no"));
+	normal.emplace_back("Yes");
+	normal.emplace_back("No");
 	return TVPShowSimpleMessageBox(text, caption, normal);
 }
 
 ttstr TVPGetMessageByLocale(const std::string &key) {
-	return LocaleConfigManager::GetInstance()->GetText(key);
+	// return LocaleConfigManager::GetInstance()->GetText(key);
+	return "";
 }
 
 int _argc;
@@ -556,11 +556,11 @@ bool tTVPApplication::StartApplication(ttstr path) {
 	}
 #endif
 	TVPTerminateCode = 0;
-	LocaleConfigManager *mgr = LocaleConfigManager::GetInstance();
-	_retry = mgr->GetText("retry");
-	_cancel = mgr->GetText("cancel");
-	_msg = mgr->GetText("err_no_memory");
-	_title = mgr->GetText("err_occured");
+	// LocaleConfigManager *mgr = LocaleConfigManager::GetInstance();
+	_retry = "Retry";
+	_cancel = "Cancel";
+	_msg = "No memory";
+	_title = "Error occurred";
 	TVPNativeProjectDir = path;
 
 	CheckConsole();
