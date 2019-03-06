@@ -717,7 +717,7 @@ void TVPGetMemoryInfo(TVPMemoryInfo &m)
 #include <unistd.h>
 void TVPRelinquishCPU(){
 	// sched_yield();
-	sleep(0);
+	SDL_Delay(0);
 }
 
 void TVP_utime(const char *name, time_t modtime) {

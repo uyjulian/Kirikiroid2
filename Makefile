@@ -11,9 +11,9 @@ CFLAGS += -Wall
 CFLAGS += -DTJS_TEXT_OUT_CRLF -D__STDC_CONSTANT_MACROS -DUSE_UNICODE_FSTRING -D_7ZIP_ST
 CFLAGS += -Isrc/core -Isrc/core/base -Isrc/core/base/win32 -Isrc/core/environ -Isrc/core/environ/win32 -Isrc/core/environ/android -Isrc/core/environ/sdl -Isrc/core/msg -Isrc/core/msg/win32 -Isrc/core/extension -Isrc/core/sound -Isrc/core/sound/win32 -Isrc/core/tjs2 -Isrc/core/utils -Isrc/core/utils/win32 -Isrc/core/visual -Isrc/core/visual/ARM -Isrc/core/visual/win32 -Isrc/core/visual/RenderScript/rs
 CFLAGS += -Isrc/plugins
-CFLAGS += -I/usr/local/opt/xxhash/include -I/usr/local/opt/webp/include -I/usr/local/opt/libpng/include -I/usr/local/opt/ffmpeg/include -I/usr/local/opt/libarchive/include -I/usr/local/opt/libbpg/include -I/usr/local/opt/lz4/include -I/usr/local/opt/opencv/include/opencv4 -I/usr/local/opt/mono-libgdiplus/include -I/usr/local/opt/opus/include/opus -I/usr/local/opt/sdl2/include/SDL2 -I/usr/local/opt/libiconv/include -I/usr/local/opt/libjpeg-turbo/include -I/usr/local/opt/oniguruma/include -I/usr/local/opt/jxrlib/include -I/usr/local/opt/jxrlib/include/glue -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2 -I/usr/local/opt/opusfile/include/opus 
-LDFLAGS += -L/usr/local/opt/xxhash/lib -L/usr/local/opt/webp/lib -L/usr/local/opt/libpng/lib -L/usr/local/opt/ffmpeg/lib -L/usr/local/opt/libarchive/lib -L/usr/local/opt/lz4/lib -L/usr/local/opt/opencv/lib -L/usr/local/opt/mono-libgdiplus/lib -L/usr/local/opt/opus/lib -L/usr/local/opt/sdl2/lib -L/usr/local/opt/libiconv/lib -L/usr/local/opt/libjpeg-turbo/lib -L/usr/local/opt/oniguruma/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/opusfile/lib
-LDLIBS += -framework OpenAL -lxxhash -lwebp -lz -lpng -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale -lvorbis -lvorbisfile -larchive -llz4 -lopencv_core -lopencv_imgproc -lgdiplus -lopus -lSDL2 -liconv -lturbojpeg -lonig -ljpegxr -ljxrglue -lfreetype -lopusfile
+CFLAGS += -I/usr/local/opt/xxhash/include -I/usr/local/opt/webp/include -I/usr/local/opt/libpng/include -I/usr/local/opt/ffmpeg/include -I/usr/local/opt/libarchive/include -I/usr/local/opt/libbpg/include -I/usr/local/opt/lz4/include -I/usr/local/opt/opencv/include/opencv4 -I/usr/local/opt/opus/include/opus -I/usr/local/opt/sdl2/include/SDL2 -I/usr/local/opt/libiconv/include -I/usr/local/opt/libjpeg-turbo/include -I/usr/local/opt/oniguruma/include -I/usr/local/opt/jxrlib/include -I/usr/local/opt/jxrlib/include/glue -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2 -I/usr/local/opt/opusfile/include/opus 
+LDFLAGS += -L/usr/local/opt/xxhash/lib -L/usr/local/opt/webp/lib -L/usr/local/opt/libpng/lib -L/usr/local/opt/ffmpeg/lib -L/usr/local/opt/libarchive/lib -L/usr/local/opt/lz4/lib -L/usr/local/opt/opencv/lib -L/usr/local/opt/opus/lib -L/usr/local/opt/sdl2/lib -L/usr/local/opt/libiconv/lib -L/usr/local/opt/libjpeg-turbo/lib -L/usr/local/opt/oniguruma/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/opusfile/lib
+LDLIBS += -lxxhash -lwebp -lz -lpng -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale -lvorbis -lvorbisfile -larchive -llz4 -lopencv_core -lopencv_imgproc -lopus -lSDL2 -liconv -lturbojpeg -lonig -ljpegxr -ljxrglue -lfreetype -lopusfile
 
 %.o: %.c
 	echo -e "\tCC  $<"
@@ -145,12 +145,12 @@ SOURCES += src/core/movie/krmovie.cpp
 # SOURCES += src/core/movie/ffmpeg/VideoPlayerVideo.cpp
 # SOURCES += src/core/movie/ffmpeg/VideoReferenceClock.cpp
 # SOURCES += src/core/movie/ffmpeg/VideoRenderer.cpp
-# SOURCES += src/core/movie/ffmpeg/krffmpeg.cpp
+SOURCES += src/core/movie/ffmpeg/krffmpeg.cpp
 SOURCES += src/core/msg/MsgIntf.cpp
 SOURCES += src/core/msg/win32/MsgImpl.cpp
 SOURCES += src/core/msg/win32/OptionsDesc.cpp
 SOURCES += src/core/sound/CDDAIntf.cpp
-# SOURCES += src/core/sound/FFWaveDecoder.cpp
+SOURCES += src/core/sound/FFWaveDecoder.cpp
 SOURCES += src/core/sound/MIDIIntf.cpp
 # SOURCES += src/core/sound/MathAlgorithms.cpp
 SOURCES += src/core/sound/PhaseVocoderDSP.cpp

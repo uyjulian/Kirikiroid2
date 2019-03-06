@@ -20,7 +20,7 @@ extern "C" {
 #include "libavformat/avformat.h"
 };
 
-class FFWaveDecoder : public tTVPWaveDecoder // decoder interface
+class FFWaveDecoder : public tTVPWaveDecoder // decoder interface 
 {
     bool IsPlanar;
 
