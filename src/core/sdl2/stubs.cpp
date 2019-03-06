@@ -47,6 +47,11 @@ static tjs_uint8 _scancode[0x200];
 static tjs_uint16 _keymap[0x200];
 static TVPWindowLayer *_lastWindowLayer, *_currentWindowLayer;
 
+bool sdlProcessEvents();
+bool sdlProcessEventsForFrames(int frames);
+
+#include <iostream>
+
 class TVPWindowLayer : public iWindowLayer {
 protected:
 	tTVPMouseCursorState MouseCursorState = mcsVisible;
@@ -87,6 +92,7 @@ protected:
 	SDL_Renderer* renderer;
 	tTJSNI_Window *TJSNativeInstance;
 	bool hasDrawn = false;
+	bool isBeingDeleted = false;
 
 public:
 	TVPWindowLayer(tTJSNI_Window *w)
@@ -111,7 +117,7 @@ public:
 		
 		window = SDL_CreateWindow("An SDL2 window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 640, 480);
+		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 640, 480);
 		SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
 		// SDL_ShowWindow(window);
 	}
@@ -218,7 +224,18 @@ public:
 		SDL_RaiseWindow(window);
 	}
 	virtual void ShowWindowAsModal() override {
+		in_mode_ = true;
 		BringToFront();
+		modal_result_ = 0;
+		while (this == _currentWindowLayer && !modal_result_) {
+			sdlProcessEvents();
+			if (::Application->IsTarminate()) {
+				modal_result_ = mrCancel;
+			} else if (modal_result_ != 0) {
+				break;
+			}
+		}
+		in_mode_ = false;
 	}
 	virtual bool GetVisible() override {
 		return SDL_GetWindowFlags(window) & SDL_WINDOW_SHOWN;
@@ -237,11 +254,11 @@ public:
 
 	}
 	virtual const char *GetCaption() override {
-		return "";
+		return SDL_GetWindowTitle(window);
 
 	}
-	virtual void SetCaption(const std::string &) override {
-
+	virtual void SetCaption(const std::string & s) override {
+		SDL_SetWindowTitle(window, s.c_str());
 	}
 	virtual void SetWidth(tjs_int w) override {
 		int h;
@@ -306,13 +323,154 @@ public:
 	virtual void UpdateOverlay() = 0;
 #endif
 	virtual void InvalidateClose() override {
+		isBeingDeleted = true;
 	}
 	virtual bool GetWindowActive() override {
 		return _currentWindowLayer == this;
 	}
+	bool Closing = false, ProgramClosing = false, CanCloseWork = false;
+	bool in_mode_ = false; // is modal
+	int modal_result_ = 0;
+	enum CloseAction {
+		caNone,
+		caHide,
+		caFree,
+		caMinimize
+	};
+	void OnClose(CloseAction& action) {
+		if (modal_result_ == 0)
+			action = caNone;
+		else
+			action = caHide;
+
+		if (ProgramClosing) {
+			if (TJSNativeInstance) {
+				if (TJSNativeInstance->IsMainWindow()) {
+					// this is the main window
+				} else 			{
+					// not the main window
+					action = caFree;
+				}
+				//if (TVPFullScreenedWindow != this) {
+					// if this is not a fullscreened window
+				//	SetVisible(false);
+				//}
+				iTJSDispatch2 * obj = TJSNativeInstance->GetOwnerNoAddRef();
+				TJSNativeInstance->NotifyWindowClose();
+				obj->Invalidate(0, NULL, NULL, obj);
+				TJSNativeInstance = NULL;
+				SetVisible(false);
+				isBeingDeleted = true;
+			}
+		}
+	}
+	bool OnCloseQuery() {
+		// closing actions are 3 patterns;
+		// 1. closing action by the user
+		// 2. "close" method
+		// 3. object invalidation
+
+		if (TVPGetBreathing()) {
+			return false;
+		}
+
+		// the default event handler will invalidate this object when an onCloseQuery
+		// event reaches the handler.
+		if (TJSNativeInstance && (modal_result_ == 0 ||
+			modal_result_ == mrCancel/* mrCancel=when close button is pushed in modal window */)) {
+			iTJSDispatch2 * obj = TJSNativeInstance->GetOwnerNoAddRef();
+			if (obj) {
+				tTJSVariant arg[1] = { true };
+				static ttstr eventname(TJS_W("onCloseQuery"));
+
+				if (!ProgramClosing) {
+					// close action does not happen immediately
+					if (TJSNativeInstance) {
+						TVPPostInputEvent(new tTVPOnCloseInputEvent(TJSNativeInstance));
+					}
+
+					Closing = true; // waiting closing...
+				//	TVPSystemControl->NotifyCloseClicked();
+					return false;
+				} else {
+					CanCloseWork = true;
+					TVPPostEvent(obj, obj, eventname, 0, TVP_EPT_IMMEDIATE, 1, arg);
+					sdlProcessEvents(); // for post event
+					// this event happens immediately
+					// and does not return until done
+					return CanCloseWork; // CanCloseWork is set by the event handler
+				}
+			} else {
+				return true;
+			}
+		} else {
+			return true;
+		}
+	}
 	virtual void Close() override {
+		// closing action by "close" method
+		if (Closing) return; // already waiting closing...
+
+		ProgramClosing = true;
+		try {
+			//tTVPWindow::Close();
+			if (in_mode_) {
+				modal_result_ = mrCancel;
+			} 
+			else if (OnCloseQuery()) {
+				CloseAction action = caFree;
+				OnClose(action);
+				switch (action) {
+				case caNone:
+					break;
+				case caHide:
+					SetVisible(false);
+					break;
+				case caMinimize:
+					//::ShowWindow(GetHandle(), SW_MINIMIZE);
+					break;
+				case caFree:
+				default:
+					isBeingDeleted = true;
+					//::PostMessage(GetHandle(), TVP_EV_WINDOW_RELEASE, 0, 0);
+					break;
+				}
+			}
+		}
+		catch (...) {
+			ProgramClosing = false;
+			throw;
+		}
+		ProgramClosing = false;
 	}
 	virtual void OnCloseQueryCalled(bool b) override {
+		// closing is allowed by onCloseQuery event handler
+		if (!ProgramClosing) {
+			// closing action by the user
+			if (b) {
+				if (in_mode_)
+					modal_result_ = 1; // when modal
+				else
+					SetVisible(false);  // just hide
+
+				Closing = false;
+				if (TJSNativeInstance) {
+					if (TJSNativeInstance->IsMainWindow()) {
+						// this is the main window
+						iTJSDispatch2 * obj = TJSNativeInstance->GetOwnerNoAddRef();
+						obj->Invalidate(0, NULL, NULL, obj);
+						// TJSNativeInstance = NULL; // ¤³¤Î¶ÎëA¤Ç¤Ï¼È¤Ëthis¤¬Ï÷³ý¤µ¤ì¤Æ¤¤¤ë¤¿¤á¡¢¥á¥ó¥Ð©`¤Ø¥¢¥¯¥»¥¹¤·¤Æ¤Ï¤¤¤±¤Ê¤¤
+					}
+				} else {
+					delete this;
+				}
+			} else {
+				Closing = false;
+			}
+		} else {
+			// closing action by the program
+			CanCloseWork = b;
+		}
 	}
 	virtual void InternalKeyDown(tjs_uint16 key, tjs_uint32 shift) override {
 	}
@@ -385,6 +543,10 @@ public:
 		return NULL;
 	}
 	void sdlRecvEvent(SDL_Event event) {
+		if (isBeingDeleted) {
+			delete this;
+			return;
+		}
 		if (window && _prevWindow) {
 			uint32_t windowID = SDL_GetWindowID(window);
 			bool tryParentWindow = false;
@@ -416,7 +578,7 @@ public:
 					tryParentWindow = event.text.windowID != windowID;
 					break;
 			}
-			if (tryParentWindow) {
+			if (tryParentWindow && !in_mode_) {
 				_prevWindow->sdlRecvEvent(event);
 				return;
 			}
@@ -457,6 +619,7 @@ public:
 								btn = tTVPMouseButton::mbLeft;
 								break;
 						}
+						TVPPostInputEvent(new tTVPOnClickInputEvent(TJSNativeInstance, event.button.x, event.button.y));
 						TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
 						break;
 					}
@@ -467,6 +630,10 @@ public:
 					case SDL_KEYUP: {
 						TVPPostInputEvent(new tTVPOnKeyUpInputEvent(TJSNativeInstance, event.key.keysym.sym, 0));
 						break;
+					}
+					case SDL_WINDOWEVENT_CLOSE:
+					case SDL_QUIT: {
+						TVPPostInputEvent(new tTVPOnCloseInputEvent(TJSNativeInstance));
 					}
 				}
 			}
@@ -489,19 +656,32 @@ public:
 //TODO: Rendering: On every frame copy from GetAdapterTexture
 //TODO: Startup game at path ::Application->StartApplication(path);
 
+bool sdlProcessEvents() {
+	SDL_Event event;
+	SDL_PollEvent(&event);
+	if (_currentWindowLayer) {
+		_currentWindowLayer->sdlRecvEvent(event);
+	}
+	::Application->Run();
+	iTVPTexture2D::RecycleProcess();
+	return true;
+}
+
+bool sdlProcessEventsForFrames(int frames) {
+	for (int i = 0; i < frames; ++i) {
+		sdlProcessEvents();
+	}
+}
+
 int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	char cwd[PATH_MAX];
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
 		::Application->StartApplication(cwd); //nice
 	}
-	SDL_Event event;
-	while (SDL_PollEvent(&event) || true) {
-		if (_currentWindowLayer) {
-			_currentWindowLayer->sdlRecvEvent(event);
-		}
-		::Application->Run();
-		iTVPTexture2D::RecycleProcess();
+	
+	while (sdlProcessEvents()) {
+
 	}
 	SDL_Quit();
 	return 0;
