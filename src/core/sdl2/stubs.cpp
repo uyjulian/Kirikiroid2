@@ -580,8 +580,10 @@ public:
 					tryParentWindow = event.text.windowID != windowID;
 					break;
 			}
-			if (tryParentWindow && !in_mode_) {
-				_prevWindow->sdlRecvEvent(event);
+			if (tryParentWindow) {
+				if (!in_mode_) {
+					_prevWindow->sdlRecvEvent(event);
+				}
 				return;
 			}
 		}
@@ -660,9 +662,10 @@ public:
 
 bool sdlProcessEvents() {
 	SDL_Event event;
-	SDL_PollEvent(&event);
-	if (_currentWindowLayer) {
-		_currentWindowLayer->sdlRecvEvent(event);
+	while (SDL_PollEvent(&event)) {
+		if (_currentWindowLayer) {
+			_currentWindowLayer->sdlRecvEvent(event);
+		}
 	}
 	::Application->Run();
 	iTVPTexture2D::RecycleProcess();
