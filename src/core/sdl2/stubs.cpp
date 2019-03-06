@@ -115,7 +115,7 @@ public:
 			TJSNativeInstance = nullptr;
 		}
 		
-		window = SDL_CreateWindow("An SDL2 window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
+		window = SDL_CreateWindow("An SDL2 window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 640, 480);
 		SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
@@ -189,10 +189,12 @@ public:
 
 	}
 	virtual void GetCursorPos(tjs_int &x, tjs_int &y) override {
+		SDL_GetMouseState(&x, &y);
 		// x = _LastMouseX;
 		// y = _LastMouseY;
 	}
 	virtual void SetCursorPos(tjs_int x, tjs_int y) override {
+		SDL_WarpMouseInWindow(window, x, y);
 		// _LastMouseX = x;
 		// _LastMouseY = y;
 	}
