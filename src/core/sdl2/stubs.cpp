@@ -596,35 +596,47 @@ public:
 					}
 					case SDL_MOUSEBUTTONDOWN: {
 						tTVPMouseButton btn;
+						bool hasbtn = false;
 						switch(event.button.button) {
 							case SDL_BUTTON_RIGHT:
 								btn = tTVPMouseButton::mbRight;
+								hasbtn = true;
 								break;
 							case SDL_BUTTON_MIDDLE:
 								btn = tTVPMouseButton::mbMiddle;
+								hasbtn = true;
 								break;
-							default:
+							case SDL_BUTTON_LEFT:
 								btn = tTVPMouseButton::mbLeft;
+								hasbtn = true;
 								break;
 						}
-						TVPPostInputEvent(new tTVPOnMouseDownInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+						if (hasbtn) {
+							TVPPostInputEvent(new tTVPOnMouseDownInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+						}
 						break;
 					}
 					case SDL_MOUSEBUTTONUP: {
 						tTVPMouseButton btn;
+						bool hasbtn = false;
 						switch(event.button.button) {
 							case SDL_BUTTON_RIGHT:
 								btn = tTVPMouseButton::mbRight;
+								hasbtn = true;
 								break;
 							case SDL_BUTTON_MIDDLE:
 								btn = tTVPMouseButton::mbMiddle;
+								hasbtn = true;
 								break;
-							default:
+							case SDL_BUTTON_LEFT:
 								btn = tTVPMouseButton::mbLeft;
+								hasbtn = true;
 								break;
 						}
-						TVPPostInputEvent(new tTVPOnClickInputEvent(TJSNativeInstance, event.button.x, event.button.y));
-						TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+						if (hasbtn) {
+							TVPPostInputEvent(new tTVPOnClickInputEvent(TJSNativeInstance, event.button.x, event.button.y));
+							TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+						}
 						break;
 					}
 					case SDL_KEYDOWN: {
@@ -684,9 +696,26 @@ int main(int argc, char **argv) {
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
 		::Application->StartApplication(cwd); //nice
 	}
-	
-	while (sdlProcessEvents()) {
 
+    Uint32 startTime = 0;
+    Uint32 endTime = 0;
+    Uint32 delta = 0;
+    short timePerFrame = 16; // miliseconds
+    
+	while (sdlProcessEvents()) {
+		// TVPRelinquishCPU();
+		if (!startTime) {
+            startTime = SDL_GetTicks(); 
+        } else {
+            delta = endTime - startTime; // how many ms for a frame
+        }
+        
+        if (delta < timePerFrame) {
+            SDL_Delay(timePerFrame - delta);
+        }
+        
+        startTime = endTime;
+        endTime = SDL_GetTicks();
 	}
 	SDL_Quit();
 	return 0;
@@ -736,11 +765,12 @@ std::string TVPGetPackageVersionString() {
 
 tjs_uint32 TVPGetRoughTickCount32()
 {
-	tjs_uint32 uptime = 0;
-	struct timespec on;
-	if (clock_gettime(CLOCK_MONOTONIC, &on) == 0)
-		uptime = on.tv_sec * 1000 + on.tv_nsec / 1000000;
-	return uptime;
+	// tjs_uint32 uptime = 0;
+	// struct timespec on;
+	// if (clock_gettime(CLOCK_MONOTONIC, &on) == 0)
+	// 	uptime = on.tv_sec * 1000 + on.tv_nsec / 1000000;
+	// return uptime;
+	return SDL_GetTicks();
 }
 
 bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
@@ -900,8 +930,9 @@ void TVPGetMemoryInfo(TVPMemoryInfo &m)
 
 // #include <sched.h>
 #include <unistd.h>
-void TVPRelinquishCPU(){
+void TVPRelinquishCPU() {
 	// sched_yield();
+	// nanosleep(15);
 	SDL_Delay(0);
 }
 
