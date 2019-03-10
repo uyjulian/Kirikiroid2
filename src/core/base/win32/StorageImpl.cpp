@@ -415,12 +415,27 @@ void TVPPreNormalizeStorageName(ttstr &name)
 		}
 	}
 #else // posix
-    if(namelen>=1) {
-        if(name[0] == TJS_W('/')) {
-            name = ttstr(TJS_W("file://.")) + name;
-            return;
-        }
-    }
+	if(namelen >= 2)
+	{
+		if( (name[0] == TJS_W('\\') || name[0] == TJS_W('/')) &&
+			(name[1] != TJS_W('\\') && name[1] != TJS_W('/'))) {
+			ttstr newname(TJS_W("file:/"));
+			newname += name;
+			name = newname;
+			return;
+		}
+	}
+
+	if(namelen>=2)
+	{
+		if( (name[0] == TJS_W('\\') && name[1] == TJS_W('\\')) ||
+			(name[0] == TJS_W('/') && name[1] == TJS_W('/')) )
+		{
+			// unc expression
+			name = ttstr(TJS_W("file:")) + name;
+			return;
+		}
+	}
 #endif
 }
 //---------------------------------------------------------------------------

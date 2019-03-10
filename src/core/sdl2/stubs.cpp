@@ -694,6 +694,7 @@ int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	char cwd[PATH_MAX];
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		strncat(cwd, "/", PATH_MAX);
 		::Application->StartApplication(cwd); //nice
 	}
 

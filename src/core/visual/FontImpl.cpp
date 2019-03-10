@@ -119,7 +119,8 @@ static int TVPInternalEnumFonts(FT_Byte* pBuf, int buflen, const ttstr &FontPath
 				info.Index = i;
 				info.Getter = getter;
 				TVPAddLog(ttstr(TJS_W("Got Font \"") + fontname + "\" "));
-				TVPFontNames.Add(fontname, info);
+				if (!fontname.IsEmpty())
+					TVPFontNames.Add(fontname, info);
 				addCount = 1;
 			}
 			/*if (!addCount)*/ {
@@ -129,7 +130,8 @@ static int TVPInternalEnumFonts(FT_Byte* pBuf, int buflen, const ttstr &FontPath
 				info.Index = i;
 				info.Getter = getter;
 				TVPAddLog(ttstr(TJS_W("Got Font \"") + fontname + "\" "));
-				TVPFontNames.Add(fontname, info);
+				if (!fontname.IsEmpty())
+					TVPFontNames.Add(fontname, info);
 			}
 			++faceCount;
 		}
@@ -159,10 +161,23 @@ int TVPEnumFontsProc(const ttstr &FontPath)
 
 tTJSBinaryStream* TVPCreateFontStream(const ttstr &fontname)
 {
+    tTJSHashTable<ttstr, TVPFontNamePathInfo, tTVPttstrHash>::tIterator i;
+
 	TVPFontNamePathInfo *info = TVPFindFont(fontname);
 	if (!info) {
 		info = TVPFontNames.Find(TVPDefaultFontName);
-		if (!info) return nullptr;
+		if (!info) {
+			for (i = TVPFontNames.GetLast(); !i.IsNull(); i--) {
+				TVPFontNamePathInfo *iinfo = TVPFontNames.Find(i.GetKey());
+				if (!iinfo) {
+					break;
+				}
+				info = iinfo;
+			}
+			if (!info) {
+				return nullptr;
+			}
+		}
 	}
 	if (info->Getter) {
 		return info->Getter(info);
@@ -224,33 +239,52 @@ void TVPInitFontNames()
         // std::string fullPath = cocos2d::FileUtils::getInstance()->fullPathForFilename("DroidSansFallback.ttf");
         // if (TVPEnumFontsProc(fullPath)) break;
 	} while (false);
-    if(TVPFontNames.GetCount() > 0)
-    {
-        // set default fontface name
-        TVPDefaultFontName = TVPFontNames.GetLast().GetKey();
-    }
-    TVPDefaultFontName = "MS PMincho";
+    // set default fontface name
 
     // check exePath + "/fonts/*.ttf"
 	{
-		std::vector<ttstr> list;
-		auto lister = [&](const ttstr &name, tTVPLocalFileInfo* s) {
-			if (s->Mode & (S_IFREG | S_IFDIR)) {
-				list.emplace_back(name);
-			}
-		};
-#ifdef __ANDROID__
-		TVPGetLocalFileListAt(Android_GetInternalStoragePath() + "/fonts", lister);
-		for (const ttstr &path : pathlist) {
-			TVPGetLocalFileListAt(path + "/fonts", lister);
-		}
+		std::vector<ttstr> fontlist;
+		std::vector<ttstr> dirlist;
+
+// #ifdef __ANDROID__
+// 		TVPGetLocalFileListAt(Android_GetInternalStoragePath() + "/fonts", lister);
+// 		for (const ttstr &path : pathlist) {
+// 			TVPGetLocalFileListAt(path + "/fonts", lister);
+// 		}
+// #endif
+
+		ttstr dir(TVPGetAppPath() + "/fonts");
+		TVPGetLocalName(dir);
+		dirlist.emplace_back(dir);
+#ifdef __APPLE__
+		dirlist.emplace_back("/System/Library/Fonts");
+		dirlist.emplace_back("/Library/Fonts");
 #endif
-		TVPGetLocalFileListAt(TVPGetAppPath() + "/fonts", lister);
-        auto itend = list.end();
-        for (auto it = list.begin(); it != itend; ++it) {
+		auto it2end = dirlist.end();
+		for (auto it2 = dirlist.begin(); it2 != it2end; ++it2) {
+			auto lister = [&](const ttstr &name, tTVPLocalFileInfo* s) {
+				if (s->Mode & (S_IFREG | S_IFDIR)) {
+					fontlist.emplace_back(*it2 + "/" + name);
+				}
+			};
+			TVPGetLocalFileListAt(*it2, lister);
+		}
+		// std::sort(fontlist.begin(), fontlist.end());
+        auto itend = fontlist.end();
+        for (auto it = fontlist.begin(); it != itend; ++it) {
             TVPEnumFontsProc(*it);
         }
     }
+
+    tTJSHashTable<ttstr, TVPFontNamePathInfo, tTVPttstrHash>::tIterator i;
+	for(i = TVPFontNames.GetFirst(); !i.IsNull(); i++)
+	{
+		TVPFontNamePathInfo *iinfo = TVPFontNames.Find(i.GetKey());
+		if (!iinfo) {
+			break;
+		}
+		TVPDefaultFontName = i.GetKey();
+	}
 
 	if (TVPDefaultFontName.IsEmpty()) {
 		TVPShowSimpleMessageBox(("Could not found any font.\nPlease ensure that at least \"default.ttf\" exists"), "Exception Occured");
