@@ -369,12 +369,12 @@ tjs_uint64 TJS_INTF_METHOD tTVPPartialStream::GetSize()
 //---------------------------------------------------------------------------
 
 
-
+#if 0
 extern "C" {
 #include <archive.h>
 #include <archive_entry.h>
 }
-#if 0
+
 class LibArchive_Archive : public tTVPArchive {
 	struct archive *_arc;
 	tTJSBinaryStream *_stream;
@@ -469,6 +469,7 @@ tTVPArchive *TVPOpenLibArchive(const ttstr & name, tTJSBinaryStream *st, bool no
 }
 #endif
 
+#if 0
 static FILE *_fileopen(const std::string &strpath) {
 	FILE *fp = fopen(strpath.c_str(), "wb");
 	if (!fp) { // make dirs
@@ -758,6 +759,7 @@ const char * tTVPUnpackArchiveImplLibArchive::_onPassphraseCallback(struct archi
 	static std::string psw = ((tTVPUnpackArchiveImplLibArchive*)clientdata)->onPassphraseCallback();
 	return psw.c_str();
 }
+#endif
 
 // extern "C" {
 // #include "7zip/C/7z.h"
@@ -979,6 +981,7 @@ const char * tTVPUnpackArchiveImplLibArchive::_onPassphraseCallback(struct archi
 // 	}
 // };
 
+#if 0
 int tTVPUnpackArchive::Prepare(const std::string &path, const std::string &_outpath, tjs_uint64 *totalSize) {
 	FILE *FpIn = fopen(path.c_str(), "rb");
 	if (!FpIn) return -1;
@@ -1051,3 +1054,5 @@ tTVPUnpackArchive::~tTVPUnpackArchive()
 {
 	if (ArcThread) delete ArcThread;
 }
+
+#endif

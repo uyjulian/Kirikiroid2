@@ -23,10 +23,14 @@ extern "C" {
 #include "Application.h"
 #include "Platform.h"
 // #include "ConfigManager/IndividualConfigManager.h"
+#ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
 #include <xxhash.h>
+#endif
 #include "tjsHashSearch.h"
 #include "EventIntf.h"
+#ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
 #include <lz4.h>
+#endif
 
 #ifdef _MSC_VER
 #pragma comment(lib,"opencv_ts300d.lib")
@@ -372,6 +376,8 @@ public:
 
 	virtual size_t GetBitmapSize() override { return Pitch * Height * (Format == TVPTextureFormat::RGBA ? 4 : 1); }
 };
+
+#ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
 
 #define EMPTY_LINE_BYTES 8192
 static const tjs_uint8 __empty_line[EMPTY_LINE_BYTES + 32] = {}; // at most 2048 pixels per line
@@ -773,6 +779,8 @@ public:
 		return blk.Height;
 	}
 };
+
+#endif
 
 class tTVPSoftwareTexture2D : public tTVPSoftwareTexture2D_static {
 	tTVPSoftwareTexture2D(tTVPBitmap *bmp)
@@ -2634,11 +2642,13 @@ public:
 		, _drawCount(0)
 	{
 		_createStaticTexture2D = tTVPSoftwareTexture2D::Create;
+#ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
 		std::string compTexMethod = "none";//IndividualConfigManager::GetInstance()->GetValue<std::string>("software_compress_tex", "none");
 		if (compTexMethod == "halfline") _createStaticTexture2D = tTVPSoftwareTexture2D_half::Create;
 		else if (compTexMethod == "lz4") _createStaticTexture2D = tTVPSoftwareTexture2D_lz4::Create;
 		else if (compTexMethod == "lz4+tlg5") _createStaticTexture2D = tTVPSoftwareTexture2D_lz4_tlg5::Create;
-
+#endif
+		
 		Register_1();
 		Register_2();
 		Register_3();

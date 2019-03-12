@@ -10,6 +10,7 @@
 #include "DebugIntf.h"
 #include <algorithm>
 
+#ifdef TVP_AUDIO_ENABLE_VORBIS
 static const bool FloatExtraction = false; // true if output format is IEEE 32-bit float
 
 #define WARN_OLD_VORBIS_DATE 20020717
@@ -279,6 +280,9 @@ bool VorbisWaveDecoder::SetStream( const ttstr & url )
     return true;
 }
 
+#endif
+
+#ifdef TVP_AUDIO_ENABLE_OPUS
 #include <opusfile.h>
 
 class OpusWaveDecoder : public tTVPWaveDecoder // decoder interface
@@ -461,3 +465,7 @@ tTVPWaveDecoder * OpusWaveDecoderCreator::Create(const ttstr & storagename, cons
     }
     return decoder;
 }
+
+#endif
+
+

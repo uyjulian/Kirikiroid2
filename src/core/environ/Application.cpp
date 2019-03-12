@@ -1136,8 +1136,16 @@ void TVPInitWindowOptions() {
 	;
 }
 
+#ifndef TVP_AUDIO_ENABLE_FFMPEG
+#include <libgen.h>
+#endif
+
 std::string ExtractFileDir(const std::string & FileName) {
+#ifdef TVP_AUDIO_ENABLE_FFMPEG
 	return av_dirname((char*)FileName.c_str());
+#else
+	return dirname((char*)FileName.c_str());
+#endif
 }
 
 unsigned long ColorToRGB(unsigned int col)

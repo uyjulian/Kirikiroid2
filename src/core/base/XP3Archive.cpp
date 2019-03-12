@@ -11,7 +11,9 @@
 
 #include "tjsCommHead.h"
 
+#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
+#endif
 #include "MsgIntf.h"
 #include "DebugIntf.h"
 #include "EventIntf.h"

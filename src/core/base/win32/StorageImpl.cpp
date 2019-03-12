@@ -21,7 +21,9 @@
 #include "SysInitIntf.h"
 #include "DebugIntf.h"
 #include "Random.h"
+#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
+#endif
 //#include "SusieArchive.h"
 #include "FileSelector.h"
 #include "Random.h"
@@ -599,15 +601,28 @@ bool TVPCheckExistentLocalFolder(const ttstr &name)
 //---------------------------------------------------------------------------
 
 
-
+#ifdef TVP_ARCHIVE_ENABLE_ZIP
 tTVPArchive * TVPOpenZIPArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
-// tTVPArchive * TVPOpen7ZArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
+#endif
+#ifdef TVP_ARCHIVE_ENABLE_7Z
+tTVPArchive * TVPOpen7ZArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
+#endif
+#ifdef TVP_ARCHIVE_ENABLE_TAR
 tTVPArchive * TVPOpenTARArchive(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName);
+#endif
 static tTVPArchive*(*ArchiveCreators[])(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName) = {
-	// TVPOpenZIPArchive,
-	// TVPOpen7ZArchive,
+#ifdef TVP_ARCHIVE_ENABLE_ZIP
+	TVPOpenZIPArchive,
+#endif
+#ifdef TVP_ARCHIVE_ENABLE_7Z
+	TVPOpen7ZArchive,
+#endif
+#ifdef TVP_ARCHIVE_ENABLE_TAR
 	TVPOpenTARArchive,
-	tTVPXP3Archive::Create
+#endif
+#ifdef TVP_ARCHIVE_ENABLE_XP3
+	tTVPXP3Archive::Create,
+#endif
 };
 
 //---------------------------------------------------------------------------
@@ -1444,7 +1459,7 @@ ttstr TVPSearchCD(const ttstr & name)
 }
 //---------------------------------------------------------------------------
 
-
+#if defined(TVP_ARCHIVE_ENABLE_XP3) || defined(TVP_ARCHIVE_ENABLE_7Z) || defined(TVP_ARCHIVE_ENABLE_TAR) || defined(TVP_ARCHIVE_ENABLE_ZIP)
 tTJSBinaryStream * TVPGetCachedArchiveHandle(void * pointer, const ttstr & name);
 void TVPReleaseCachedArchiveHandle(void * pointer, tTJSBinaryStream * stream);
 TArchiveStream::TArchiveStream(tTVPArchive *owner, tjs_uint64 off, tjs_uint64 len) : Owner(owner), StartPos(off), DataLength(len) {
@@ -1458,6 +1473,7 @@ TArchiveStream::~TArchiveStream() {
 	TVPReleaseCachedArchiveHandle(Owner, _instr);
 	Owner->Release();
 }
+#endif
 
 //---------------------------------------------------------------------------
 // TVPCreateNativeClass_Storages

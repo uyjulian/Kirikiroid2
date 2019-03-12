@@ -1165,11 +1165,13 @@ static tjs_int __stdcall TVP_Stub_07dfce61d490cf671a2d5359d713d64a(const char * 
 {
 	return TVPUtf8ToWideCharString(in, out);
 }
+#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
 static void __stdcall TVP_Stub_52d30ac8479ef7e870b5aff076482799(tTVPXP3ArchiveExtractionFilter filter)
 {
 	return TVPSetXP3ArchiveExtractionFilter(filter);
 }
+#endif
 #include "EventIntf.h"
 static void __stdcall TVP_Stub_8e4d0392ed46e87f94e5fcf675a124a1()
 {

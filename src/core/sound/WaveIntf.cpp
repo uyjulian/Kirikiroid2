@@ -18,8 +18,12 @@
 #include "UtilStreams.h"
 #include "WaveLoopManager.h"
 #include "tjsDictionary.h"
+#if defined(TVP_AUDIO_ENABLE_OPUS) || defined(TVP_AUDIO_ENABLE_VORBIS)
 #include "VorbisWaveDecoder.h"
+#endif
+#ifdef TVP_AUDIO_ENABLE_FFMPEG
 #include "FFWaveDecoder.h"
+#endif
 
 
 //---------------------------------------------------------------------------
@@ -426,7 +430,7 @@ void TVPConvertPCMToFloat(float *output, const void *input,
 
 
 
-
+#ifdef TVP_AUDIO_ENABLE_WAVE
 //---------------------------------------------------------------------------
 // tTVPWD_RIFFWave
 //---------------------------------------------------------------------------
@@ -734,7 +738,7 @@ tTVPWaveDecoder * tTVPWDC_RIFFWave::Create(const ttstr & storagename,
 	}
 }
 //---------------------------------------------------------------------------
-
+#endif
 
 
 
@@ -745,18 +749,34 @@ bool TVPWaveDecoderManagerAvail = false;
 struct tTVPWaveDecoderManager
 {
 	std::vector<tTVPWaveDecoderCreator *> Creators;
+#ifdef TVP_AUDIO_ENABLE_WAVE
 	tTVPWDC_RIFFWave RIFFWaveDecoderCreator;
-    VorbisWaveDecoderCreator vorbisWaveDecoderCreator;
-    // FFWaveDecoderCreator ffWaveDecoderCreator;
-    OpusWaveDecoderCreator opusWaveDecoderCreator;
+#endif
+#ifdef TVP_AUDIO_ENABLE_VORBIS
+	VorbisWaveDecoderCreator vorbisWaveDecoderCreator;
+#endif
+#ifdef TVP_AUDIO_ENABLE_FFMPEG
+	FFWaveDecoderCreator ffWaveDecoderCreator;
+#endif
+#ifdef TVP_AUDIO_ENABLE_OPUS
+	OpusWaveDecoderCreator opusWaveDecoderCreator;
+#endif
 
 	tTVPWaveDecoderManager()
 	{
 		TVPWaveDecoderManagerAvail = true;
-        // TVPRegisterWaveDecoderCreator(&ffWaveDecoderCreator);
-        TVPRegisterWaveDecoderCreator(&opusWaveDecoderCreator);
+#ifdef TVP_AUDIO_ENABLE_FFMPEG
+		TVPRegisterWaveDecoderCreator(&ffWaveDecoderCreator);
+#endif
+#ifdef TVP_AUDIO_ENABLE_OPUS
+		TVPRegisterWaveDecoderCreator(&opusWaveDecoderCreator);
+#endif
+#ifdef TVP_AUDIO_ENABLE_WAVE
 		TVPRegisterWaveDecoderCreator(&RIFFWaveDecoderCreator);
-        TVPRegisterWaveDecoderCreator(&vorbisWaveDecoderCreator);
+#endif
+#ifdef TVP_AUDIO_ENABLE_VORBIS
+		TVPRegisterWaveDecoderCreator(&vorbisWaveDecoderCreator);
+#endif
 	}
 
 	~tTVPWaveDecoderManager()

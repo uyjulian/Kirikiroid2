@@ -1,4 +1,22 @@
 
+##### OPTIONS #####
+TVP_IMAGE_ENABLE_WEBP ?= 1
+TVP_IMAGE_ENABLE_BPG ?=
+TVP_IMAGE_ENABLE_BMP ?= 1
+TVP_IMAGE_ENABLE_TLG ?= 1
+TVP_IMAGE_ENABLE_PNG ?= 1
+TVP_IMAGE_ENABLE_JPEG ?=
+TVP_IMAGE_ENABLE_JXR ?=
+TVP_AUDIO_ENABLE_WAVE ?=
+TVP_AUDIO_ENABLE_OPUS ?= 1
+TVP_AUDIO_ENABLE_VORBIS ?= 1
+TVP_AUDIO_ENABLE_FFMPEG ?=
+TVP_ARCHIVE_ENABLE_ZIP ?=
+TVP_ARCHIVE_ENABLE_7Z ?=
+TVP_ARCHIVE_ENABLE_TAR ?=
+TVP_ARCHIVE_ENABLE_XP3 ?=
+TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION ?=
+TVP_RENDERER_ENABLE_OPENGL ?=
 CC = clang
 CXX = clang++
 AR = 
@@ -9,12 +27,147 @@ CFLAGS += -O0 -g
 GIT_HASH = nothing
 CUR_TIME = $(shell date +%s)
 CFLAGS += -Wall
-CFLAGS += -DTJS_TEXT_OUT_CRLF -D__STDC_CONSTANT_MACROS -DUSE_UNICODE_FSTRING -D_7ZIP_ST -DGL_SILENCE_DEPRECATION
-CFLAGS += -Isrc/core -Isrc/core/base -Isrc/core/base/win32 -Isrc/core/environ -Isrc/core/environ/win32 -Isrc/core/environ/android -Isrc/core/environ/sdl -Isrc/core/msg -Isrc/core/msg/win32 -Isrc/core/extension -Isrc/core/sound -Isrc/core/sound/win32 -Isrc/core/tjs2 -Isrc/core/utils -Isrc/core/utils/win32 -Isrc/core/visual -Isrc/core/visual/ARM -Isrc/core/visual/win32 -Isrc/core/visual/RenderScript/rs
+CFLAGS += -DTJS_TEXT_OUT_CRLF -DUSE_UNICODE_FSTRING
+CFLAGS += -Isrc/core
+CFLAGS += -Isrc/core/base
+CFLAGS += -Isrc/core/base/win32
+CFLAGS += -Isrc/core/environ
+CFLAGS += -Isrc/core/environ/win32
+CFLAGS += -Isrc/core/environ/android
+CFLAGS += -Isrc/core/environ/sdl
+CFLAGS += -Isrc/core/msg
+CFLAGS += -Isrc/core/msg/win32
+CFLAGS += -Isrc/core/extension
+CFLAGS += -Isrc/core/sound
+CFLAGS += -Isrc/core/sound/win32
+CFLAGS += -Isrc/core/tjs2
+CFLAGS += -Isrc/core/utils
+CFLAGS += -Isrc/core/utils/win32
+CFLAGS += -Isrc/core/visual
+CFLAGS += -Isrc/core/visual/ARM
+CFLAGS += -Isrc/core/visual/win32
 CFLAGS += -Isrc/plugins
-CFLAGS += -I/usr/local/opt/xxhash/include -I/usr/local/opt/webp/include -I/usr/local/opt/libpng/include -I/usr/local/opt/ffmpeg/include -I/usr/local/opt/libarchive/include -I/usr/local/opt/libbpg/include -I/usr/local/opt/lz4/include -I/usr/local/opt/opencv/include/opencv4 -I/usr/local/opt/opus/include/opus -I/usr/local/opt/sdl2/include/SDL2 -I/usr/local/opt/libiconv/include -I/usr/local/opt/libjpeg-turbo/include -I/usr/local/opt/oniguruma/include -I/usr/local/opt/jxrlib/include -I/usr/local/opt/jxrlib/include/glue -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2 -I/usr/local/opt/opusfile/include/opus 
-LDFLAGS += -L/usr/local/opt/xxhash/lib -L/usr/local/opt/webp/lib -L/usr/local/opt/libpng/lib -L/usr/local/opt/ffmpeg/lib -L/usr/local/opt/libarchive/lib -L/usr/local/opt/lz4/lib -L/usr/local/opt/opencv/lib -L/usr/local/opt/opus/lib -L/usr/local/opt/sdl2/lib -L/usr/local/opt/libiconv/lib -L/usr/local/opt/libjpeg-turbo/lib -L/usr/local/opt/oniguruma/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/opusfile/lib
-LDLIBS += -framework OpenGL -lxxhash -lwebp -lz -lpng -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale -lvorbis -lvorbisfile -larchive -llz4 -lopencv_core -lopencv_imgproc -lopus -lSDL2 -liconv -lturbojpeg -lonig -ljpegxr -ljxrglue -lfreetype -lopusfile
+
+CFLAGS += -I/usr/local/opt/zlib/include
+LDFLAGS += -L/usr/local/opt/zlib/lib
+LDLIBS += -lz
+
+CFLAGS += -I/usr/local/opt/opencv/include/opencv4
+LDFLAGS += -L/usr/local/opt/opencv/lib
+LDLIBS += -lopencv_core -lopencv_imgproc
+
+CFLAGS += -I/usr/local/opt/sdl2/include/SDL2
+LDFLAGS += -L/usr/local/opt/sdl2/lib
+LDLIBS += -lSDL2
+
+# CFLAGS += -I/usr/local/opt/libiconv/include
+# LDFLAGS += -L/usr/local/opt/libiconv/lib
+# LDLIBS += -liconv
+
+CFLAGS += -I/usr/local/opt/oniguruma/include
+LDFLAGS += -L/usr/local/opt/oniguruma/lib
+LDLIBS += -lonig
+
+CFLAGS += -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2
+LDFLAGS += -L/usr/local/opt/freetype/lib
+LDLIBS += -lfreetype
+
+ifdef TVP_IMAGE_ENABLE_WEBP
+	CFLAGS += -DTVP_IMAGE_ENABLE_WEBP
+	CFLAGS += -I/usr/local/opt/webp/include
+	LDFLAGS += -L/usr/local/opt/webp/lib
+	LDLIBS += -lwebp
+endif
+
+ifdef TVP_IMAGE_ENABLE_BPG
+	CFLAGS += -DTVP_IMAGE_ENABLE_BPG
+	CFLAGS += -I/usr/local/opt/libbpg/include
+	LDFLAGS += -I/usr/local/opt/libbpg/lib
+	LDLIBS += -lbpg
+endif
+
+ifdef TVP_IMAGE_ENABLE_BMP
+	CFLAGS += -DTVP_IMAGE_ENABLE_BMP
+endif
+
+ifdef TVP_IMAGE_ENABLE_TLG
+	CFLAGS += -DTVP_IMAGE_ENABLE_TLG
+endif
+
+ifdef TVP_IMAGE_ENABLE_PNG
+	CFLAGS += -DTVP_IMAGE_ENABLE_PNG
+	CFLAGS += -I/usr/local/opt/libpng/include
+	LDFLAGS += -L/usr/local/opt/libpng/lib
+	LDLIBS += -lpng
+endif
+
+ifdef TVP_IMAGE_ENABLE_JPEG
+	CFLAGS += -DTVP_IMAGE_ENABLE_JPEG
+	CFLAGS += -I/usr/local/opt/libjpeg-turbo/include
+	LDFLAGS += -L/usr/local/opt/libjpeg-turbo/lib
+	LDLIBS += -lturbojpeg
+endif
+
+ifdef TVP_IMAGE_ENABLE_JXR
+	CFLAGS += -DTVP_IMAGE_ENABLE_JXR -DINITGUID
+	CFLAGS += -I/usr/local/opt/jxrlib/include -I/usr/local/opt/jxrlib/include/glue -I/usr/local/opt/jxrlib/include/image/sys -I/usr/local/opt/jxrlib/include/common/include
+	LDFLAGS += -L/usr/local/opt/jxrlib/lib
+	LDLIBS += -ljpegxr -ljxrglue
+endif
+
+ifdef TVP_AUDIO_ENABLE_WAVE
+	CFLAGS += -DTVP_AUDIO_ENABLE_WAVE
+endif
+
+ifdef TVP_AUDIO_ENABLE_OPUS
+	CFLAGS += -DTVP_AUDIO_ENABLE_OPUS
+	CFLAGS += -I/usr/local/opt/opus/include/opus -I/usr/local/opt/opusfile/include/opus
+	LDFLAGS += -L/usr/local/opt/opus/lib -L/usr/local/opt/opusfile/lib
+	LDLIBS += -lopus -lopusfile
+endif
+
+ifdef TVP_AUDIO_ENABLE_VORBIS
+	CFLAGS += -DTVP_AUDIO_ENABLE_VORBIS
+	CFLAGS += -I/usr/local/opt/libvorbis/include/vorbis
+	LDFLAGS += -L/usr/local/opt/libvorbis/lib
+	LDLIBS += -lvorbis -lvorbisfile
+endif
+
+ifdef TVP_AUDIO_ENABLE_FFMPEG
+	CFLAGS += -DTVP_AUDIO_ENABLE_FFMPEG
+	CFLAGS += -I/usr/local/opt/ffmpeg/include
+	LDFLAGS += -L/usr/local/opt/ffmpeg/lib
+	LDLIBS += -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale
+endif
+
+ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
+	CFLAGS += -DTVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
+	CFLAGS += -I/usr/local/opt/xxhash/include -I/usr/local/opt/lz4/include
+	LDFLAGS += -L/usr/local/opt/xxhash/lib -L/usr/local/opt/lz4/lib
+	LDLIBS += -lxxhash -llz4
+endif
+
+ifdef TVP_RENDERER_ENABLE_OPENGL
+	CFLAGS += -DTVP_RENDERER_ENABLE_OPENGL -DGL_SILENCE_DEPRECATION
+	CFLAGS += -framework OpenGL
+	LDLIBS += -framework OpenGL
+endif
+
+ifdef TVP_ARCHIVE_ENABLE_ZIP
+	CFLAGS += -DTVP_ARCHIVE_ENABLE_ZIP
+endif
+
+ifdef TVP_ARCHIVE_ENABLE_7Z
+	CFLAGS += -DTVP_ARCHIVE_ENABLE_7Z
+endif
+
+ifdef TVP_ARCHIVE_ENABLE_TAR
+	CFLAGS += -DTVP_ARCHIVE_ENABLE_TAR
+endif
+
+ifdef TVP_ARCHIVE_ENABLE_XP3
+	CFLAGS += -DTVP_ARCHIVE_ENABLE_XP3
+endif
 
 %.o: %.c
 	echo -e "\tCC  $<"
@@ -41,25 +194,41 @@ SOURCES += src/core/visual/LayerBitmapIntf.cpp
 SOURCES += src/core/visual/LayerIntf.cpp
 SOURCES += src/core/visual/LayerManager.cpp
 SOURCES += src/core/visual/LayerTreeOwnerImpl.cpp
-#SOURCES += src/core/visual/LoadBPG.cpp
+ifdef TVP_IMAGE_ENABLE_BPG
+SOURCES += src/core/visual/LoadBPG.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_JPEG
 SOURCES += src/core/visual/LoadJPEG.cpp
-#SOURCES += src/core/visual/LoadJXR.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_JXR
+SOURCES += src/core/visual/LoadJXR.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_PNG
 SOURCES += src/core/visual/LoadPNG.cpp
+endif
 # SOURCES += src/core/visual/LoadPVRv3.cpp
+ifdef TVP_IMAGE_ENABLE_TLG
 SOURCES += src/core/visual/LoadTLG.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_WEBP
 SOURCES += src/core/visual/LoadWEBP.cpp
+endif
 SOURCES += src/core/visual/MenuItemIntf.cpp
 SOURCES += src/core/visual/PrerenderedFont.cpp
 SOURCES += src/core/visual/RectItf.cpp
 SOURCES += src/core/visual/RenderManager.cpp
+ifdef TVP_IMAGE_ENABLE_TLG
 SOURCES += src/core/visual/SaveTLG5.cpp
 SOURCES += src/core/visual/SaveTLG6.cpp
+endif
 SOURCES += src/core/visual/TransIntf.cpp
 SOURCES += src/core/visual/VideoOvlIntf.cpp
 SOURCES += src/core/visual/WindowIntf.cpp
 SOURCES += src/core/visual/argb.cpp
 SOURCES += src/core/visual/tvpgl.cpp
-# SOURCES += src/core/base/7zArchive.cpp
+ifdef TVP_ARCHIVE_ENABLE_7Z
+SOURCES += src/core/base/7zArchive.cpp
+endif
 SOURCES += src/core/base/BinaryStream.cpp
 SOURCES += src/core/base/CharacterSet.cpp
 SOURCES += src/core/base/EventIntf.cpp
@@ -68,11 +237,17 @@ SOURCES += src/core/base/ScriptMgnIntf.cpp
 SOURCES += src/core/base/StorageIntf.cpp
 SOURCES += src/core/base/SysInitIntf.cpp
 SOURCES += src/core/base/SystemIntf.cpp
+ifdef TVP_ARCHIVE_ENABLE_TAR
 SOURCES += src/core/base/TARArchive.cpp
+endif
 SOURCES += src/core/base/TextStream.cpp
 SOURCES += src/core/base/UtilStreams.cpp
+ifdef TVP_ARCHIVE_ENABLE_XP3
 SOURCES += src/core/base/XP3Archive.cpp
-# SOURCES += src/core/base/ZIPArchive.cpp
+endif
+ifdef TVP_ARCHIVE_ENABLE_ZIP
+SOURCES += src/core/base/ZIPArchive.cpp
+endif
 SOURCES += src/core/base/win32/EventImpl.cpp
 SOURCES += src/core/base/win32/FileSelector.cpp
 SOURCES += src/core/base/win32/NativeEventQueue.cpp
@@ -146,18 +321,24 @@ SOURCES += src/core/movie/krmovie.cpp
 # SOURCES += src/core/movie/ffmpeg/VideoPlayerVideo.cpp
 # SOURCES += src/core/movie/ffmpeg/VideoReferenceClock.cpp
 # SOURCES += src/core/movie/ffmpeg/VideoRenderer.cpp
+ifdef TVP_AUDIO_ENABLE_FFMPEG
 SOURCES += src/core/movie/ffmpeg/krffmpeg.cpp
+endif
 SOURCES += src/core/msg/MsgIntf.cpp
 SOURCES += src/core/msg/win32/MsgImpl.cpp
 SOURCES += src/core/msg/win32/OptionsDesc.cpp
 SOURCES += src/core/sound/CDDAIntf.cpp
+ifdef TVP_AUDIO_ENABLE_FFMPEG
 SOURCES += src/core/sound/FFWaveDecoder.cpp
+endif
 SOURCES += src/core/sound/MIDIIntf.cpp
 # SOURCES += src/core/sound/MathAlgorithms.cpp
 SOURCES += src/core/sound/PhaseVocoderDSP.cpp
 SOURCES += src/core/sound/PhaseVocoderFilter.cpp
 SOURCES += src/core/sound/SoundBufferBaseIntf.cpp
+ifneq '$(TVP_AUDIO_ENABLE_OPUS)$(TVP_AUDIO_ENABLE_VORBIS)' ''
 SOURCES += src/core/sound/VorbisWaveDecoder.cpp
+endif
 SOURCES += src/core/sound/WaveFormatConverter.cpp
 SOURCES += src/core/sound/WaveIntf.cpp
 SOURCES += src/core/sound/WaveLoopManager.cpp
@@ -222,9 +403,9 @@ SOURCES += src/core/utils/TimerIntf.cpp
 SOURCES += src/core/utils/VelocityTracker.cpp
 SOURCES += src/core/utils/encoding/gbk2unicode.c
 SOURCES += src/core/utils/encoding/jis2unicode.c
-SOURCES += src/core/utils/minizip/unzip.c
-SOURCES += src/core/utils/minizip/zip.c
-SOURCES += src/core/utils/minizip/ioapi.cpp
+# SOURCES += src/core/utils/minizip/unzip.c
+# SOURCES += src/core/utils/minizip/zip.c
+# SOURCES += src/core/utils/minizip/ioapi.cpp
 SOURCES += src/core/utils/win32/ClipboardImpl.cpp
 SOURCES += src/core/utils/win32/DebugImpl.cpp
 SOURCES += src/core/utils/win32/PadImpl.cpp
@@ -234,7 +415,9 @@ SOURCES += src/core/utils/win32/TimerImpl.cpp
 SOURCES += src/core/visual/gl/ResampleImage.cpp
 SOURCES += src/core/visual/gl/WeightFunctor.cpp
 SOURCES += src/core/visual/gl/blend_function.cpp
+ifdef TVP_RENDERER_ENABLE_OPENGL
 SOURCES += src/core/visual/ogl/RenderManager_ogl.cpp
+endif
 # SOURCES += src/core/visual/ogl/astcrt.cpp
 # SOURCES += src/core/visual/ogl/etcpak.cpp
 # SOURCES += src/core/visual/ogl/imagepacker.cpp
@@ -266,7 +449,9 @@ SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
 SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
+ifdef TVP_ARCHIVE_ENABLE_XP3
 SOURCES += src/plugins/xp3filter.cpp
+endif
 SOURCES += src/plugins/ncbind/ncbind.cpp
 OBJECTS := $(SOURCES:.c=.o)
 OBJECTS := $(OBJECTS:.cpp=.o)

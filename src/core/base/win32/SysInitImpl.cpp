@@ -28,9 +28,10 @@
 #include "LayerIntf.h"
 #include "Random.h"
 #include "DetectCPU.h"
+#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
+#endif
 #include "ScriptMgnIntf.h"
-#include "XP3Archive.h"
 //#include "VersionFormUnit.h"
 #include "EmergencyExit.h"
 
@@ -1370,6 +1371,7 @@ void TVPAfterSystemInit()
 			TVPDefaultHoldAlpha = false;
 	}
 
+#ifdef TVP_IMAGE_ENABLE_JPEG
 	// check TVPJPEGFastLoad option
 	if(TVPGetCommandLine(TJS_W("-jpegdec"), &opt)) // this specifies precision for JPEG decoding
 	{
@@ -1382,6 +1384,7 @@ void TVPAfterSystemInit()
 			TVPJPEGLoadPrecision = jlpHigh;
 
 	}
+#endif
 
 	// dump option
 	TVPDumpOptions();

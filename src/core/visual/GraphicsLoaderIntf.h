@@ -155,33 +155,47 @@ TJS_EXP_FUNC_DEF( void, TVPUnregisterGraphicLoadingHandler, (const ttstr & name,
 //---------------------------------------------------------------------------
 // default handlers
 //---------------------------------------------------------------------------
+#ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+#endif
 
+#ifdef TVP_IMAGE_ENABLE_JPEG
 extern void TVPLoadJPEG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+#endif
 
+#ifdef TVP_IMAGE_ENABLE_PNG
 extern void TVPLoadPNG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+#endif
 
+#ifdef TVP_IMAGE_ENABLE_JXR
 extern void TVPLoadJXR(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+#endif
 
+#ifdef TVP_IMAGE_ENABLE_TLG
 extern void TVPLoadTLG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx, tTVPGraphicLoadMode mode);
+#endif
 //---------------------------------------------------------------------------
+#ifdef TVP_IMAGE_ENABLE_WEBP
 extern void TVPLoadWEBP(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+#endif
 
+#ifdef TVP_IMAGE_ENABLE_BPG
 extern void TVPLoadBPG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx, tTVPGraphicLoadMode mode);
+#endif
 
 //---------------------------------------------------------------------------
 // Image header handler
@@ -195,40 +209,77 @@ extern void TVPLoadBPG(void* formatdata, void *callbackdata, tTVPGraphicSizeCall
 //    etc...
 // ]
 //---------------------------------------------------------------------------
+#ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPLoadHeaderBMP(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_JPEG
 extern void TVPLoadHeaderJPG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_PNG
 extern void TVPLoadHeaderPNG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_JXR
 extern void TVPLoadHeaderJXR(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_TLG
 extern void TVPLoadHeaderTLG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic);
+#endif
+#ifdef TVP_IMAGE_ENABLE_WEBP
 extern void TVPLoadHeaderWEBP(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic);
+#endif
+#ifdef TVP_IMAGE_ENABLE_BPG
 extern void TVPLoadHeaderBPG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic);
+#endif
 //---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
 // Image saving handler
 //---------------------------------------------------------------------------
+#ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
+#endif
+#ifdef TVP_IMAGE_ENABLE_PNG
 extern void TVPSaveAsPNG(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
+#endif
+#ifdef TVP_IMAGE_ENABLE_JPEG
 extern void TVPSaveAsJPG(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
+#endif
+#ifdef TVP_IMAGE_ENABLE_JXR
 extern void TVPSaveAsJXR(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
+#endif
+#ifdef TVP_IMAGE_ENABLE_TLG
 extern void TVPSaveAsTLG(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
+#endif
 //---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
 // is accept
 //---------------------------------------------------------------------------
+#ifdef TVP_IMAGE_ENABLE_BMP
 extern bool TVPAcceptSaveAsBMP(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_PNG
 extern bool TVPAcceptSaveAsPNG(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_JPEG
 extern bool TVPAcceptSaveAsJPG(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_JXR
 extern bool TVPAcceptSaveAsJXR(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+#endif
+#ifdef TVP_IMAGE_ENABLE_TLG
 extern bool TVPAcceptSaveAsTLG(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+#endif
 //---------------------------------------------------------------------------
 
+#ifdef TVP_IMAGE_ENABLE_BMP
 void TVPSaveTextureAsBMP(tTJSBinaryStream* dst, class iTVPTexture2D* bmp, const ttstr & mode = TJS_W(""), iTJSDispatch2* meta = nullptr);
 void TVPSaveTextureAsBMP(const ttstr &path, class iTVPTexture2D* tex, const ttstr &mode = TJS_W(""), iTJSDispatch2* meta = nullptr);
+#endif
 
+#ifdef TVP_IMAGE_ENABLE_JPEG
 //---------------------------------------------------------------------------
 // JPEG loading handler
 //---------------------------------------------------------------------------
@@ -241,7 +292,7 @@ enum tTVPJPEGLoadPrecision
 
 extern tTVPJPEGLoadPrecision TVPJPEGLoadPrecision;
 //---------------------------------------------------------------------------
-
+#endif
 
 
 //---------------------------------------------------------------------------

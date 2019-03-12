@@ -20,7 +20,9 @@
 #include "DebugIntf.h"
 #include "tjsArray.h"
 #include "SysInitIntf.h"
+#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
+#endif
 #include "TickCount.h"
 
 
@@ -1344,7 +1346,9 @@ tTJSBinaryStream * TVPCreateStream(const ttstr & _name, tjs_uint32 flags)
 void TVPClearStorageCaches()
 {
 	// clear all storage related caches
+#ifdef TVP_ARCHIVE_ENABLE_XP3
 	TVPClearXP3SegmentCache();
+#endif
 	TVPClearAutoPathCache();
 }
 //---------------------------------------------------------------------------
