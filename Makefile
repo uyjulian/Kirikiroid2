@@ -3,17 +3,18 @@ CC = clang
 CXX = clang++
 AR = 
 ASM = 
+# CFLAGS += -Ofast -march=native
 CFLAGS += -O0 -g
 # GIT_HASH = $(shell git rev-parse --short HEAD)
 GIT_HASH = nothing
 CUR_TIME = $(shell date +%s)
 CFLAGS += -Wall
-CFLAGS += -DTJS_TEXT_OUT_CRLF -D__STDC_CONSTANT_MACROS -DUSE_UNICODE_FSTRING -D_7ZIP_ST
+CFLAGS += -DTJS_TEXT_OUT_CRLF -D__STDC_CONSTANT_MACROS -DUSE_UNICODE_FSTRING -D_7ZIP_ST -DGL_SILENCE_DEPRECATION
 CFLAGS += -Isrc/core -Isrc/core/base -Isrc/core/base/win32 -Isrc/core/environ -Isrc/core/environ/win32 -Isrc/core/environ/android -Isrc/core/environ/sdl -Isrc/core/msg -Isrc/core/msg/win32 -Isrc/core/extension -Isrc/core/sound -Isrc/core/sound/win32 -Isrc/core/tjs2 -Isrc/core/utils -Isrc/core/utils/win32 -Isrc/core/visual -Isrc/core/visual/ARM -Isrc/core/visual/win32 -Isrc/core/visual/RenderScript/rs
 CFLAGS += -Isrc/plugins
 CFLAGS += -I/usr/local/opt/xxhash/include -I/usr/local/opt/webp/include -I/usr/local/opt/libpng/include -I/usr/local/opt/ffmpeg/include -I/usr/local/opt/libarchive/include -I/usr/local/opt/libbpg/include -I/usr/local/opt/lz4/include -I/usr/local/opt/opencv/include/opencv4 -I/usr/local/opt/opus/include/opus -I/usr/local/opt/sdl2/include/SDL2 -I/usr/local/opt/libiconv/include -I/usr/local/opt/libjpeg-turbo/include -I/usr/local/opt/oniguruma/include -I/usr/local/opt/jxrlib/include -I/usr/local/opt/jxrlib/include/glue -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2 -I/usr/local/opt/opusfile/include/opus 
 LDFLAGS += -L/usr/local/opt/xxhash/lib -L/usr/local/opt/webp/lib -L/usr/local/opt/libpng/lib -L/usr/local/opt/ffmpeg/lib -L/usr/local/opt/libarchive/lib -L/usr/local/opt/lz4/lib -L/usr/local/opt/opencv/lib -L/usr/local/opt/opus/lib -L/usr/local/opt/sdl2/lib -L/usr/local/opt/libiconv/lib -L/usr/local/opt/libjpeg-turbo/lib -L/usr/local/opt/oniguruma/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/jxrlib/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/freetype/lib -L/usr/local/opt/opusfile/lib
-LDLIBS += -lxxhash -lwebp -lz -lpng -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale -lvorbis -lvorbisfile -larchive -llz4 -lopencv_core -lopencv_imgproc -lopus -lSDL2 -liconv -lturbojpeg -lonig -ljpegxr -ljxrglue -lfreetype -lopusfile
+LDLIBS += -framework OpenGL -lxxhash -lwebp -lz -lpng -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale -lvorbis -lvorbisfile -larchive -llz4 -lopencv_core -lopencv_imgproc -lopus -lSDL2 -liconv -lturbojpeg -lonig -ljpegxr -ljxrglue -lfreetype -lopusfile
 
 %.o: %.c
 	echo -e "\tCC  $<"
@@ -233,7 +234,7 @@ SOURCES += src/core/utils/win32/TimerImpl.cpp
 SOURCES += src/core/visual/gl/ResampleImage.cpp
 SOURCES += src/core/visual/gl/WeightFunctor.cpp
 SOURCES += src/core/visual/gl/blend_function.cpp
-# SOURCES += src/core/visual/ogl/RenderManager_ogl.cpp
+SOURCES += src/core/visual/ogl/RenderManager_ogl.cpp
 # SOURCES += src/core/visual/ogl/astcrt.cpp
 # SOURCES += src/core/visual/ogl/etcpak.cpp
 # SOURCES += src/core/visual/ogl/imagepacker.cpp
