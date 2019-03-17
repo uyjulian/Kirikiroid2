@@ -70,7 +70,7 @@ static void* TVPLoadGraphicAsync_ScanLineCallback(void *callbackdata, tjs_int y)
 			return NULL;
 		}
 	}
-	return NULL; // -1 ‚Ì‚Ìƒtƒ‰ƒbƒVƒ…ˆ—‚Í‰½‚à‚µ‚È‚¢
+	return NULL; // -1 ã®æ™‚ã®ãƒ•ãƒ©ãƒƒã‚·ãƒ¥å‡¦ç†ã¯ä½•ã‚‚ã—ãªã„
 }
 //---------------------------------------------------------------------------
 static void TVPLoadGraphicAsync_MetaInfoPushCallback(void *callbackdata, const ttstr & name, const ttstr & value)
@@ -83,7 +83,7 @@ static void TVPLoadGraphicAsync_MetaInfoPushCallback(void *callbackdata, const t
 //---------------------------------------------------------------------------
 
 tTVPAsyncImageLoader::tTVPAsyncImageLoader()
-: EventQueue(this,&tTVPAsyncImageLoader::Proc), tTVPThread(true)
+: EventQueue(this,&tTVPAsyncImageLoader::Proc)
 {
 	EventQueue.Allocate();
 }
@@ -107,7 +107,7 @@ void tTVPAsyncImageLoader::ExitRequest() {
 	PushCommandQueueEvent.Set();
 }
 void tTVPAsyncImageLoader::Execute() {
-	// ƒvƒ‰ƒCƒIƒŠƒeƒB‚ÍÅ’á‚É‚·‚é
+	// ãƒ—ãƒ©ã‚¤ã‚ªãƒªãƒ†ã‚£ã¯æœ€ä½ã«ã™ã‚‹
 	SetPriority(ttpIdle);
 	LoadingThread();
 }
@@ -158,7 +158,7 @@ void tTVPAsyncImageLoader::HandleLoadedImage() {
 				iTJSDispatch2* metainfo = TVPMetaInfoPairsToDictionary(cmd->dest_->MetaInfo);
 
 				cmd->bmp_->SetSizeAndImageBuffer(cmd->dest_->bmp);
-				// “Ç‚İŠ®—¹‚É‚àƒLƒƒƒbƒVƒ…ƒ`ƒFƒbƒN(”ñ“¯Šú‚È‚Ì‚ÅŠ®—¹‘O‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚é‰Â”\«‚ ‚è)
+				// èª­è¾¼ã¿å®Œäº†æ™‚ã«ã‚‚ã‚­ãƒ£ãƒƒã‚·ãƒ¥ãƒã‚§ãƒƒã‚¯(éåŒæœŸãªã®ã§å®Œäº†å‰ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ã‚‹å¯èƒ½æ€§ã‚ã‚Š)
 				if( TVPHasImageCache( cmd->path_, glmNormal, 0, 0, TVP_clNone ) == false ) {
 					TVPPushGraphicCache( cmd->path_, cmd->dest_->bmp, cmd->dest_->MetaInfo );
 					cmd->dest_->MetaInfo = NULL;
@@ -186,7 +186,7 @@ void tTVPAsyncImageLoader::HandleLoadedImage() {
 }
 //---------------------------------------------------------------------------
 
-// onLoaded( dic, is_async, is_error, error_mes ); ƒGƒ‰[‚Í
+// onLoaded( dic, is_async, is_error, error_mes ); ã‚¨ãƒ©ãƒ¼ã¯
 // sync ( main thead )
 void tTVPAsyncImageLoader::LoadRequest( iTJSDispatch2 *owner, tTJSNI_Bitmap* bmp, const ttstr &name ) {
 	//tTVPBaseBitmap* dest = new tTVPBaseBitmap( 32, 32, 32 );
@@ -194,7 +194,7 @@ void tTVPAsyncImageLoader::LoadRequest( iTJSDispatch2 *owner, tTJSNI_Bitmap* bmp
 	iTJSDispatch2* metainfo = NULL;
 	ttstr nname = TVPNormalizeStorageName(name);
 	if( TVPCheckImageCache(nname,&dest,glmNormal,0,0,TVP_clNone,&metainfo) ) {
-		// ƒLƒƒƒbƒVƒ…“à‚É”­Œ©A‘¦À‚É“Ç‚İ‚ğŠ®—¹‚·‚é
+		// ã‚­ãƒ£ãƒƒã‚·ãƒ¥å†…ã«ç™ºè¦‹ã€å³åº§ã«èª­è¾¼ã¿ã‚’å®Œäº†ã™ã‚‹
 		if (bmp) {
 			bmp->CopyFrom(&dest);
 			bmp->SetLoading(false);
@@ -223,7 +223,7 @@ void tTVPAsyncImageLoader::LoadRequest( iTJSDispatch2 *owner, tTJSNI_Bitmap* bmp
 
 // tTJSCriticalSectionHolder cs_holder(TVPCreateStreamCS);
 //	tTJSBinaryStream* stream = TVPCreateStream(nname, TJS_BS_READ);
-// TVPCreateStream ‚ÍƒƒbƒN‚³‚ê‚Ä‚¢‚é‚Ì‚ÅA”ñ“¯Šú‚ÅÀs‰Â”\
+// TVPCreateStream ã¯ãƒ­ãƒƒã‚¯ã•ã‚Œã¦ã„ã‚‹ã®ã§ã€éåŒæœŸã§å®Ÿè¡Œå¯èƒ½
 
 void tTVPAsyncImageLoader::PushLoadQueue( iTJSDispatch2 *owner, tTJSNI_Bitmap *bmp, const ttstr &nname ) {
 	tTVPImageLoadCommand* cmd = new tTVPImageLoadCommand();
@@ -234,16 +234,16 @@ void tTVPAsyncImageLoader::PushLoadQueue( iTJSDispatch2 *owner, tTJSNI_Bitmap *b
 	cmd->dest_ = new tTVPTmpBitmapImage();
 	cmd->result_.Clear();
 	{
-		// ƒLƒ…[‚ğƒƒbƒN‚µ‚ÄƒvƒbƒVƒ…
+		// ã‚­ãƒ¥ãƒ¼ã‚’ãƒ­ãƒƒã‚¯ã—ã¦ãƒ—ãƒƒã‚·ãƒ¥
 		tTJSCriticalSectionHolder cs(CommandQueueCS);
 		CommandQueue.push(cmd);
 	}
-	// ’Ç‰Á‚µ‚½‚±‚Æ‚ğƒCƒxƒ“ƒg‚Å’Ê’m
+	// è¿½åŠ ã—ãŸã“ã¨ã‚’ã‚¤ãƒ™ãƒ³ãƒˆã§é€šçŸ¥
 	PushCommandQueueEvent.Set();
 }
 void tTVPAsyncImageLoader::LoadingThread() {
 	while( !GetTerminated() ) {
-		// ƒLƒ…[’Ç‰ÁƒCƒxƒ“ƒg‘Ò‚¿
+		// ã‚­ãƒ¥ãƒ¼è¿½åŠ ã‚¤ãƒ™ãƒ³ãƒˆå¾…ã¡
 		PushCommandQueueEvent.WaitFor(0);
 		if( GetTerminated() ) break;
 		bool loading;
@@ -290,7 +290,7 @@ void tTVPAsyncImageLoader::LoadImageFromCommand( tTVPImageLoadCommand* cmd ) {
 				TVPLoadGraphicAsync_ScanLineCallback, TVPLoadGraphicAsync_MetaInfoPushCallback,
 				holder.Get(), -1, glmNormal );
 		} catch(...) {
-			// —áŠO‚Í‘S‚ÄƒLƒƒƒbƒ`
+			// ä¾‹å¤–ã¯å…¨ã¦ã‚­ãƒ£ãƒƒãƒ
 			cmd->result_ = TVPFormatMessage(TVPImageLoadError, cmd->path_);
 		}
 	} else {

@@ -16,36 +16,6 @@
 #include "ObjectList.h"
 #include <algorithm>
 
-template <typename T>
-struct ObjectVector : public std::vector<T*> { // thread safe vector
-	tTJSSpinLock Lock;
-
-	tjs_int Find(const T * object) const {
-		tTJSSpinLockHolder holder(((ObjectVector*)this)->Lock);
-		auto it = std::find(this->begin(), this->end(), object);
-		if (it == this->end()) return -1;
-		return it - this->begin();
-	}
-
-	bool Add(T* object, tjs_int idx = -1) {
-		tTJSSpinLockHolder holder(Lock);
-		if (std::find(this->begin(), this->end(), object) != this->end()) return false;
-		if (idx == -1)
-			this->push_back(object);
-		else
-			this->insert(this->begin() + idx, object);
-		return true;
-	}
-
-	bool Remove(T* object) {
-		tTJSSpinLockHolder holder(Lock);
-		auto it = std::find(this->begin(), this->end(), object);
-		if (it == this->end()) return false;
-		this->erase(it);
-		return true;
-	}
-};
-
 //---------------------------------------------------------------------------
 // tTJSNI_MenuItem
 //---------------------------------------------------------------------------
@@ -56,7 +26,7 @@ class tTJSNI_BaseMenuItem : public tTJSNativeInstance
 	typedef tTJSNativeInstance inherited;
 	friend class tTJSNI_MenuItem;
 protected:
-	ObjectVector<tTJSNI_BaseMenuItem> Children;
+	tObjectList<tTJSNI_BaseMenuItem> Children;
 	tTJSNI_Window *Window;
 
 	iTJSDispatch2 *Owner;

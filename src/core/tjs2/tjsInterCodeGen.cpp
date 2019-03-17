@@ -104,7 +104,15 @@ int _yyerror(const tjs_char * msg, void *pm, tjs_int pos)
 	TJS_snprintf(buf, sizeof(buf)/sizeof(tjs_char), TJS_W(" at line %d"), 1+sb->SrcPosToLine(errpos));
 	str += buf;
 
-	sb->GetTJS()->OutputToConsole(str.c_str());
+	if( sb->GetTJS() )
+	{
+		sb->GetTJS()->OutputToConsole( str.c_str() );
+	}
+	else
+	{
+		str = sb->GetName() + ttstr(TJS_W(" : ")) + str;
+		TJS_eTJSError( str.c_str() );
+	}
 
 	return 0;
 }
@@ -268,7 +276,6 @@ tTJSInterCodeContext::tTJSInterCodeContext(tTJSInterCodeContext *parent,
 
 		Block = block;
 		block->Add(this);
-		TJSVariantArrayStack = block->GetTJS()->GetVariantArrayStack();
 		if(ContextType != ctTopLevel) Block->AddRef();
 			// owner ScriptBlock hooks global object, so to avoid mutual reference lock.
 
@@ -301,7 +308,7 @@ tTJSInterCodeContext::tTJSInterCodeContext(tTJSInterCodeContext *parent,
 		throw;
 	}
 #ifdef ENABLE_DEBUGGER
-	// å√Ç¢ÉçÅ[ÉJÉãïœêîÇÕçÌèúÇµÇƒÇµÇ‹Ç§
+	// Âè§„ÅÑ„É≠„Éº„Ç´„É´Â§âÊï∞„ÅØÂâäÈô§„Åó„Å¶„Åó„Åæ„ÅÜ
 	TJSDebuggerClearLocalVariable( GetClassName().c_str(), GetName(), Block->GetName(), FunctionRegisterCodePoint );
 #endif	// ENABLE_DEBUGGER
 }
@@ -370,7 +377,6 @@ tTJSInterCodeContext::tTJSInterCodeContext( tTJSScriptBlock *block, const tjs_ch
 		AsGlobalContextMode = false;
 		ContextType = type;
 		Block = block;
-		TJSVariantArrayStack = block->GetTJS()->GetVariantArrayStack();
 	} catch(...) {
 		delete [] Name;
 		throw;
@@ -579,7 +585,7 @@ void tTJSInterCodeContext::OutputWarning(const tjs_char *msg, tjs_int pos)
 	TJS_snprintf(buf, sizeof(buf)/sizeof(tjs_char), TJS_W(" line %d"), 1+Block->SrcPosToLine(errpos));
 	str += buf;
 
-	Block->GetTJS()->OutputToConsole(str.c_str());
+	if( Block->GetTJS() ) Block->GetTJS()->OutputToConsole(str.c_str());
 }
 //---------------------------------------------------------------------------
 
@@ -805,10 +811,10 @@ void tTJSInterCodeContext::FixCode(void)
 				// jmp is in the re-positioning target -> delete
 				jmp = JumpList.erase(jmp);
 			}
-			else if((fix->BeforeInsertion?
+			else if(fix->BeforeInsertion?
 				(jmptarget < fix->StartIP):(jmptarget <= fix->StartIP)
-				&& *jmp > fix->StartIP + fix->Size) ||
-				(*jmp < fix->StartIP && jmptarget >= fix->StartIP + fix->Size))
+				&& *jmp > fix->StartIP + fix->Size ||
+				*jmp < fix->StartIP && jmptarget >= fix->StartIP + fix->Size)
 			{
 				// jmp and its jumping-target is in the re-positioning target
 				CodeArea[*jmp + 1] += fix->NewSize - fix->Size;
@@ -875,8 +881,8 @@ void tTJSInterCodeContext::FixCode(void)
 				else
 					break; // must be an error
 			}
-			else if((CodeArea[addr] == VM_JF && jumpcode == VM_JNF) ||
-				(CodeArea[addr] == VM_JNF && jumpcode == VM_JF))
+			else if(CodeArea[addr] == VM_JF && jumpcode == VM_JNF ||
+				CodeArea[addr] == VM_JNF && jumpcode == VM_JF)
 			{
 				// JF after JNF or JNF after JF
 				jumptarget = addr + 2;
@@ -1482,6 +1488,25 @@ tjs_int tTJSInterCodeContext::GenNodeCode(tjs_int & frame, tTJSExprNode *node,
 		}
 		resaddr2 = _GenNodeCode(frame, (*node)[1], TJS_RT_NEEDED, 0, tSubParam());
 		PutCode(VM_CHKINS, node_pos);
+		PutCode(TJS_TO_VM_REG_ADDR(resaddr1), node_pos);
+		PutCode(TJS_TO_VM_REG_ADDR(resaddr2), node_pos);
+        return resaddr1;
+	  }
+
+	case T_IN:	// 'in' operator
+	  {
+		// in operator
+		tjs_int resaddr1, resaddr2;
+		resaddr1 = _GenNodeCode(frame, (*node)[0], TJS_RT_NEEDED, 0, tSubParam());
+		if( !TJSIsFrame( resaddr1 ) ) {
+			PutCode( VM_CP, node_pos );
+			PutCode( TJS_TO_VM_REG_ADDR( frame ), node_pos );
+			PutCode( TJS_TO_VM_REG_ADDR( resaddr1 ), node_pos );
+			resaddr1 = frame;
+			frame++;
+		}
+		resaddr2 = _GenNodeCode(frame, (*node)[1], TJS_RT_NEEDED, 0, tSubParam());
+		PutCode(VM_CHKIN, node_pos);
 		PutCode(TJS_TO_VM_REG_ADDR(resaddr1), node_pos);
 		PutCode(TJS_TO_VM_REG_ADDR(resaddr2), node_pos);
         return resaddr1;
@@ -3877,7 +3902,7 @@ tTJSExprNode * tTJSInterCodeContext::MakeNP3(tjs_int opecode, tTJSExprNode * nod
 //---------------------------------------------------------------------------
 
 /**
- * ÉoÉCÉgÉRÅ[ÉhÇèoóÕÇ∑ÇÈ
+ * „Éê„Ç§„Éà„Ç≥„Éº„Éâ„ÇíÂá∫Âäõ„Åô„Çã
  * @return
  */
 std::vector<tjs_uint8>* tTJSInterCodeContext::ExportByteCode( bool outputdebug, tTJSScriptBlock *block, tjsConstArrayData& constarray )
@@ -3902,13 +3927,12 @@ std::vector<tjs_uint8>* tTJSInterCodeContext::ExportByteCode( bool outputdebug, 
 	if( Name != NULL ) {
 		name = constarray.PutString(Name);
 	}
-	// 13 * 4 ÉfÅ[É^ïîï™ÇÃÉTÉCÉY
-	int count = 0;
-	if (outputdebug) {
-		count = SourcePosArraySize;
+	// 13 * 4 „Éá„Éº„ÇøÈÉ®ÂàÜ„ÅÆ„Çµ„Ç§„Ç∫
+	int srcpossize = 0;
+	if( outputdebug ) {
+		srcpossize = SourcePosArraySize * 8;
 	}
-	int srcpossize = count * 8;
-	int codesize = (CodeAreaSize % 2) == 1 ? CodeAreaSize * 2 + 2 : CodeAreaSize * 2;
+	int codesize = (CodeAreaSize%2) == 1 ? CodeAreaSize * 2+2 : CodeAreaSize * 2;
 	int datasize = DataAreaSize * 4;
 	int scgpsize = (int)(SuperClassGetterPointer.size() * 4);
 	int propsize = (int)((Properties != NULL ? Properties->size() * 8 : 0)+4);
@@ -3929,6 +3953,7 @@ std::vector<tjs_uint8>* tTJSInterCodeContext::ExportByteCode( bool outputdebug, 
 	Add4ByteToVector( result, propGetter );
 	Add4ByteToVector( result, superClassGetter );
 
+	int count = srcpossize;
 	Add4ByteToVector( result, count);
 	if( outputdebug ) {
 		for( int i = 0; i < count ; i++ ) {
@@ -3988,7 +4013,18 @@ std::vector<tjs_uint8>* tTJSInterCodeContext::ExportByteCode( bool outputdebug, 
 	return result;
 }
 //---------------------------------------------------------------------------
-
+bool tTJSInterCodeContext::CopyConstData( tTJSVariant* result )
+{
+	if( DataArea != NULL && DataAreaSize == 1 && 
+		CodeAreaSize > 5 && CodeArea[0] == VM_CONST && CodeArea[3] == VM_SRV && CodeArea[5] == VM_RET ) {
+		result->CopyRef( DataArea[CodeArea[2]] );
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 //---------------------------------------------------------------------------
 } // namespace TJS
 

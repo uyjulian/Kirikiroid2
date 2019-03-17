@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 /*
-	Risa [‚è‚³]      alias ‹g—¢‹g—¢3 [kirikiri-3]
+	Risa [ã‚Šã•]      alias å‰é‡Œå‰é‡Œ3 [kirikiri-3]
 	 stands for "Risa Is a Stagecraft Architecture"
 	Copyright (C) 2000 W.Dee <dee@kikyou.info> and contributors
 
@@ -8,21 +8,27 @@
 */
 //---------------------------------------------------------------------------
 //! @file
-//! @brief FreeType ƒtƒHƒ“ƒgƒhƒ‰ƒCƒo
+//! @brief FreeType ãƒ•ã‚©ãƒ³ãƒˆãƒ‰ãƒ©ã‚¤ãƒ
 //---------------------------------------------------------------------------
 
 #include "tjsCommHead.h"
 #include "FreeType.h"
-//#include "NativeFreeTypeFace.h"
-//#include "uni_cp932.h"
-//#include "cp932_uni.h"
+#ifdef _WIN32
+#include "NativeFreeTypeFace.h"
+#endif
+#include "uni_cp932.h"
+#include "cp932_uni.h"
 
+#include "FontImpl.h"
 #include "BinaryStream.h"
 #include "MsgIntf.h"
 #include "SysInitIntf.h"
 #include "ComplexRect.h"
 
 #include <algorithm>
+#include <vector>
+#include <map>
+#include <memory>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -35,13 +41,12 @@
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-#include "FontImpl.h"
 
-extern bool TVPEncodeUTF8ToUTF16(ttstr &output, const std::string &source);
+extern bool TVPEncodeUTF8ToUTF16( tjs_string &output, const std::string &source );
 
 //---------------------------------------------------------------------------
 
-FT_Library FreeTypeLibrary = NULL;	//!< FreeType ƒ‰ƒCƒuƒ‰ƒŠ
+FT_Library FreeTypeLibrary = NULL;	//!< FreeType ãƒ©ã‚¤ãƒ–ãƒ©ãƒª
 void TVPInitializeFont() {
 	if( FreeTypeLibrary == NULL ) {
 		FT_Error err = FT_Init_FreeType( &FreeTypeLibrary );
@@ -53,28 +58,96 @@ void TVPUninitializeFreeFont() {
 		FreeTypeLibrary = NULL;
 	}
 }
+/**
+ * path ã¨ filename ã¯ã©ã¡ã‚‰ã‹ã—ã‹å…¥ã£ã¦ã„ãªã„
+ * path ã¯ Android ã§ã‚·ã‚¹ãƒ†ãƒ ãƒ•ã‚©ãƒ³ãƒˆã‚’è¿½åŠ ã™ã‚‹ãŸã‚ã«å­˜åœ¨ã™ã‚‹
+ * filename ã¯ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–ã‚„assetã‹ã‚‰è¿½åŠ ã•ã‚ŒãŸæ™‚ã«ä¿æŒã•ã‚Œã‚‹
+ * ã¤ã¾ã‚Šã€ã‚·ã‚¹ãƒ†ãƒ ãƒ•ã‚©ãƒ³ãƒˆã¨ã‚¢ãƒ¼ã‚«ã‚¤ãƒ–/assetã®ãƒ•ã‚©ãƒ³ãƒˆã¯åˆ¥ç‰©æ‰±ã„ã•ã‚Œã‚‹
+ */
+struct FontInfo {
+	tjs_string	facename;
+	std::string	path;		// 
+	tjs_string	filename;
+	tjs_uint	index;
+	std::string	stylename;
+	tjs_uint	num_glyphs;
+	tjs_uint	style_flags;
+	tjs_uint	face_flags;
+	tjs_uint	enc_flags;
+	FontInfo() : index( 0 ), num_glyphs( 0 ), style_flags( 0 ), face_flags( 0 ), enc_flags( 0 ) {}
+};
+enum TVPEncodingFlags {
+	TVP_ENC_SJIS			= 0x01 << 0,
+	TVP_ENC_UNICODE			= 0x01 << 1,
+	TVP_ENC_NONE			= 0x01 << 2,
+	TVP_ENC_MS_SYMBOL		= 0x01 << 3,
+	TVP_ENC_GB2312			= 0x01 << 4,
+	TVP_ENC_BIG5			= 0x01 << 5,
+	TVP_ENC_WANSUNG			= 0x01 << 6,
+	TVP_ENC_JOHAB			= 0x01 << 7,
+	TVP_ENC_ADOBE_STANDARD	= 0x01 << 8,
+	TVP_ENC_ADOBE_EXPERT	= 0x01 << 9,
+	TVP_ENC_ADOBE_CUSTOM	= 0x01 << 10,
+	TVP_ENC_ADOBE_LATIN_1	= 0x01 << 11,
+	TVP_ENC_APPLE_ROMAN		= 0x01 << 12
+};
+struct FaceKey {
+	tjs_string name_;
+	tjs_uint flag_;
+	FaceKey( const tjs_string& n, tjs_uint f ) : name_(n), flag_(f&(TVP_TF_ITALIC|TVP_TF_BOLD)) {}
+	bool operator < (const FaceKey& rhs) const {
+		if( name_ == rhs.name_ ) {
+			return flag_ < rhs.flag_;
+		} else {
+			return name_ < rhs.name_;
+		}
+	}
+	bool operator == ( const FaceKey& rhs) const {
+		return (name_ == rhs.name_) && (flag_==rhs.flag_);
+	}
+};
+class tTVPFreeTypeFaceList {
+	std::vector<FontInfo*>	faces_;
+	std::vector<FontInfo*>	systemfaces_;
+	std::map<FaceKey,FontInfo*>	systemfont_;
+
+private:
+	static bool CheckFaceFlag( FontInfo& face, tjs_uint flag );
+
+public:
+	~tTVPFreeTypeFaceList();
+	bool LoadFont( tjs_string filename, std::vector<tjs_string>* faces );
+	void LoadSystemFont( std::string path, std::vector<tjs_string>* faces );
+	void GetSystemFontList( std::vector<tjs_string>& faces );
+
+	tBaseFreeTypeFace* GetFace( const tjs_string& facename, tjs_uint32 options ) const;
+	void GetFontList(std::vector<ttstr> & list, tjs_uint32 flags, const tTVPFont & font );
+};
 
 //---------------------------------------------------------------------------
 /**
- * ƒtƒ@ƒCƒ‹ƒVƒXƒeƒ€Œo—R‚Å‚ÌFreeType Face ƒNƒ‰ƒX
+ * ãƒ•ã‚¡ã‚¤ãƒ«ã‚·ã‚¹ãƒ†ãƒ çµŒç”±ã§ã®FreeType Face ã‚¯ãƒ©ã‚¹
  */
 class tGenericFreeTypeFace : public tBaseFreeTypeFace
 {
 protected:
-	FT_Face Face;	//!< FreeType face ƒIƒuƒWƒFƒNƒg
-	tTJSBinaryStream* File;	 //!< tTJSBinaryStream ƒIƒuƒWƒFƒNƒg
-	std::vector<ttstr> FaceNames; //!< Face–¼‚ğ—ñ‹“‚µ‚½”z—ñ
+	FT_Face Face;	//!< FreeType face ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	tTJSBinaryStream* File;	 //!< tTJSBinaryStream ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	std::vector<tjs_string> FaceNames; //!< Faceåã‚’åˆ—æŒ™ã—ãŸé…åˆ—
+	//std::unique_ptr<tjs_uint8[]> FontImage;
 
 private:
 	FT_StreamRec Stream;
 
 public:
 	tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 options);
+	tGenericFreeTypeFace(const std::string& path, const ttstr &fontname, tjs_uint32 index );
+	tGenericFreeTypeFace(const ttstr &filename, std::vector<FontInfo*>& fonst, std::vector<tjs_string>* faces );
 	virtual ~tGenericFreeTypeFace();
 
 	virtual FT_Face GetFTFace() const;
-	virtual void GetFaceNameList(std::vector<ttstr> & dest) const;
-	virtual tjs_char GetDefaultChar() const { return L' '; }
+	virtual void GetFaceNameList(std::vector<tjs_string> & dest) const;
+	virtual tjs_char GetDefaultChar() const { return TJS_W(' '); }
 
 private:
 	void Clear();
@@ -86,15 +159,228 @@ private:
 //---------------------------------------------------------------------------
 
 
+
+static tTVPFreeTypeFaceList* FreeTypeFaceList = nullptr;
+static inline void TVPInitializeFaceList() {
+	if( FreeTypeFaceList == nullptr ) {
+		FreeTypeFaceList = new tTVPFreeTypeFaceList();
+	}
+}
+static void TVPClearFaceList() { if( FreeTypeFaceList ) delete FreeTypeFaceList, FreeTypeFaceList = nullptr; }
+static tTVPAtExit TVPClearFaceListAtExit
+	(TVP_ATEXIT_PRI_SHUTDOWN, TVPClearFaceList);
+//---------------------------------------------------------------------------
+bool TVPAddFontToFreeType( const ttstr& storage, std::vector<tjs_string>* faces ) {
+	TVPInitializeFaceList();
+	return FreeTypeFaceList->LoadFont( storage.AsStdString(), faces );
+}
+//---------------------------------------------------------------------------
+void TVPAddSystemFontToFreeType( const std::string& storage, std::vector<tjs_string>* faces ) {
+	TVPInitializeFaceList();
+	FreeTypeFaceList->LoadSystemFont( storage, faces );
+}
+//---------------------------------------------------------------------------
+void TVPGetFontListFromFreeType(std::vector<ttstr> & list, tjs_uint32 flags, const tTVPFont & font ) {
+	TVPInitializeFaceList();
+	FreeTypeFaceList->GetFontList( list, flags, font );
+}
+//---------------------------------------------------------------------------
+void TVPGetSystemFontListFromFreeType( std::vector<tjs_string>& faces ) {
+	TVPInitializeFaceList();
+	FreeTypeFaceList->GetSystemFontList( faces );
+}
+//---------------------------------------------------------------------------
+static void TVPLoadFont( FT_Open_Args& arg, std::vector<FontInfo*>& fonts, std::map<FaceKey,FontInfo*>* fontmap, std::vector<tjs_string>* faces, const std::string* path, const tjs_string* filename ) {
+	FT_Face face = nullptr;
+	tjs_uint face_num = 1;
+	for( tjs_uint f = 0; f < face_num; f++ ) {
+		FT_Error err = FT_Open_Face( FreeTypeLibrary, &arg, f, &face);
+		if( err == 0 ) {
+			face_num = face->num_faces;
+			std::string familyname(face->family_name);
+			FontInfo* info = new FontInfo();
+			fonts.push_back( info );
+			tjs_string wname;
+			TVPEncodeUTF8ToUTF16( wname, familyname );
+			if( faces ) faces->push_back( wname );
+			if( fontmap ) {
+				tjs_uint styleflag = (face->style_flags&FT_STYLE_FLAG_ITALIC) ? TVP_TF_ITALIC : 0;
+				styleflag |= (face->style_flags&FT_STYLE_FLAG_BOLD ) ? TVP_TF_BOLD : 0;
+				fontmap->insert( std::map<FaceKey, FontInfo*>::value_type( FaceKey(wname,styleflag), info ) );
+			}
+			info->facename = wname;
+			if( path ) info->path = *path;
+			if( filename ) info->filename = *filename;
+			info->index = f;
+			info->stylename = std::string(face->style_name);
+			info->num_glyphs = face->num_glyphs;
+			info->face_flags = face->face_flags;
+			info->style_flags = face->style_flags;
+			info->enc_flags = 0;
+			int numcharmap = face->num_charmaps;
+			for (int c = 0; c < numcharmap; c++) {
+				FT_Encoding enc = face->charmaps[c]->encoding;
+				if (enc == FT_ENCODING_SJIS) {
+					info->enc_flags |= TVP_ENC_SJIS;
+				} else if (enc == FT_ENCODING_UNICODE) {
+					info->enc_flags |= TVP_ENC_UNICODE;
+				} else if (enc == FT_ENCODING_NONE) {
+					info->enc_flags |= TVP_ENC_NONE;
+				} else if (enc == FT_ENCODING_MS_SYMBOL) {
+					info->enc_flags |= TVP_ENC_MS_SYMBOL;
+				} else if (enc == FT_ENCODING_GB2312) {
+					info->enc_flags |= TVP_ENC_GB2312;
+				} else if (enc == FT_ENCODING_BIG5) {
+					info->enc_flags |= TVP_ENC_BIG5;
+				} else if (enc == FT_ENCODING_WANSUNG) {
+					info->enc_flags |= TVP_ENC_WANSUNG;
+				} else if (enc == FT_ENCODING_JOHAB) {
+					info->enc_flags |= TVP_ENC_JOHAB;
+				} else if (enc == FT_ENCODING_ADOBE_STANDARD) {
+					info->enc_flags |= TVP_ENC_ADOBE_STANDARD;
+				} else if (enc == FT_ENCODING_ADOBE_EXPERT) {
+					info->enc_flags |= TVP_ENC_ADOBE_EXPERT;
+				} else if (enc == FT_ENCODING_ADOBE_CUSTOM) {
+					info->enc_flags |= TVP_ENC_ADOBE_CUSTOM;
+				} else if (enc == FT_ENCODING_ADOBE_LATIN_1) {
+					info->enc_flags |= TVP_ENC_ADOBE_LATIN_1;
+				} else if (enc == FT_ENCODING_APPLE_ROMAN) {
+					info->enc_flags |= TVP_ENC_APPLE_ROMAN;
+				}
+			}
+		}
+		if(face) FT_Done_Face(face), face = nullptr;
+	}
+}
+//---------------------------------------------------------------------------
+tTVPFreeTypeFaceList::~tTVPFreeTypeFaceList() {
+	for( auto i = faces_.begin(); i != faces_.end(); i++ ) {
+		delete (*i);
+	}
+	faces_.clear();
+	for( auto i = systemfaces_.begin(); i != systemfaces_.end(); i++ ) {
+		delete (*i);
+	}
+	systemfaces_.clear();
+	systemfont_.clear();
+}
+//---------------------------------------------------------------------------
+bool tTVPFreeTypeFaceList::LoadFont( tjs_string filename, std::vector<tjs_string>* faces ) {
+	TVPInitializeFont();
+
+	// èª­ã¿è¾¼ã¿æ¸ˆã¿ã®ä¸­ã«ã‚ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ã™ã‚‹
+	bool found = false;
+	for( auto i = faces_.begin(); i != faces_.end(); i++ ) {
+		if( (*i)->filename == filename ) {
+			if( faces ) faces->push_back( (*i)->facename );
+			else return false;
+			found = true;
+		}
+	}
+	if( found ) return false;
+
+	// ãƒ•ã‚§ã‚¤ã‚¹åä¸€è¦§ã‚’å–å¾—ã™ã‚‹
+	tGenericFreeTypeFace ftf( filename, faces_, faces );
+	return true;
+}
+//---------------------------------------------------------------------------
+void tTVPFreeTypeFaceList::LoadSystemFont( std::string path, std::vector<tjs_string>* faces ) {
+	TVPInitializeFont();
+
+	// èª­ã¿è¾¼ã¿æ¸ˆã¿ã®ä¸­ã«ã‚ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ã™ã‚‹
+	bool found = false;
+	for( auto i = systemfaces_.begin(); i != systemfaces_.end(); i++ ) {
+		if( (*i)->path == path ) {
+			if( faces ) faces->push_back( (*i)->facename );
+			found = true;
+		}
+	}
+	if( found ) return;
+
+	FT_Open_Args args;
+	memset(&args, 0, sizeof(args));
+	args.flags = FT_OPEN_PATHNAME;
+	args.pathname = const_cast<char*>(path.c_str());
+	TVPLoadFont( args, systemfaces_, &systemfont_, faces, &path, nullptr );
+}
+//---------------------------------------------------------------------------
+void tTVPFreeTypeFaceList::GetSystemFontList( std::vector<tjs_string>& faces ) {
+	faces.clear();
+	for( auto i = systemfaces_.begin(); i != systemfaces_.end(); i++ ) {
+		faces.push_back( (*i)->facename );
+	}
+}
+//---------------------------------------------------------------------------
+tBaseFreeTypeFace* tTVPFreeTypeFaceList::GetFace( const tjs_string& facename, tjs_uint32 options ) const {
+	if( !faces_.empty() ) {
+		// ã¾ãšã¯ã‚¹ã‚¿ã‚¤ãƒ«æŒ‡å®šã§æ¤œç´¢ã™ã‚‹
+		tjs_uint styleflag = options&TVP_TF_ITALIC ? FT_STYLE_FLAG_ITALIC : 0;
+		styleflag |= options&TVP_TF_BOLD ? FT_STYLE_FLAG_BOLD : 0;
+		auto f = std::find_if( faces_.begin(), faces_.end(), [facename, styleflag]( const FontInfo* x ) {
+			return ( x->facename == facename && ( x->style_flags&( FT_STYLE_FLAG_ITALIC | FT_STYLE_FLAG_BOLD ) ) == styleflag );
+		} );
+		if( f != faces_.end() ) {
+			FontInfo* font = *f;
+			return new tGenericFreeTypeFace( ttstr( font->filename ), TVP_FACE_OPTIONS_FACE_INDEX( font->index ) );
+		}
+		// ã‚¹ã‚¿ã‚¤ãƒ«æ°—ã«ã›ãšæ¤œç´¢ã™ã‚‹
+		f = std::find_if( faces_.begin(), faces_.end(), [facename]( const FontInfo* x ) { return ( x->facename == facename ); } );
+		if( f != faces_.end() ) {
+			FontInfo* font = *f;
+			return new tGenericFreeTypeFace( ttstr( font->filename ), TVP_FACE_OPTIONS_FACE_INDEX( font->index ) );
+		}
+	} else {
+		FaceKey key( facename, options&( TVP_TF_ITALIC | TVP_TF_BOLD ) );
+		auto i = systemfont_.find( key );
+		if( i != systemfont_.end() ) {
+			FontInfo* font = i->second;
+			return new tGenericFreeTypeFace( font->path, ttstr( facename ), font->index );
+		}
+	}
+	return nullptr;
+}
+//---------------------------------------------------------------------------
+bool tTVPFreeTypeFaceList::CheckFaceFlag( FontInfo& face, tjs_uint flags ) {
+	if( flags & TVP_FSF_FIXEDPITCH ) { // fixed pitch only ?
+		if( (face.face_flags & FT_FACE_FLAG_FIXED_SIZES) == 0 ) return false;
+	}
+	// if( flags & TVP_FSF_SAMECHARSET ) // ã‚­ãƒ£ãƒ©ã‚»ãƒƒãƒˆã¯FreeTypeã§ã¯ç„¡è¦–
+	if( flags & TVP_FSF_IGNORESYMBOL ) { // ä¸å®Œå…¨ã§ã¯ã‚ã‚‹ãŒã€MS Symbolã®ã¿é™¤å¤–
+		if( (face.enc_flags & TVP_ENC_MS_SYMBOL) ) return false;
+	}
+
+	if( flags & TVP_FSF_NOVERTICAL ) { // not to list vertical fonts up ?
+		if( (face.face_flags & FT_FACE_FLAG_VERTICAL) ) return false;
+	}
+	// if( flags & TVP_FSF_TRUETYPEONLY ) // TrueTypeOnlyã¯FreeTypeã§ã¯ç„¡è¦–
+	return true;
+}
+//---------------------------------------------------------------------------
+void tTVPFreeTypeFaceList::GetFontList(std::vector<ttstr> & list, tjs_uint32 flags, const tTVPFont & font ) {
+	for( auto i = faces_.begin(); i != faces_.end(); i++ ) {
+		if( CheckFaceFlag( *(*i), flags ) ) {
+			ttstr facename( (*i)->facename );
+			if(std::find(list.begin(), list.end(), facename) == list.end())
+				list.push_back( facename );
+		}
+	}
+	for( auto i = systemfaces_.begin(); i != systemfaces_.end(); i++ ) {
+		if( CheckFaceFlag( *(*i), flags ) ) {
+			ttstr facename( (*i)->facename );
+			if(std::find(list.begin(), list.end(), facename) == list.end())
+				list.push_back( facename );
+		}
+	}
+}
 //---------------------------------------------------------------------------
 /**
- * ƒRƒ“ƒXƒgƒ‰ƒNƒ^
- * @param fontname	ƒtƒHƒ“ƒg–¼
- * @param options	ƒIƒvƒVƒ‡ƒ“(TVP_TF_XXXX ’è”‚©TVP_FACE_OPTIONS_XXXX’è”‚Ì‘g‚İ‡‚í‚¹)
+ * ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+ * @param fontname	ãƒ•ã‚©ãƒ³ãƒˆå
+ * @param options	ã‚ªãƒ—ã‚·ãƒ§ãƒ³(TVP_TF_XXXX å®šæ•°ã‹TVP_FACE_OPTIONS_XXXXå®šæ•°ã®çµ„ã¿åˆã‚ã›)
  */
 tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 options) : File(NULL)
 {
-	// ƒtƒB[ƒ‹ƒh‚Ì‰Šú‰»
+	// ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã®åˆæœŸåŒ–
 	Face = NULL;
 	memset(&Stream, 0, sizeof(Stream));
 
@@ -104,14 +390,17 @@ tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 opt
 			File = NULL;
 		} 
 
-		// ƒtƒ@ƒCƒ‹‚ğŠJ‚­
+		// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
+		// File = TVPCreateBinaryStreamForRead(fontname,TJS_W("") );
 		File = TVPCreateFontStream(fontname);
 		if( File == NULL ) {
 			TVPThrowExceptionMessage( TVPCannotOpenFontFile, fontname );
 		}
 
-		// FT_StreamRec ‚ÌŠeƒtƒB[ƒ‹ƒh‚ğ–„‚ß‚é
+		// FT_StreamRec ã®å„ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã‚’åŸ‹ã‚ã‚‹
 		FT_StreamRec * fsr = &Stream;
+//#ifndef ANDROID
+#if 1
 		fsr->base = 0;
 		fsr->size = static_cast<unsigned long>(File->GetSize());
 		fsr->pos = 0;
@@ -119,8 +408,23 @@ tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 opt
 		fsr->pathname.pointer = NULL;
 		fsr->read = IoFunc;
 		fsr->close = CloseFunc;
+#else
+		tjs_uint32 fileSize = (tjs_uint32)File->GetSize();
+		FontImage.reset( new tjs_uint8[fileSize] );
+		File->SetPosition( 0 );
+		File->ReadBuffer( (void*)FontImage.get(), fileSize );
+		delete File;
+		File = nullptr;
 
-		// Face ‚ğ‚»‚ê‚¼‚êŠJ‚«AFace–¼‚ğæ“¾‚µ‚Ä FaceNames ‚ÉŠi”[‚·‚é
+		fsr->base = FontImage.get();
+		fsr->size = fileSize;
+		fsr->pos = 0;
+		fsr->descriptor.pointer = nullptr;
+		fsr->pathname.pointer = nullptr;
+		fsr->read = nullptr;
+		fsr->close = nullptr;
+#endif
+		// Face ã‚’ãã‚Œãã‚Œé–‹ãã€Faceåã‚’å–å¾—ã—ã¦ FaceNames ã«æ ¼ç´ã™ã‚‹
 		tjs_uint face_num = 1;
 
 		FT_Face face = NULL;
@@ -129,12 +433,12 @@ tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 opt
 		{
 			if(!OpenFaceByIndex(i, face))
 			{
-				FaceNames.push_back(ttstr());
+				FaceNames.push_back(tjs_string());
 			}
 			else
 			{
 				const char * name = face->family_name;
-				ttstr wname;
+				tjs_string wname;
 				TVPEncodeUTF8ToUTF16( wname, std::string(name) );
 				FaceNames.push_back( wname );
 				face_num = face->num_faces;
@@ -144,10 +448,10 @@ tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 opt
 		if(face) FT_Done_Face(face), face = NULL;
 
 
-		// FreeType ƒGƒ“ƒWƒ“‚Åƒtƒ@ƒCƒ‹‚ğŠJ‚±‚¤‚Æ‚µ‚Ä‚İ‚é
+		// FreeType ã‚¨ãƒ³ã‚¸ãƒ³ã§ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã“ã†ã¨ã—ã¦ã¿ã‚‹
 		tjs_uint index = TVP_GET_FACE_INDEX_FROM_OPTIONS(options);
 		if(!OpenFaceByIndex(index, Face)) {
-			// ƒtƒHƒ“ƒg‚ğŠJ‚¯‚È‚©‚Á‚½
+			// ãƒ•ã‚©ãƒ³ãƒˆã‚’é–‹ã‘ãªã‹ã£ãŸ
 			TVPThrowExceptionMessage(TVPFontCannotBeUsed, fontname );
 		}
 	}
@@ -157,11 +461,78 @@ tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 opt
 	}
 }
 //---------------------------------------------------------------------------
+tGenericFreeTypeFace::tGenericFreeTypeFace(const std::string& path, const ttstr &fontname, tjs_uint32 index ) : File(nullptr), Face(nullptr)
+{
+	memset(&Stream, 0, sizeof(Stream));
+	try {
+		FT_Parameter parameters[1];
+		parameters[0].tag = FT_PARAM_TAG_UNPATENTED_HINTING; // Appleã®ç‰¹è¨±å›é¿ã‚’è¡Œã†
+		parameters[0].data = NULL;
 
+		FT_Open_Args args;
+		memset(&args, 0, sizeof(args));
+		args.flags = FT_OPEN_PATHNAME;
+		args.pathname = const_cast<char*>(path.c_str());
+		args.num_params = 1;
+		args.params = parameters;
+		FT_Error err = FT_Open_Face( FreeTypeLibrary, &args, index, &Face);
+		if( err != 0 ) {
+			TVPThrowExceptionMessage(TVPFontCannotBeUsed, fontname );
+		}
+		FaceNames.push_back( fontname.AsStdString() );
+	}
+	catch(...)
+	{
+		throw;
+	}
+}
+//---------------------------------------------------------------------------
+/**
+ * ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+ * ãƒ•ã‚©ãƒ³ãƒˆã®æƒ…å ±ã‚’å–å¾—ã™ã‚‹ãŸã‚ã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+ * @param fontname	ãƒ•ã‚©ãƒ³ãƒˆå
+ * @param fonts		ãƒ•ã‚©ãƒ³ãƒˆæƒ…å ±æ ¼ç´å…ˆ
+ * @param faces		ãƒ•ã‚§ã‚¤ã‚¹åãƒªã‚¹ãƒˆæ ¼ç´å…ˆ
+ */
+tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &filename, std::vector<FontInfo*>& fonts, std::vector<tjs_string>* faces ) : File(nullptr), Face(nullptr)
+{
+	// ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã®åˆæœŸåŒ–
+	memset(&Stream, 0, sizeof(Stream));
+
+	try {
+		// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
+		File = TVPCreateBinaryStreamForRead( filename,TJS_W("") );
+		if( File == NULL ) {
+			TVPThrowExceptionMessage( TVPCannotOpenFontFile, filename );
+		}
+
+		// FT_StreamRec ã®å„ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã‚’åŸ‹ã‚ã‚‹
+		FT_StreamRec * fsr = &Stream;
+		fsr->base = 0;
+		fsr->size = static_cast<unsigned long>(File->GetSize());
+		fsr->pos = 0;
+		fsr->descriptor.pointer = this;
+		fsr->pathname.pointer = NULL;
+		fsr->read = IoFunc;
+		fsr->close = CloseFunc;
+
+		// Face ã‚’ãã‚Œãã‚Œé–‹ãã€Faceåã‚’å–å¾—ã—ã¦ FaceNames ã«æ ¼ç´ã™ã‚‹
+		FT_Open_Args args;
+		memset(&args, 0, sizeof(args));
+		args.flags = FT_OPEN_STREAM;
+		args.stream = &Stream;
+		tjs_string fontname = filename.AsStdString();
+		TVPLoadFont( args, fonts, nullptr, faces, nullptr, &fontname );
+	}
+	catch(...)
+	{
+		throw;
+	}
+}
 
 //---------------------------------------------------------------------------
 /**
- * ƒfƒXƒgƒ‰ƒNƒ^
+ * ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
  */
 tGenericFreeTypeFace::~tGenericFreeTypeFace()
 {
@@ -176,7 +547,7 @@ tGenericFreeTypeFace::~tGenericFreeTypeFace()
 
 //---------------------------------------------------------------------------
 /**
- * FreeType ‚Ì Face ƒIƒuƒWƒFƒNƒg‚ğ•Ô‚·
+ * FreeType ã® Face ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’è¿”ã™
  */
 FT_Face tGenericFreeTypeFace::GetFTFace() const
 {
@@ -187,9 +558,9 @@ FT_Face tGenericFreeTypeFace::GetFTFace() const
 
 //---------------------------------------------------------------------------
 /**
- * ‚±‚ÌƒtƒHƒ“ƒgƒtƒ@ƒCƒ‹‚ª‚Á‚Ä‚¢‚éƒtƒHƒ“ƒg‚ğ”z—ñ‚Æ‚µ‚Ä•Ô‚·
+ * ã“ã®ãƒ•ã‚©ãƒ³ãƒˆãƒ•ã‚¡ã‚¤ãƒ«ãŒæŒã£ã¦ã„ã‚‹ãƒ•ã‚©ãƒ³ãƒˆã‚’é…åˆ—ã¨ã—ã¦è¿”ã™
  */
-void tGenericFreeTypeFace::GetFaceNameList(std::vector<ttstr> & dest) const
+void tGenericFreeTypeFace::GetFaceNameList(std::vector<tjs_string> & dest) const
 {
 	dest = FaceNames;
 }
@@ -199,7 +570,7 @@ void tGenericFreeTypeFace::GetFaceNameList(std::vector<ttstr> & dest) const
 
 //---------------------------------------------------------------------------
 /**
- * FreeType —p ƒXƒgƒŠ[ƒ€“Ç‚İ‚İŠÖ”
+ * FreeType ç”¨ ã‚¹ãƒˆãƒªãƒ¼ãƒ èª­ã¿è¾¼ã¿é–¢æ•°
  */
 unsigned long tGenericFreeTypeFace::IoFunc( FT_Stream stream, unsigned long offset, unsigned char* buffer, unsigned long count )
 {
@@ -227,7 +598,7 @@ unsigned long tGenericFreeTypeFace::IoFunc( FT_Stream stream, unsigned long offs
 
 //---------------------------------------------------------------------------
 /**
- * FreeType —p ƒXƒgƒŠ[ƒ€íœŠÖ”
+ * FreeType ç”¨ ã‚¹ãƒˆãƒªãƒ¼ãƒ å‰Šé™¤é–¢æ•°
  */
 void tGenericFreeTypeFace::CloseFunc( FT_Stream  stream )
 {
@@ -237,18 +608,18 @@ void tGenericFreeTypeFace::CloseFunc( FT_Stream  stream )
 
 //---------------------------------------------------------------------------
 /**
- * w’èƒCƒ“ƒfƒbƒNƒX‚ÌFace‚ğŠJ‚­
- * @param index	ŠJ‚­index
- * @param face	FT_Face •Ï”‚Ö‚ÌQÆ
- * @return	Face‚ğŠJ‚¯‚ê‚Î true ‚»‚¤‚Å‚È‚¯‚ê‚Î false
- * @note	‰‚ß‚Ä Face ‚ğŠJ‚­ê‡‚Í face ‚Åw’è‚·‚é•Ï”‚É‚Í null ‚ğ“ü‚ê‚Ä‚¨‚­‚±‚Æ
+ * æŒ‡å®šã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã®Faceã‚’é–‹ã
+ * @param index	é–‹ãindex
+ * @param face	FT_Face å¤‰æ•°ã¸ã®å‚ç…§
+ * @return	Faceã‚’é–‹ã‘ã‚Œã° true ãã†ã§ãªã‘ã‚Œã° false
+ * @note	åˆã‚ã¦ Face ã‚’é–‹ãå ´åˆã¯ face ã§æŒ‡å®šã™ã‚‹å¤‰æ•°ã«ã¯ null ã‚’å…¥ã‚Œã¦ãŠãã“ã¨
  */
 bool tGenericFreeTypeFace::OpenFaceByIndex(tjs_uint index, FT_Face & face)
 {
 	if(face) FT_Done_Face(face), face = NULL;
 
 	FT_Parameter parameters[1];
-	parameters[0].tag = FT_PARAM_TAG_UNPATENTED_HINTING; // Apple‚Ì“Á‹–‰ñ”ğ‚ğs‚¤
+	parameters[0].tag = FT_PARAM_TAG_UNPATENTED_HINTING; // Appleã®ç‰¹è¨±å›é¿ã‚’è¡Œã†
 	parameters[0].data = NULL;
 
 	FT_Open_Args args;
@@ -271,70 +642,86 @@ bool tGenericFreeTypeFace::OpenFaceByIndex(tjs_uint index, FT_Face & face)
 
 //---------------------------------------------------------------------------
 /**
- * ƒRƒ“ƒXƒgƒ‰ƒNƒ^
- * @param fontname	ƒtƒHƒ“ƒg–¼
- * @param options	ƒIƒvƒVƒ‡ƒ“
+ * ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+ * @param fontname	ãƒ•ã‚©ãƒ³ãƒˆå
+ * @param options	ã‚ªãƒ—ã‚·ãƒ§ãƒ³
  */
-tFreeTypeFace::tFreeTypeFace(const ttstr &fontname, tjs_uint32 options)
-	: FontName(fontname)
+tFreeTypeFace::tFreeTypeFace(const std::vector<tjs_string> &fontname, tjs_uint32 options)
 {
 	TVPInitializeFont();
+	TVPInitializeFaceList();
 
-	// ƒtƒB[ƒ‹ƒh‚ğƒNƒŠƒA
-	Face = NULL;
-	GlyphIndexToCharcodeVector = NULL;
-	UnicodeToLocalChar = NULL;
-	LocalCharToUnicode = NULL;
+	// ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã‚’ã‚¯ãƒªã‚¢
 	Options = options;
 	Height = 10;
 
+	tjs_size count = fontname.size();
+	for( tjs_int i = 0; i < (tjs_int)count; i++ ) {
+		Faces.push_back( std::unique_ptr<FaceSet>( new FaceSet() ) );
+		Faces[i]->FontName = fontname[i];
 
-	// ƒtƒHƒ“ƒg‚ğŠJ‚­
-	//if(options & TVP_FACE_OPTIONS_FILE)
-	{
-		// ƒtƒ@ƒCƒ‹‚ğŠJ‚­
-		Face = new tGenericFreeTypeFace(fontname, options);
-			// —áŠO‚ª‚±‚±‚Å”­¶‚·‚é‰Â”\«‚ª‚ ‚é‚Ì‚Å’ˆÓ
-	}
-	//else
-	{
-		// ƒlƒCƒeƒBƒu‚ÌƒtƒHƒ“ƒg–¼‚É‚æ‚éw’è (ƒvƒ‰ƒbƒgƒtƒH[ƒ€ˆË‘¶)
-		//Face = new tNativeFreeTypeFace(fontname, options);
-			// —áŠO‚ª‚±‚±‚Å”­¶‚·‚é‰Â”\«‚ª‚ ‚é‚Ì‚Å’ˆÓ
-	}
-	FTFace = Face->GetFTFace();
-
-	// ƒ}ƒbƒsƒ“ƒO‚ğŠm”F‚·‚é
-	if(FTFace->charmap == NULL)
-	{
-		// FreeType ‚Í©“®“I‚É UNICODE ƒ}ƒbƒsƒ“ƒO‚ğg—p‚·‚é‚ªA
-		// ƒtƒHƒ“ƒg‚ª UNICODE ƒ}ƒbƒsƒ“ƒO‚Ìî•ñ‚ğŠÜ‚ñ‚Å‚¢‚È‚¢ê‡‚Í
-		// ©“®“I‚È•¶šƒ}ƒbƒsƒ“ƒO‚Ì‘I‘ğ‚Ís‚í‚ê‚È‚¢B
-		// ‚Æ‚è‚ ‚¦‚¸(“ú–{ŒêŠÂ‹«‚ÉŒÀ‚Á‚ÄŒ¾‚¦‚Î) SJIS ƒ}ƒbƒsƒ“ƒO‚µ‚©‚à‚Á‚Ä‚È‚¢
-		// ƒtƒHƒ“ƒg‚ª‘½‚¢‚Ì‚ÅSJIS‚ğ‘I‘ğ‚³‚¹‚Ä‚İ‚éB
+		// ãƒ•ã‚©ãƒ³ãƒˆã‚’é–‹ã
+		Faces[i]->Face.reset( new tGenericFreeTypeFace( fontname[i], options ) );
 #if 0
-		FT_Error err = FT_Select_Charmap(FTFace, FT_ENCODING_SJIS);
-		if(!err)
+		if( ( options & TVP_FACE_OPTIONS_FILE ) == 0 )
 		{
-			// SJIS ‚Ö‚ÌØ‚è‘Ö‚¦‚ª¬Œ÷‚µ‚½
-			// •ÏŠ·ŠÖ”‚ğƒZƒbƒg‚·‚é
- 			UnicodeToLocalChar = UnicodeToSJIS;
- 			LocalCharToUnicode = SJISToUnicode;
+			Faces[i]->Face.reset( FreeTypeFaceList->GetFace( fontname[i], options ) );
 		}
-		else
-#else
-		FT_Error err;
-#endif
+#ifdef _WIN32
+		if( Faces[i]->Face == nullptr )
 		{
-			int numcharmap = FTFace->num_charmaps;
-			for( int i = 0; i < numcharmap; i++ )
+			if( options & TVP_FACE_OPTIONS_FILE )
 			{
-				FT_Encoding enc = FTFace->charmaps[i]->encoding;
-				if( enc != FT_ENCODING_NONE && enc != FT_ENCODING_APPLE_ROMAN )
+				// ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
+				Faces[i]->Face.reset( new tGenericFreeTypeFace( fontname[i], options ) );
+				// ä¾‹å¤–ãŒã“ã“ã§ç™ºç”Ÿã™ã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹ã®ã§æ³¨æ„
+			} else
+			{
+				// ãƒã‚¤ãƒ†ã‚£ãƒ–ã®ãƒ•ã‚©ãƒ³ãƒˆåã«ã‚ˆã‚‹æŒ‡å®š (ãƒ—ãƒ©ãƒƒãƒˆãƒ•ã‚©ãƒ¼ãƒ ä¾å­˜)
+				Faces[i]->Face.reset( new tNativeFreeTypeFace( fontname[i], options ) );
+				// ä¾‹å¤–ãŒã“ã“ã§ç™ºç”Ÿã™ã‚‹å¯èƒ½æ€§ãŒã‚ã‚‹ã®ã§æ³¨æ„
+			}
+		}
+#else
+		if( Faces[i]->Face == nullptr )
+		{
+			if( options & TVP_FACE_OPTIONS_FILE )
+			{
+				Faces[i]->Face.reset( new tGenericFreeTypeFace( fontname[i], options ) );
+			}
+		}
+#endif
+#endif
+		Faces[i]->FTFace = Faces[i]->Face->GetFTFace();
+
+		// ãƒãƒƒãƒ”ãƒ³ã‚°ã‚’ç¢ºèªã™ã‚‹
+		if( Faces[i]->FTFace->charmap == nullptr )
+		{
+			// FreeType ã¯è‡ªå‹•çš„ã« UNICODE ãƒãƒƒãƒ”ãƒ³ã‚°ã‚’ä½¿ç”¨ã™ã‚‹ãŒã€
+			// ãƒ•ã‚©ãƒ³ãƒˆãŒ UNICODE ãƒãƒƒãƒ”ãƒ³ã‚°ã®æƒ…å ±ã‚’å«ã‚“ã§ã„ãªã„å ´åˆã¯
+			// è‡ªå‹•çš„ãªæ–‡å­—ãƒãƒƒãƒ”ãƒ³ã‚°ã®é¸æŠã¯è¡Œã‚ã‚Œãªã„ã€‚
+			// (æ—¥æœ¬èªç’°å¢ƒã«é™ã£ã¦è¨€ãˆã°) SJIS ãƒãƒƒãƒ”ãƒ³ã‚°ã—ã‹ã‚‚ã£ã¦ãªã„
+			// ãƒ•ã‚©ãƒ³ãƒˆãŒå¤šã„ã®ã§SJISã‚’é¸æŠã•ã›ã¦ã¿ã‚‹ã€‚
+			FT_Error err = FT_Select_Charmap( Faces[i]->FTFace, FT_ENCODING_SJIS );
+			if( !err )
+			{
+				// SJIS ã¸ã®åˆ‡ã‚Šæ›¿ãˆãŒæˆåŠŸã—ãŸ
+				// å¤‰æ›é–¢æ•°ã‚’ã‚»ãƒƒãƒˆã™ã‚‹
+				Faces[i]->UnicodeToLocalChar = UnicodeToSJIS;
+				Faces[i]->LocalCharToUnicode = SJISToUnicode;
+			} else
+			{
+				// ã¨ã‚Šã‚ãˆãšä½•ã‹å‰²ã‚Šå½“ã¦ã‚‹ã€æ­£ã—ãè¡¨ç¤ºã•ã‚Œãªã„ã‹ã‚‚ã—ã‚Œãªã„ãŒ
+				int numcharmap = Faces[i]->FTFace->num_charmaps;
+				for( int j = 0; j < numcharmap; j++ )
 				{
-					err = FT_Select_Charmap(FTFace, enc);
-					if(!err) {
-						break;
+					FT_Encoding enc = Faces[i]->FTFace->charmaps[j]->encoding;
+					if( enc != FT_ENCODING_NONE && enc != FT_ENCODING_APPLE_ROMAN )
+					{
+						err = FT_Select_Charmap( Faces[i]->FTFace, enc );
+						if( !err ) {
+							break;
+						}
 					}
 				}
 			}
@@ -346,52 +733,51 @@ tFreeTypeFace::tFreeTypeFace(const ttstr &fontname, tjs_uint32 options)
 
 //---------------------------------------------------------------------------
 /**
- * ƒfƒXƒgƒ‰ƒNƒ^
+ * ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
  */
 tFreeTypeFace::~tFreeTypeFace()
 {
-	if(GlyphIndexToCharcodeVector) delete GlyphIndexToCharcodeVector;
-	if(Face) delete Face;
 }
 //---------------------------------------------------------------------------
 
-
+#if 0
 //---------------------------------------------------------------------------
 /**
- * ‚±‚ÌFace‚ª•Û‚µ‚Ä‚¢‚églyph‚Ì”‚ğ“¾‚é
- * @return	‚±‚ÌFace‚ª•Û‚µ‚Ä‚¢‚églyph‚Ì”
+ * ã“ã®FaceãŒä¿æŒã—ã¦ã„ã‚‹glyphã®æ•°ã‚’å¾—ã‚‹
+ * @return	ã“ã®FaceãŒä¿æŒã—ã¦ã„ã‚‹glyphã®æ•°
  */
 tjs_uint tFreeTypeFace::GetGlyphCount()
 {
-	if(!FTFace) return 0;
+	FT_Face face = Faces[0]->FTFace;
+	if(!face) return 0;
 
-	// FreeType ‚ª•Ô‚µ‚Ä‚­‚éƒOƒŠƒt‚Ì”‚ÍAÀÛ‚É•¶šƒR[ƒh‚ªŠ„‚è“–‚Ä‚ç‚ê‚Ä‚¢‚È‚¢
-	// ƒOƒŠƒt‚ğ‚àŠÜ‚ñ‚¾”‚Æ‚È‚Á‚Ä‚¢‚é
-	// ‚±‚±‚ÅAÀÛ‚ÉƒtƒHƒ“ƒg‚ÉŠÜ‚Ü‚ê‚Ä‚¢‚éƒOƒŠƒt‚ğæ“¾‚·‚é
-	// TODO:ƒXƒŒƒbƒh•ÛŒì‚³‚ê‚Ä‚¢‚È‚¢‚Ì‚Å’ˆÓIIIIII
-	if(!GlyphIndexToCharcodeVector)
+	// FreeType ãŒè¿”ã—ã¦ãã‚‹ã‚°ãƒªãƒ•ã®æ•°ã¯ã€å®Ÿéš›ã«æ–‡å­—ã‚³ãƒ¼ãƒ‰ãŒå‰²ã‚Šå½“ã¦ã‚‰ã‚Œã¦ã„ãªã„
+	// ã‚°ãƒªãƒ•ã‚’ã‚‚å«ã‚“ã æ•°ã¨ãªã£ã¦ã„ã‚‹
+	// ã“ã“ã§ã€å®Ÿéš›ã«ãƒ•ã‚©ãƒ³ãƒˆã«å«ã¾ã‚Œã¦ã„ã‚‹ã‚°ãƒªãƒ•ã‚’å–å¾—ã™ã‚‹
+	// TODO:ã‚¹ãƒ¬ãƒƒãƒ‰ä¿è­·ã•ã‚Œã¦ã„ãªã„ã®ã§æ³¨æ„ï¼ï¼ï¼ï¼ï¼ï¼
+	if(!Faces[0]->GlyphIndexToCharcodeVector)
 	{
-		// ƒ}ƒbƒv‚ªì¬‚³‚ê‚Ä‚¢‚È‚¢‚Ì‚Åì¬‚·‚é
-		GlyphIndexToCharcodeVector = new tGlyphIndexToCharcodeVector;
+		// ãƒãƒƒãƒ—ãŒä½œæˆã•ã‚Œã¦ã„ãªã„ã®ã§ä½œæˆã™ã‚‹
+		Faces[0]->GlyphIndexToCharcodeVector.reset( new FaceSet::tGlyphIndexToCharcodeVector() );
 		FT_ULong  charcode;
 		FT_UInt   gindex;
-		charcode = FT_Get_First_Char( FTFace, &gindex );
+		charcode = FT_Get_First_Char( face, &gindex );
 		while ( gindex != 0 )
 		{
 			FT_ULong code;
-			if(LocalCharToUnicode)
-				code = LocalCharToUnicode(charcode);
+			if( Faces[0]->LocalCharToUnicode)
+				code = Faces[0]->LocalCharToUnicode(charcode);
 			else
 				code = charcode;
-			GlyphIndexToCharcodeVector->push_back(code);
-			charcode = FT_Get_Next_Char( FTFace, charcode, &gindex );
+			Faces[0]->GlyphIndexToCharcodeVector->push_back(code);
+			charcode = FT_Get_Next_Char( face, charcode, &gindex );
 		}
 		std::sort(
-			GlyphIndexToCharcodeVector->begin(),
-			GlyphIndexToCharcodeVector->end()); // •¶šƒR[ƒh‡‚Å•À‚Ñ‘Ö‚¦
+			Faces[0]->GlyphIndexToCharcodeVector->begin(),
+			Faces[0]->GlyphIndexToCharcodeVector->end()); // æ–‡å­—ã‚³ãƒ¼ãƒ‰é †ã§ä¸¦ã³æ›¿ãˆ
 	}
 
-	return (tjs_uint)GlyphIndexToCharcodeVector->size();
+	return (tjs_uint)Faces[0]->GlyphIndexToCharcodeVector->size();
 }
 //---------------------------------------------------------------------------
 
@@ -399,46 +785,48 @@ tjs_uint tFreeTypeFace::GetGlyphCount()
 
 //---------------------------------------------------------------------------
 /**
- * Glyph ƒCƒ“ƒfƒbƒNƒX‚©‚ç‘Î‰‚·‚é•¶šƒR[ƒh‚ğ“¾‚é
- * @param index	ƒCƒ“ƒfƒbƒNƒX(FreeType‚ÌŠÇ—‚µ‚Ä‚¢‚é•¶šindex‚Æ‚Íˆá‚¤‚Ì‚Å’ˆÓ)
- * @return	‘Î‰‚·‚é•¶šƒR[ƒh(‘Î‰‚·‚éƒR[ƒh‚ª–³‚¢ê‡‚Í 0)
+ * Glyph ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‹ã‚‰å¯¾å¿œã™ã‚‹æ–‡å­—ã‚³ãƒ¼ãƒ‰ã‚’å¾—ã‚‹
+ * @param index	ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹(FreeTypeã®ç®¡ç†ã—ã¦ã„ã‚‹æ–‡å­—indexã¨ã¯é•ã†ã®ã§æ³¨æ„)
+ * @return	å¯¾å¿œã™ã‚‹æ–‡å­—ã‚³ãƒ¼ãƒ‰(å¯¾å¿œã™ã‚‹ã‚³ãƒ¼ãƒ‰ãŒç„¡ã„å ´åˆã¯ 0)
  */
 tjs_char tFreeTypeFace::GetCharcodeFromGlyphIndex(tjs_uint index)
 {
-	tjs_uint size = GetGlyphCount(); // ƒOƒŠƒt”‚ğ“¾‚é‚Â‚¢‚Å‚Éƒ}ƒbƒv‚ğì¬‚·‚é
+	tjs_uint size = GetGlyphCount(); // ã‚°ãƒªãƒ•æ•°ã‚’å¾—ã‚‹ã¤ã„ã§ã«ãƒãƒƒãƒ—ã‚’ä½œæˆã™ã‚‹
 
-	if(!GlyphIndexToCharcodeVector) return 0;
+	if(!Faces[0]->GlyphIndexToCharcodeVector) return 0;
 	if(index >= size) return 0;
 
-	return static_cast<tjs_char>((*GlyphIndexToCharcodeVector)[index]);
+	return static_cast<tjs_char>((*(Faces[0]->GlyphIndexToCharcodeVector.get()))[index]);
 }
 //---------------------------------------------------------------------------
-
+#endif
 
 //---------------------------------------------------------------------------
 /**
- * ‚±‚ÌƒtƒHƒ“ƒg‚ÉŠÜ‚Ü‚ê‚éFace–¼‚ÌƒŠƒXƒg‚ğ“¾‚é
- * @param dest	Ši”[æ”z—ñ
+ * ã“ã®ãƒ•ã‚©ãƒ³ãƒˆã«å«ã¾ã‚Œã‚‹Faceåã®ãƒªã‚¹ãƒˆã‚’å¾—ã‚‹
+ * @param dest	æ ¼ç´å…ˆé…åˆ—
  */
-void tFreeTypeFace::GetFaceNameList(std::vector<ttstr> &dest)
+void tFreeTypeFace::GetFaceNameList(std::vector<tjs_string> &dest)
 {
-	Face->GetFaceNameList(dest);
+	Faces[0]->Face->GetFaceNameList(dest);
 }
 //---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
 /**
- * ƒtƒHƒ“ƒg‚Ì‚‚³‚ğİ’è‚·‚é
- * @param height	ƒtƒHƒ“ƒg‚Ì‚‚³(ƒsƒNƒZƒ‹’PˆÊ)
+ * ãƒ•ã‚©ãƒ³ãƒˆã®é«˜ã•ã‚’è¨­å®šã™ã‚‹
+ * @param height	ãƒ•ã‚©ãƒ³ãƒˆã®é«˜ã•(ãƒ”ã‚¯ã‚»ãƒ«å˜ä½)
  */
 void tFreeTypeFace::SetHeight(int height)
 {
 	Height = height;
-	FT_Error err = FT_Set_Pixel_Sizes(FTFace, 0, Height);
-	if(err)
-	{
-		// TODO: Error ƒnƒ“ƒhƒŠƒ“ƒO
+	for( auto face = Faces.begin(); face != Faces.end(); face++ ) {
+		FT_Error err = FT_Set_Pixel_Sizes( (*face)->FTFace, 0, Height );
+		if(err)
+		{
+			// TODO: Error ãƒãƒ³ãƒ‰ãƒªãƒ³ã‚°
+		}
 	}
 }
 //---------------------------------------------------------------------------
@@ -446,66 +834,68 @@ void tFreeTypeFace::SetHeight(int height)
 
 //---------------------------------------------------------------------------
 /**
- * w’è‚µ‚½•¶šƒR[ƒh‚É‘Î‚·‚éƒOƒŠƒtƒrƒbƒgƒ}ƒbƒv‚ğ“¾‚é
- * @param code	•¶šƒR[ƒh
- * @return	V‹Kì¬‚³‚ê‚½ƒOƒŠƒtƒrƒbƒgƒ}ƒbƒvƒIƒuƒWƒFƒNƒg‚Ö‚Ìƒ|ƒCƒ“ƒ^
- *			NULL ‚Ìê‡‚Í•ÏŠ·‚É¸”s‚µ‚½ê‡
+ * æŒ‡å®šã—ãŸæ–‡å­—ã‚³ãƒ¼ãƒ‰ã«å¯¾ã™ã‚‹ã‚°ãƒªãƒ•ãƒ“ãƒƒãƒˆãƒãƒƒãƒ—ã‚’å¾—ã‚‹
+ * @param code	æ–‡å­—ã‚³ãƒ¼ãƒ‰
+ * @return	æ–°è¦ä½œæˆã•ã‚ŒãŸã‚°ãƒªãƒ•ãƒ“ãƒƒãƒˆãƒãƒƒãƒ—ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã¸ã®ãƒã‚¤ãƒ³ã‚¿
+ *			NULL ã®å ´åˆã¯å¤‰æ›ã«å¤±æ•—ã—ãŸå ´åˆ
  */
 tTVPCharacterData * tFreeTypeFace::GetGlyphFromCharcode(tjs_char code)
 {
-	// ƒOƒŠƒtƒXƒƒbƒg‚ÉƒOƒŠƒt‚ğ“Ç‚İ‚İA¡–@‚ğæ“¾‚·‚é
+	// ã‚°ãƒªãƒ•ã‚¹ãƒ­ãƒƒãƒˆã«ã‚°ãƒªãƒ•ã‚’èª­ã¿è¾¼ã¿ã€å¯¸æ³•ã‚’å–å¾—ã™ã‚‹
+	tjs_int index;
 	tGlyphMetrics metrics;
-	if(!GetGlyphMetricsFromCharcode(code, metrics))
-		return NULL;
+	if( (index = GetGlyphMetricsFromCharcode(code, metrics)) < 0 )
+		return nullptr;
 
-	// •¶š‚ğƒŒƒ“ƒ_ƒŠƒ“ƒO‚·‚é
+	// æ–‡å­—ã‚’ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã™ã‚‹
 	FT_Error err;
 
-	if(FTFace->glyph->format != FT_GLYPH_FORMAT_BITMAP)
+	FT_Face face = Faces[index]->FTFace;
+	if(face->glyph->format != FT_GLYPH_FORMAT_BITMAP)
 	{
 		FT_Render_Mode mode;
 		if(!(Options & TVP_FACE_OPTIONS_NO_ANTIALIASING))
 			mode = FT_RENDER_MODE_NORMAL;
 		else
 			mode = FT_RENDER_MODE_MONO;
-		err = FT_Render_Glyph(FTFace->glyph, mode);
-			// note: ƒfƒtƒHƒ‹ƒg‚ÌƒŒƒ“ƒ_ƒŠƒ“ƒOƒ‚[ƒh‚Í FT_RENDER_MODE_NORMAL (256FƒOƒŒ[ƒXƒP[ƒ‹)
-			//       FT_RENDER_MODE_MONO ‚Í 1bpp ƒ‚ƒmƒNƒ[ƒ€
-		if(err) return NULL;
+		err = FT_Render_Glyph(face->glyph, mode);
+			// note: ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ãƒ¢ãƒ¼ãƒ‰ã¯ FT_RENDER_MODE_NORMAL (256è‰²ã‚°ãƒ¬ãƒ¼ã‚¹ã‚±ãƒ¼ãƒ«)
+			//       FT_RENDER_MODE_MONO ã¯ 1bpp ãƒ¢ãƒã‚¯ãƒ­ãƒ¼ãƒ 
+		if(err) return nullptr;
 	}
 
-	// ˆê‰ƒrƒbƒgƒ}ƒbƒvŒ`®‚ğƒ`ƒFƒbƒN
-	FT_Bitmap *ft_bmp = &(FTFace->glyph->bitmap);
+	// ä¸€å¿œãƒ“ãƒƒãƒˆãƒãƒƒãƒ—å½¢å¼ã‚’ãƒã‚§ãƒƒã‚¯
+	FT_Bitmap *ft_bmp = &(face->glyph->bitmap);
 	FT_Bitmap new_bmp;
 	bool release_ft_bmp = false;
-	tTVPCharacterData * glyph_bmp = NULL;
+	tTVPCharacterData * glyph_bmp = nullptr;
 	try
 	{
 		if(ft_bmp->rows && ft_bmp->width)
 		{
-			// ƒrƒbƒgƒ}ƒbƒv‚ªƒTƒCƒY‚ğ‚Á‚Ä‚¢‚éê‡
+			// ãƒ“ãƒƒãƒˆãƒãƒƒãƒ—ãŒã‚µã‚¤ã‚ºã‚’æŒã£ã¦ã„ã‚‹å ´åˆ
 			if(ft_bmp->pixel_mode != ft_pixel_mode_grays)
 			{
-				// ft_pixel_mode_grays ‚Å‚Í‚È‚¢‚Ì‚Å ft_pixel_mode_grays Œ`®‚É•ÏŠ·‚·‚é
+				// ft_pixel_mode_grays ã§ã¯ãªã„ã®ã§ ft_pixel_mode_grays å½¢å¼ã«å¤‰æ›ã™ã‚‹
 				FT_Bitmap_New(&new_bmp);
 				release_ft_bmp = true;
 				ft_bmp = &new_bmp;
-				err = FT_Bitmap_Convert(FTFace->glyph->library,
-					&(FTFace->glyph->bitmap),
+				err = FT_Bitmap_Convert(face->glyph->library,
+					&(face->glyph->bitmap),
 					&new_bmp, 1);
-					// Œ‹‹Ç tGlyphBitmap Œ`®‚É•ÏŠ·‚·‚éÛ‚ÉƒAƒ‰ƒCƒ“ƒƒ“ƒg‚ğ‚µ’¼‚·‚Ì‚Å
-					// ‚±‚±‚Åw’è‚·‚é alignment ‚Í 1 ‚Å‚æ‚¢
+					// çµå±€ tGlyphBitmap å½¢å¼ã«å¤‰æ›ã™ã‚‹éš›ã«ã‚¢ãƒ©ã‚¤ãƒ³ãƒ¡ãƒ³ãƒˆã‚’ã—ç›´ã™ã®ã§
+					// ã“ã“ã§æŒ‡å®šã™ã‚‹ alignment ã¯ 1 ã§ã‚ˆã„
 				if(err)
 				{
-					if(release_ft_bmp) FT_Bitmap_Done(FTFace->glyph->library, ft_bmp);
-					return NULL;
+					if(release_ft_bmp) FT_Bitmap_Done(face->glyph->library, ft_bmp);
+					return nullptr;
 				}
 			}
 
 			if(ft_bmp->num_grays != 256)
 			{
-				// gray ƒŒƒxƒ‹‚ª 256 ‚Å‚Í‚È‚¢
-				// 256 ‚É‚È‚é‚æ‚¤‚ÉæZ‚ğs‚¤
+				// gray ãƒ¬ãƒ™ãƒ«ãŒ 256 ã§ã¯ãªã„
+				// 256 ã«ãªã‚‹ã‚ˆã†ã«ä¹—ç®—ã‚’è¡Œã†
 				tjs_int32 multiply =
 					static_cast<tjs_int32>((static_cast<tjs_int32> (1) << 30) - 1) /
 						(ft_bmp->num_grays - 1);
@@ -521,19 +911,19 @@ tTVPCharacterData * tFreeTypeFace::GetGlyphFromCharcode(tjs_char code)
 				}
 			}
 		}
-		// 64”{‚³‚ê‚Ä‚¢‚é‚à‚Ì‚ğ‰ğœ‚·‚é
+		// 64å€ã•ã‚Œã¦ã„ã‚‹ã‚‚ã®ã‚’è§£é™¤ã™ã‚‹
 		metrics.CellIncX = FT_PosToInt( metrics.CellIncX );
 		metrics.CellIncY = FT_PosToInt( metrics.CellIncY );
 
-		// tGlyphBitmap ‚ğì¬‚µ‚Ä•Ô‚·
-		//int baseline = (int)(FTFace->height + FTFace->descender) * FTFace->size->metrics.y_ppem / FTFace->units_per_EM;
-		int baseline = (int)( FTFace->ascender ) * FTFace->size->metrics.y_ppem / FTFace->units_per_EM;
+		// tGlyphBitmap ã‚’ä½œæˆã—ã¦è¿”ã™
+		//int baseline = (int)(face->height + face->descender) * face->size->metrics.y_ppem / face->units_per_EM;
+		int baseline = (int)( face->ascender ) * face->size->metrics.y_ppem / face->units_per_EM;
 
 		glyph_bmp = new tTVPCharacterData(
 			ft_bmp->buffer,
 			ft_bmp->pitch,
-			  FTFace->glyph->bitmap_left,
-			  baseline - FTFace->glyph->bitmap_top,
+			  face->glyph->bitmap_left,
+			  baseline - face->glyph->bitmap_top,
 			  ft_bmp->width,
 			  ft_bmp->rows,
 			metrics);
@@ -542,14 +932,14 @@ tTVPCharacterData * tFreeTypeFace::GetGlyphFromCharcode(tjs_char code)
 		
 		if( Options & TVP_TF_UNDERLINE ) {
 			tjs_int pos = -1, thickness = -1;
-			GetUnderline( pos, thickness );
+			GetUnderline( pos, thickness, index );
 			if( pos >= 0 && thickness > 0 ) {
 				glyph_bmp->AddHorizontalLine( pos, thickness, 255 );
 			}
 		}
 		if( Options & TVP_TF_STRIKEOUT ) {
 			tjs_int pos = -1, thickness = -1;
-			GetStrikeOut( pos, thickness );
+			GetStrikeOut( pos, thickness, index );
 			if( pos >= 0 && thickness > 0 ) {
 				glyph_bmp->AddHorizontalLine( pos, thickness, 255 );
 			}
@@ -557,10 +947,10 @@ tTVPCharacterData * tFreeTypeFace::GetGlyphFromCharcode(tjs_char code)
 	}
 	catch(...)
 	{
-		if(release_ft_bmp) FT_Bitmap_Done(FTFace->glyph->library, ft_bmp);
+		if(release_ft_bmp) FT_Bitmap_Done(face->glyph->library, ft_bmp);
 		throw;
 	}
-	if(release_ft_bmp) FT_Bitmap_Done(FTFace->glyph->library, ft_bmp);
+	if(release_ft_bmp) FT_Bitmap_Done(face->glyph->library, ft_bmp);
 
 	return glyph_bmp;
 }
@@ -568,35 +958,37 @@ tTVPCharacterData * tFreeTypeFace::GetGlyphFromCharcode(tjs_char code)
 
 //---------------------------------------------------------------------------
 /**
- * w’è‚µ‚½•¶šƒR[ƒh‚É‘Î‚·‚é•`‰æ—Ìˆæ‚ğ“¾‚é
- * @param code	•¶šƒR[ƒh
- * @return	ƒŒƒ“ƒ_ƒŠƒ“ƒO—Ìˆæ‹éŒ`‚Ö‚Ìƒ|ƒCƒ“ƒ^
- *			NULL ‚Ìê‡‚Í•ÏŠ·‚É¸”s‚µ‚½ê‡
+ * æŒ‡å®šã—ãŸæ–‡å­—ã‚³ãƒ¼ãƒ‰ã«å¯¾ã™ã‚‹æç”»é ˜åŸŸã‚’å¾—ã‚‹
+ * @param code	æ–‡å­—ã‚³ãƒ¼ãƒ‰
+ * @return	ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°é ˜åŸŸçŸ©å½¢ã¸ã®ãƒã‚¤ãƒ³ã‚¿
+ *			NULL ã®å ´åˆã¯å¤‰æ›ã«å¤±æ•—ã—ãŸå ´åˆ
  */
 bool tFreeTypeFace::GetGlyphRectFromCharcode( tTVPRect& rt, tjs_char code, tjs_int& advancex, tjs_int& advancey )
 {
 	advancex = advancey = 0;
-	if( !LoadGlyphSlotFromCharcode(code) )
+	tjs_int index;
+	if( (index = LoadGlyphSlotFromCharcode(code)) < 0 )
 		return false;
 
-	int baseline = (int)( FTFace->ascender ) * FTFace->size->metrics.y_ppem / FTFace->units_per_EM;
+	FT_Face face = Faces[index]->FTFace;
+	int baseline = (int)( face->ascender ) * face->size->metrics.y_ppem / face->units_per_EM;
 	/*
-	FT_Render_Glyph ‚ÅƒŒƒ“ƒ_ƒŠƒ“ƒO‚µ‚È‚¢‚ÆˆÈ‰º‚ÌŠe’l‚Íæ“¾‚Å‚«‚È‚¢
-	tjs_int t = baseline - FTFace->glyph->bitmap_top;
-	tjs_int l = FTFace->glyph->bitmap_left;
-	tjs_int w = FTFace->glyph->bitmap.width;
-	tjs_int h = FTFace->glyph->bitmap.rows;
+	FT_Render_Glyph ã§ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã—ãªã„ã¨ä»¥ä¸‹ã®å„å€¤ã¯å–å¾—ã§ããªã„
+	tjs_int t = baseline - face->glyph->bitmap_top;
+	tjs_int l = face->glyph->bitmap_left;
+	tjs_int w = face->glyph->bitmap.width;
+	tjs_int h = face->glyph->bitmap.rows;
 	*/
-	tjs_int t = baseline - FT_PosToInt( FTFace->glyph->metrics.horiBearingY );
-	tjs_int l = FT_PosToInt( FTFace->glyph->metrics.horiBearingX );
-	tjs_int w = FT_PosToInt( FTFace->glyph->metrics.width );
-	tjs_int h = FT_PosToInt( FTFace->glyph->metrics.height );
-	advancex = FT_PosToInt( FTFace->glyph->advance.x );
-	advancey = FT_PosToInt( FTFace->glyph->advance.y );
+	tjs_int t = baseline - FT_PosToInt( face->glyph->metrics.horiBearingY );
+	tjs_int l = FT_PosToInt( face->glyph->metrics.horiBearingX );
+	tjs_int w = FT_PosToInt( face->glyph->metrics.width );
+	tjs_int h = FT_PosToInt( face->glyph->metrics.height );
+	advancex = FT_PosToInt( face->glyph->advance.x );
+	advancey = FT_PosToInt( face->glyph->advance.y );
 	rt = tTVPRect(l,t,l+w,t+h);
 	if( Options & TVP_TF_UNDERLINE ) {
 		tjs_int pos = -1, thickness = -1;
-		GetUnderline( pos, thickness );
+		GetUnderline( pos, thickness, index );
 		if( pos >= 0 && thickness > 0 ) {
 			if( rt.left > 0 ) rt.left = 0;
 			if( rt.right < advancex ) rt.right = advancex;
@@ -607,7 +999,7 @@ bool tFreeTypeFace::GetGlyphRectFromCharcode( tTVPRect& rt, tjs_char code, tjs_i
 	}
 	if( Options & TVP_TF_STRIKEOUT ) {
 		tjs_int pos = -1, thickness = -1;
-		GetStrikeOut( pos, thickness );
+		GetStrikeOut( pos, thickness, index );
 		if( pos >= 0 && thickness > 0 ) {
 			if( rt.left > 0 ) rt.left = 0;
 			if( rt.right < advancex ) rt.right = advancex;
@@ -620,110 +1012,99 @@ bool tFreeTypeFace::GetGlyphRectFromCharcode( tTVPRect& rt, tjs_char code, tjs_i
 
 //---------------------------------------------------------------------------
 /**
- * w’è‚µ‚½•¶šƒR[ƒh‚É‘Î‚·‚éƒOƒŠƒt‚Ì¡–@‚ğ“¾‚é(•¶š‚ği‚ß‚é‚½‚ß‚ÌƒTƒCƒY)
- * @param code		•¶šƒR[ƒh
- * @param metrics	¡–@
- * @return	¬Œ÷‚Ìê‡^A¸”s‚Ìê‡‹U
+ * æŒ‡å®šã—ãŸæ–‡å­—ã‚³ãƒ¼ãƒ‰ã«å¯¾ã™ã‚‹ã‚°ãƒªãƒ•ã®å¯¸æ³•ã‚’å¾—ã‚‹(æ–‡å­—ã‚’é€²ã‚ã‚‹ãŸã‚ã®ã‚µã‚¤ã‚º)
+ * @param code		æ–‡å­—ã‚³ãƒ¼ãƒ‰
+ * @param metrics	å¯¸æ³•
+ * @return	æˆåŠŸã®å ´åˆãƒ•ã‚§ã‚¤ã‚¹ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã€å¤±æ•—ã®å ´åˆè² ã®å€¤
  */
-bool tFreeTypeFace::GetGlyphMetricsFromCharcode(tjs_char code,
+tjs_int tFreeTypeFace::GetGlyphMetricsFromCharcode(tjs_char code,
 	tGlyphMetrics & metrics)
 {
-	if(!LoadGlyphSlotFromCharcode(code)) return false;
+	tjs_int index;
+	if( (index = LoadGlyphSlotFromCharcode(code)) < 0 ) return -1;
 
-	// ƒƒgƒŠƒbƒN\‘¢‘Ì‚ğì¬
-	// CellIncX ‚â CellIncY ‚Í ƒsƒNƒZƒ‹’l‚ª 64 ”{‚³‚ê‚½’l‚È‚Ì‚Å’ˆÓ
-	// ‚±‚ê‚Í‚à‚Æ‚à‚Æ FreeType ‚Ìd—l‚¾‚¯‚ê‚Ç‚àARisa‚Å‚à“à•”“I‚É‚Í
-	// ‚±‚Ì¸“x‚Å CellIncX ‚â CellIncY ‚ğˆµ‚¤
-	metrics.CellIncX =  FTFace->glyph->advance.x;
-	metrics.CellIncY =  FTFace->glyph->advance.y;
+	// ãƒ¡ãƒˆãƒªãƒƒã‚¯æ§‹é€ ä½“ã‚’ä½œæˆ
+	// CellIncX ã‚„ CellIncY ã¯ ãƒ”ã‚¯ã‚»ãƒ«å€¤ãŒ 64 å€ã•ã‚ŒãŸå€¤ãªã®ã§æ³¨æ„
+	// ã“ã‚Œã¯ã‚‚ã¨ã‚‚ã¨ FreeType ã®ä»•æ§˜ã ã‘ã‚Œã©ã‚‚ã€Risaã§ã‚‚å†…éƒ¨çš„ã«ã¯
+	// ã“ã®ç²¾åº¦ã§ CellIncX ã‚„ CellIncY ã‚’æ‰±ã†
+	metrics.CellIncX =  Faces[index]->FTFace->glyph->advance.x;
+	metrics.CellIncY =  Faces[index]->FTFace->glyph->advance.y;
 
-	return true;
+	return index;
 }
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 /**
- * w’è‚µ‚½•¶šƒR[ƒh‚É‘Î‚·‚éƒOƒŠƒt‚ÌƒTƒCƒY‚ğ“¾‚é(•¶š‚Ì‘å‚«‚³)
- * @param code		•¶šƒR[ƒh
- * @param metrics	ƒTƒCƒY
- * @return	¬Œ÷‚Ìê‡^A¸”s‚Ìê‡‹U
+ * æŒ‡å®šã—ãŸæ–‡å­—ã‚³ãƒ¼ãƒ‰ã«å¯¾ã™ã‚‹ã‚°ãƒªãƒ•ã®ã‚µã‚¤ã‚ºã‚’å¾—ã‚‹(æ–‡å­—ã®å¤§ãã•)
+ * @param code		æ–‡å­—ã‚³ãƒ¼ãƒ‰
+ * @param metrics	ã‚µã‚¤ã‚º
+ * @return	æˆåŠŸã®å ´åˆçœŸã€å¤±æ•—ã®å ´åˆå½
  */
 bool tFreeTypeFace::GetGlyphSizeFromCharcode(tjs_char code, tGlyphMetrics & metrics)
 {
-	if(!LoadGlyphSlotFromCharcode(code)) return false;
+	tjs_int index;
+	if( (index = LoadGlyphSlotFromCharcode(code)) < 0 ) return false;
 
-	// ƒƒgƒŠƒbƒN\‘¢‘Ì‚ğì¬
-	metrics.CellIncX = FT_PosToInt( FTFace->glyph->metrics.horiAdvance );
-	metrics.CellIncY = FT_PosToInt( FTFace->glyph->metrics.vertAdvance );
+	// ãƒ¡ãƒˆãƒªãƒƒã‚¯æ§‹é€ ä½“ã‚’ä½œæˆ
+	metrics.CellIncX = FT_PosToInt( Faces[index]->FTFace->glyph->metrics.horiAdvance );
+	metrics.CellIncY = FT_PosToInt( Faces[index]->FTFace->glyph->metrics.vertAdvance );
 
 	return true;
 }
-
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 /**
- * w’è‚µ‚½•¶šƒR[ƒh‚É‘Î‚·‚éƒOƒŠƒt‚ğƒOƒŠƒtƒXƒƒbƒg‚Éİ’è‚·‚é
- * @param code	•¶šƒR[ƒh
- * @return	¬Œ÷‚Ìê‡^A¸”s‚Ìê‡‹U
+ * æŒ‡å®šã—ãŸæ–‡å­—ã‚³ãƒ¼ãƒ‰ã«å¯¾ã™ã‚‹ã‚°ãƒªãƒ•ã‚’ã‚°ãƒªãƒ•ã‚¹ãƒ­ãƒƒãƒˆã«è¨­å®šã™ã‚‹
+ * @param code	æ–‡å­—ã‚³ãƒ¼ãƒ‰
+ * @return	æˆåŠŸã®å ´åˆãƒ•ã‚§ã‚¤ã‚¹ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã€å¤±æ•—ã®å ´åˆè² ã®å€¤
  */
-bool tFreeTypeFace::LoadGlyphSlotFromCharcode(tjs_char code)
+tjs_int tFreeTypeFace::LoadGlyphSlotFromCharcode(tjs_char code)
 {
-	// TODO: ƒXƒŒƒbƒh•ÛŒì
+	// TODO: ã‚¹ãƒ¬ãƒƒãƒ‰ä¿è­·
 
-	// •¶šƒR[ƒh‚ğ“¾‚é
-	FT_ULong localcode;
-	if(UnicodeToLocalChar == NULL)
-		localcode = code;
-	else
-		localcode = UnicodeToLocalChar(code);
+	tjs_size count = Faces.size();
+	for( tjs_size i = 0; i < count; i++ ) {
+		std::unique_ptr<FaceSet>& faceset = Faces[i];
+		// æ–‡å­—ã‚³ãƒ¼ãƒ‰ã‚’å¾—ã‚‹
+		FT_ULong localcode;
+		if(faceset->UnicodeToLocalChar == NULL)
+			localcode = code;
+		else
+			localcode = faceset->UnicodeToLocalChar(code);
 
-	// •¶šƒR[ƒh‚©‚ç index ‚ğ“¾‚é
-	FT_UInt glyph_index = FT_Get_Char_Index(FTFace, localcode);
-	if(glyph_index == 0)
-		return false;
+		// æ–‡å­—ã‚³ãƒ¼ãƒ‰ã‹ã‚‰ index ã‚’å¾—ã‚‹
+		FT_UInt glyph_index = FT_Get_Char_Index(faceset->FTFace, localcode);
+		if(glyph_index == 0)
+			continue;
 
-	// ƒOƒŠƒtƒXƒƒbƒg‚É•¶š‚ğ“Ç‚İ‚Ş
-	FT_Int32 load_glyph_flag = 0;
-	if(!(Options & TVP_FACE_OPTIONS_NO_ANTIALIASING))
-		load_glyph_flag |= FT_LOAD_NO_BITMAP;
-	else
-		load_glyph_flag |= FT_LOAD_TARGET_MONO;
-			// note: ƒrƒbƒgƒ}ƒbƒvƒtƒHƒ“ƒg‚ğ“Ç‚İ‚İ‚½‚­‚È‚¢ê‡‚Í FT_LOAD_NO_BITMAP ‚ğw’è
+		// ã‚°ãƒªãƒ•ã‚¹ãƒ­ãƒƒãƒˆã«æ–‡å­—ã‚’èª­ã¿è¾¼ã‚€
+		FT_Int32 load_glyph_flag = 0;
+		if(!(Options & TVP_FACE_OPTIONS_NO_ANTIALIASING))
+			load_glyph_flag |= FT_LOAD_NO_BITMAP;
+		else
+			load_glyph_flag |= FT_LOAD_TARGET_MONO;
+				// note: ãƒ“ãƒƒãƒˆãƒãƒƒãƒ—ãƒ•ã‚©ãƒ³ãƒˆã‚’èª­ã¿è¾¼ã¿ãŸããªã„å ´åˆã¯ FT_LOAD_NO_BITMAP ã‚’æŒ‡å®š
 
-	if(Options & TVP_FACE_OPTIONS_NO_HINTING)
-		load_glyph_flag |= FT_LOAD_NO_HINTING|FT_LOAD_NO_AUTOHINT;
-	if(Options & TVP_FACE_OPTIONS_FORCE_AUTO_HINTING)
-		load_glyph_flag |= FT_LOAD_FORCE_AUTOHINT;
+		if(Options & TVP_FACE_OPTIONS_NO_HINTING)
+			load_glyph_flag |= FT_LOAD_NO_HINTING|FT_LOAD_NO_AUTOHINT;
+		if(Options & TVP_FACE_OPTIONS_FORCE_AUTO_HINTING)
+			load_glyph_flag |= FT_LOAD_FORCE_AUTOHINT;
 
-	FT_Error err;
-	err = FT_Load_Glyph(FTFace, glyph_index, load_glyph_flag);
+		FT_Error err;
+		err = FT_Load_Glyph(faceset->FTFace, glyph_index, load_glyph_flag);
 
-	if(err) return false;
+		if(err) continue;
 
-	// ƒtƒHƒ“ƒg‚Ì•ÏŒ`‚ğs‚¤
-	if( Options & TVP_TF_BOLD ) FT_GlyphSlot_Embolden(FTFace->glyph);
-	if( Options & TVP_TF_ITALIC ) FT_GlyphSlot_Oblique( FTFace->glyph );
+		// ãƒ•ã‚©ãƒ³ãƒˆã®å¤‰å½¢ã‚’è¡Œã†
+		if( Options & TVP_TF_BOLD ) FT_GlyphSlot_Embolden( faceset->FTFace->glyph );
+		if( Options & TVP_TF_ITALIC ) FT_GlyphSlot_Oblique( faceset->FTFace->glyph );
 
-	return true;
+		return (tjs_int)i;
+	}
+
+	return -1;
 }
 //---------------------------------------------------------------------------
 
-float FT_fixed26p6_to_float(long fixP) {
-	const unsigned long fractional_base = 1 << 6;
-	const unsigned long fractional_mask = fractional_base - 1;
-	return (float)(abs(fixP) & fractional_mask) / fractional_base + (fixP >> 6);
-}
-
-const FT_Outline* tFreeTypeFace::GetOulineData(tjs_char code, float &w, float &h)
-{
-	FT_UInt glyph_index = FT_Get_Char_Index(FTFace, code);
-	if (glyph_index == 0) return GetOulineData(GetDefaultChar(), w, h);
-	if (FT_Load_Glyph(FTFace, glyph_index, FT_LOAD_DEFAULT)) {
-		return nullptr;
-	}
-	w = FT_fixed26p6_to_float(FTFace->glyph->advance.x);
-	h = FT_fixed26p6_to_float(FTFace->glyph->advance.y);
-	FT_GlyphSlot pGlyphSlot = FTFace->glyph;
-	return &pGlyphSlot->outline;
-}

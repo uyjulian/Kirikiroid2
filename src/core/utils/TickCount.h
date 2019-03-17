@@ -10,7 +10,6 @@
 //---------------------------------------------------------------------------
 #ifndef TickCountH
 #define TickCountH
-#include "tjsTypes.h"
 
 //---------------------------------------------------------------------------
 TJS_EXP_FUNC_DEF(tjs_uint64, TVPGetTickCount, ());

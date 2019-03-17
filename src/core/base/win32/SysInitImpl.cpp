@@ -56,8 +56,8 @@
 //---------------------------------------------------------------------------
 // global data
 //---------------------------------------------------------------------------
-ttstr TVPNativeProjectDir;
-ttstr TVPNativeDataPath;
+tjs_string TVPNativeProjectDir;
+tjs_string TVPNativeDataPath;
 bool TVPProjectDirSelected = false;
 //---------------------------------------------------------------------------
 
@@ -911,7 +911,7 @@ void TVPInitializeBaseSystems()
 
 	// set default current directory
 	{
-		TVPSetCurrentDirectory( IncludeTrailingBackslash(ExtractFileDir(ExePath())) );
+		TVPSetCurrentDirectory( IncludeTrailingBackslash(ExtractFileDir(ExePath().AsStdString())) );
 	}
 
 	// load message map file
@@ -932,7 +932,7 @@ void TVPInitializeBaseSystems()
 // system initializer / uninitializer
 //---------------------------------------------------------------------------
 #if 0
-// ƒtƒHƒ‹ƒ_‘I‘ðƒ_ƒCƒAƒƒO‚ÌƒR[ƒ‹ƒoƒbƒNŠÖ”
+// ãƒ•ã‚©ãƒ«ãƒ€é¸æŠžãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã®ã‚³ãƒ¼ãƒ«ãƒãƒƒã‚¯é–¢æ•°
 static int CALLBACK TVPBrowseCallbackProc(HWND hwnd,UINT uMsg,LPARAM lParam,LPARAM lpData)
 {
     if(uMsg==BFFM_INITIALIZED){
@@ -1280,7 +1280,7 @@ static uint32_t TVPTimeBeginPeriodRes = 0;
 void TVPAfterSystemInit()
 {
 	// check CPU type
-	TVPDetectCPU();
+	// TVPDetectCPU();
 
 	TVPAllocGraphicCacheOnHeap = false; // always false since beta 20
 
@@ -1323,7 +1323,7 @@ void TVPAfterSystemInit()
 	{
 		TVPGraphicCacheSystemLimit = limitmb * 1024*1024;
 	}
-	// 32bit ‚È‚Ì‚Å 512MB ‚Ü‚Å‚É§ŒÀ
+	// 32bit ãªã®ã§ 512MB ã¾ã§ã«åˆ¶é™
 	if( TVPGraphicCacheSystemLimit >= 512*1024*1024 )
 		TVPGraphicCacheSystemLimit = 512*1024*1024;
 
@@ -1736,10 +1736,10 @@ static void TVPInitProgramArgumentsAndDataPath(bool stop_after_datapath_got)
 
 			// read datapath
 			tTJSVariant val;
-			ttstr config_datapath;
+			tjs_string config_datapath;
 // 			if(TVPGetCommandLine(TJS_W("-datapath"), &val))
 // 				config_datapath = ((ttstr)val).AsStdString();
-			TVPNativeDataPath = ApplicationSpecialPath::GetDataPathDirectory(config_datapath, ExePath());
+			TVPNativeDataPath = ApplicationSpecialPath::GetDataPathDirectory(config_datapath, ExePath().AsStdString());
 
 			if(stop_after_datapath_got) return;
 
@@ -1945,7 +1945,7 @@ static void TVPExecuteAsync( const std::wstring& progname)
 //---------------------------------------------------------------------------
 // TVPWaitWritePermit
 //---------------------------------------------------------------------------
-static bool TVPWaitWritePermit(const std::wstring& fn)
+static bool TVPWaitWritePermit(const tjs_string& fn)
 {
 	return false;
 #if 0
@@ -1994,11 +1994,12 @@ bool TVPExecuteUserConfig()
 	return false;
 	// check command line argument
 #if 0
+
 	tjs_int i;
 	bool process = false;
 	for(i=1; i<_argc; i++)
 	{
-		if(!strcmp(_argv[i], "-userconf")) // this does not refer TVPGetCommandLine
+		if(!TJS_strcmp(_wargv[i], TJS_W("-userconf"))) // this does not refer TVPGetCommandLine
 			process = true;
 	}
 

@@ -19,6 +19,30 @@
 #endif
 #include "tjsVariantString.h"
 
+
+// #include <sstream>
+// template<typename T>
+// tjs_string to_format_str( T value, const tjs_char* format ) {
+// #if 0
+// 	tjs_char buff[128];
+// 	TJS_snprintf( buff, 128, format, value);
+// 	return tjs_string(buff);
+// #else
+// 	std::basic_ostringstream<tjs_char> sout;
+// 	sout << value;
+// 	return sout.str();
+// #endif
+// }
+// inline tjs_string to_tjs_string( int value ) { return to_format_str( value, TJS_W("%d") ); }
+// inline tjs_string to_tjs_string( long value ) { return to_format_str( value, TJS_W("%ld") ); }
+// inline tjs_string to_tjs_string( long long value ) { return to_format_str( value, TJS_W("%lld") ); }
+// inline tjs_string to_tjs_string( unsigned value ) { return to_format_str( value, TJS_W("%u") ); }
+// inline tjs_string to_tjs_string( unsigned long value ) { return to_format_str( value, TJS_W("%lu") ); }
+// inline tjs_string to_tjs_string( unsigned long long value ) { return to_format_str( value, TJS_W("%llu") ); }
+// inline tjs_string to_tjs_string( float value ) { return to_format_str( value, TJS_W("%f") ); }
+// inline tjs_string to_tjs_string( double value ) { return to_format_str( value, TJS_W("%lf") ); }
+
+
 namespace TJS
 {
 /*[*/
@@ -86,14 +110,12 @@ public:
 		{ Ptr = TJSAllocVariantString(str, n); }
 
 	TJS_METHOD_DEF(TJS_METHOD_RET_EMPTY, tTJSString, (tjs_int n)); // from int
-    TJS_METHOD_DEF(TJS_METHOD_RET_EMPTY, tTJSString, (tjs_int64 n)); // from int64
 
 #ifdef TJS_SUPPORT_VCL
 	tTJSString(const AnsiString &str) { Ptr = TJSAllocVariantString(str.c_str()); }
 	tTJSString(const WideString &str) { Ptr = TJSAllocVariantString(str.c_bstr()); }
 #endif
-	tTJSString(const std::basic_string<tjs_char> &str) { Ptr = TJSAllocVariantString(str.c_str()); }
-	tTJSString(const std::string &str) { Ptr = TJSAllocVariantString(str.c_str()); }
+	tTJSString(const tjs_string &str) { Ptr = TJSAllocVariantString(str.c_str()); }
 
 	//--------------------------------------------------------- destructor --
 	TJS_METHOD_DEF(TJS_METHOD_RET_EMPTY, ~tTJSString, ()) { if(Ptr) Ptr->Release(); }
@@ -111,22 +133,21 @@ public:
 	}
 	const WideString AsWideString() const
 	{
-		if(!Ptr) return L"";
+		if(!Ptr) return TJS_W("");
 		return WideString(Ptr->operator const tjs_char *());
 	}
 #endif
 
-	const std::string AsStdString() const
+	const tjs_string AsStdString() const
 	{
-#if 0
-		if (!Ptr) return std::wstring(TJS_W(""));
-		return std::wstring(c_str());
-#else
-		if(!Ptr) return std::string("");
-			// this constant string value must match std::string in type
-		tTJSNarrowStringHolder holder(Ptr->operator const tjs_char*());
-		return std::string(holder.operator const char *());
-#endif
+		if(!Ptr) return tjs_string(TJS_W(""));
+// #ifdef UNICODE
+		return tjs_string(c_str());
+// #else
+// 			// this constant string value must match std::string in type
+// 		tTJSNarrowStringHolder holder(Ptr->operator const tjs_char*());
+// 		return std::string(holder.operator const char *());
+// #endif
 	}
 	const std::string AsNarrowStdString() const
 	{
@@ -372,7 +393,7 @@ public:
 	TJS_METHOD_DEF(void, ToLowerCase, ());
 	TJS_METHOD_DEF(void, ToUppserCase, ());
 
-	tjs_int printf(const tjs_char *format, ...);
+	tjs_int TJS_cdecl printf(const tjs_char *format, ...);
 
 	tTJSString EscapeC() const;   // c-style string escape/unescaep
 	tTJSString UnescapeC() const;
@@ -443,12 +464,6 @@ public:
 	TJS_STATIC_METHOD_DEF(void, operator delete [], (void *p)) { delete [] ((char*)p); }
 
 	TJS_STATIC_METHOD_DEF(void *, operator new, (size_t size, void *buf)) { return buf; }
-    //--------------------------------------------- indexer / finder --
-    int      IndexOf (const tTJSString& str, unsigned int pos = 0) const;
-    int      IndexOf (const char* s, unsigned int pos = 0, unsigned int n = -1) const { return IndexOf(tTJSString(s, n), pos); }
-    int      IndexOf (tjs_char c, unsigned int pos = 0) const { return IndexOf(tTJSString(&c, 1), pos); }
-    tTJSString    SubString(unsigned int pos, unsigned int len) const;
-    tTJSString Trim();
 };
 /*end-of-tTJSString*/
 TJS_EXP_FUNC_DEF(tTJSString, operator +, (const tjs_char *lhs, const tTJSString &rhs));

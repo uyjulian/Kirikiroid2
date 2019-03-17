@@ -81,7 +81,7 @@ extern ttstr TJSNonamedException;
 //---------------------------------------------------------------------------
 // TJSGetExceptionObject : retrieves TJS 'Exception' object
 //---------------------------------------------------------------------------
-extern void TJSGetExceptionObject(class tTJS *tjs, tTJSVariant *res, tTJSVariant &msg,
+extern void TJSGetExceptionObject(tTJS *tjs, tTJSVariant *res, tTJSVariant &msg,
 	tTJSVariant *trace/* trace is optional */ = NULL);
 //---------------------------------------------------------------------------
 

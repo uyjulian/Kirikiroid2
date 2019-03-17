@@ -14,7 +14,6 @@
 #include "tjsError.h"
 #include "tjsUtils.h"
 #include "tjsLex.h"
-#include <algorithm>
 
 
 namespace TJS
@@ -84,12 +83,10 @@ tjs_int TJSGetShorterStrLen(const tjs_char *str, tjs_int max)
 	else
 		len = len + TJSVS_ALLOC_INC_SIZE_L;
 
-	char *ret = (char*)malloc(//ptr,
+	char *ret = (char*)realloc(ptr,
 		len*sizeof(tjs_char) + sizeof(size_t));
 	if(!ret) TJSThrowStringAllocError();
-	memcpy(ret + sizeof(size_t), ptr + 1, *ptr*sizeof(tjs_char));
 	*(size_t *)ret = len; // embed size
-	TJSVS_free(buf);
 	return (tjs_char*)(ret + sizeof(size_t));
 }
 //---------------------------------------------------------------------------
@@ -112,7 +109,7 @@ tjs_int TJSGetShorterStrLen(const tjs_char *str, tjs_int max)
 #define HEAP_FLAG_USING 0x01
 #define HEAP_FLAG_DELETE 0x02
 #define HEAP_CAPACITY_INC 4096
-static tTJSSpinLock TJSStringHeapCS;
+static tTJSCriticalSection *TJSStringHeapCS = NULL;
 static std::vector<tTJSVariantString*> *TJSStringHeapList = NULL;
 static tTJSVariantString ** TJSStringHeapFreeCellList = NULL;
 //static tjs_uint TJSStringHeapFreeCellListCapacity = 0;
@@ -145,6 +142,7 @@ static void TJSAddStringHeapBlock(void)
 //---------------------------------------------------------------------------
 static void TJSInitStringHeap()
 {
+	TJSStringHeapCS = new tTJSCriticalSection();
 	TJSStringHeapList = new std::vector<tTJSVariantString*>();
 	TJSAddStringHeapBlock(); // initial block
 }
@@ -183,6 +181,8 @@ static void TJSUninitStringHeap(void)
 		}
 #endif
 	}
+	delete TJSStringHeapCS;
+	TJSStringHeapCS = NULL;
 
 	delete TJSStringHeapList;
 	TJSStringHeapList = NULL;
@@ -295,7 +295,7 @@ void TJSCompactStringHeap()
 	if(!TJSStringHeapList) return;
 
 	{	// thread-protected
-		tTJSSpinLockHolder csh(TJSStringHeapCS);
+		tTJSCSH csh(*TJSStringHeapCS);
 
 #ifndef __CODEGUARD__
 	// may be very slow when used with codeguard
@@ -417,7 +417,7 @@ tTJSVariantString * TJSAllocStringHeap(void)
 	}
 
 	{	// thread-protected
-		tTJSSpinLockHolder csh(TJSStringHeapCS);
+		tTJSCSH csh(*TJSStringHeapCS);
 
 #ifdef TJS_VS_USE_SYSTEM_NEW
 		tTJSVariantString *ret = new tTJSVariantString();
@@ -447,7 +447,7 @@ void TJSDeallocStringHeap(tTJSVariantString * vs)
 	// free vs
 
 	{	// thread-pretected
-		tTJSSpinLockHolder csh(TJSStringHeapCS);
+		tTJSCSH csh(*TJSStringHeapCS);
 
 #ifdef TJS_DEBUG_CHECK_STRING_HEAP_INTEGRITY
 		{
@@ -539,17 +539,6 @@ void tTJSVariantString::ToNumber(tTJSVariant &dest) const
 	dest = 0;
 }
 //---------------------------------------------------------------------------
-tTJSVariantString::operator const tjs_char *() const
-{
-	return (!this) ? (NULL) : (LongString ? LongString : ShortString);
-}
-//---------------------------------------------------------------------------
-tjs_int tTJSVariantString::GetLength() const
-{
-	if (!this) return 0;
-	return Length;
-}
-//---------------------------------------------------------------------------
 tTJSVariantString * tTJSVariantString::FixLength()
 {
 	if(!this) return NULL;
@@ -585,8 +574,8 @@ tTJSVariantString * TJSAllocVariantString(const tjs_char *ref1, const tjs_char *
 		}
 	}
 
-	tjs_intptr_t len1 = ref1 ? TJS_strlen(ref1) : 0;
-	tjs_intptr_t len2 = ref2 ? TJS_strlen(ref2) : 0;
+	tjs_intptr_t len1 = ref1? TJS_strlen(ref1):0;
+	tjs_intptr_t len2 = ref2? TJS_strlen(ref2):0;
 
 	tTJSVariantString *ret = TJSAllocStringHeap();
 
@@ -915,16 +904,10 @@ tTJSVariantString * TJSFormatString(const tjs_char *format, tjs_uint numparams,
 			tjs_uint fmtlen = (tjs_uint)(f - fst);
 			if(fmtlen > 65) goto error;  // too long
 			TJS_strncpy(fmt, fst, fmtlen);
-// #ifdef WIN32
-// 			fmt[fmtlen++] = 'I';
-// 			fmt[fmtlen++] = '6';
-// 			fmt[fmtlen++] = '4';
-// #else
-			fmt[fmtlen++] = 'l';
-			fmt[fmtlen++] = 'l';
-//#endif
-			fmt[fmtlen++] = *f;
-			fmt[fmtlen++] = 0;
+			fmt[fmtlen] = TJS_W('l'); //// CHECK!! 'll' must indicate a 64bit integer
+			fmt[fmtlen+1] = TJS_W('l');
+			fmt[fmtlen+2] = *f;
+			fmt[fmtlen+3] = 0;
 			int ind[2];
 			if(!width_ind && !prec_ind)
 			{
@@ -978,13 +961,9 @@ tTJSVariantString * TJSFormatString(const tjs_char *format, tjs_uint numparams,
 			tjs_uint fmtlen = (tjs_uint)(f - fst);
 			if(fmtlen > 67) goto error;  // too long
 			TJS_strncpy(fmt, fst, fmtlen);
-// #ifdef WIN32
-// 			fmt[fmtlen++] = 'l';
-// #else
-			fmt[fmtlen++] = 'l';
-//#endif
-			fmt[fmtlen++] = *f;
-			fmt[fmtlen++] = 0;
+			fmt[fmtlen] = TJS_W('l'); //// CHECK!! 'l' must indicate a 64bit real
+			fmt[fmtlen+1] = *f;
+			fmt[fmtlen+2] = 0;
 			int ind[2];
 			if(!width_ind && !prec_ind)
 			{

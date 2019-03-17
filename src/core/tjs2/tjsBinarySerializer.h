@@ -20,11 +20,11 @@
 namespace TJS
 {
 /**
- * ƒoƒCƒiƒŠŒ`®‚Åƒf[ƒ^‚ğƒXƒgƒŠ[ƒ€‘‚«o‚µ‚·‚é‚½‚ß‚ÌƒNƒ‰ƒX
- * Œ`®‚ÍAMessagePack ‚É‹ß‚¢‚à‚Ì‚Å×•”TJS2—p‚É’²®‚µ‚Ä‚¢‚é
- * •¶š—ñ‚ÍAUTF-16‚Ì‚Ü‚ÜŠi”[
- * ƒGƒ“ƒfƒBƒAƒ“‚ÍƒŠƒgƒ‹ƒGƒ“ƒfƒBƒAƒ“‚É‚È‚Á‚Ä‚¢‚é
- * ƒwƒbƒ_[‚à’Ç‰Á‚³‚ê‚é
+ * ãƒã‚¤ãƒŠãƒªå½¢å¼ã§ãƒ‡ãƒ¼ã‚¿ã‚’ã‚¹ãƒˆãƒªãƒ¼ãƒ æ›¸ãå‡ºã—ã™ã‚‹ãŸã‚ã®ã‚¯ãƒ©ã‚¹
+ * å½¢å¼ã¯ã€MessagePack ã«è¿‘ã„ã‚‚ã®ã§ç´°éƒ¨TJS2ç”¨ã«èª¿æ•´ã—ã¦ã„ã‚‹
+ * æ–‡å­—åˆ—ã¯ã€UTF-16ã®ã¾ã¾æ ¼ç´
+ * ã‚¨ãƒ³ãƒ‡ã‚£ã‚¢ãƒ³ã¯ãƒªãƒˆãƒ«ã‚¨ãƒ³ãƒ‡ã‚£ã‚¢ãƒ³ã«ãªã£ã¦ã„ã‚‹
+ * ãƒ˜ãƒƒãƒ€ãƒ¼ã‚‚è¿½åŠ ã•ã‚Œã‚‹
  */
 class tTJSBinarySerializer {
 public:
@@ -56,7 +56,7 @@ public:
 		
 		TYPE_FIX_RAW_MIN = 0xD4,
 		TYPE_FIX_RAW_MAX = 0xD9,
-		TYPE_FIX_RAW_LEN = TYPE_FIX_RAW_MAX - TYPE_FIX_RAW_MIN, // 5byte‚Ü‚Å‚¾‚©‚çŒø‰Ê­‚È‚¢‚ªA•¶š‚Ì•û‚ª•p“x‚‚¢‚Ì‚Å•¶š‚ÉRAWƒGƒŠƒA‚ğŠ„‚è“–‚Ä‚é
+		TYPE_FIX_RAW_LEN = TYPE_FIX_RAW_MAX - TYPE_FIX_RAW_MIN, // 5byteã¾ã§ã ã‹ã‚‰åŠ¹æœå°‘ãªã„ãŒã€æ–‡å­—ã®æ–¹ãŒé »åº¦é«˜ã„ã®ã§æ–‡å­—ã«RAWã‚¨ãƒªã‚¢ã‚’å‰²ã‚Šå½“ã¦ã‚‹
 
 		TYPE_RAW16 = 0xDA,
 		TYPE_RAW32 = 0xDB,
@@ -83,9 +83,9 @@ public:
 	struct BinaryPack {
 		static const tjs_int DATA_CAPACITY = 0x4000; // 16KB
 
-		tjs_uint8* Data; // ƒf[ƒ^À‘Ì
-		tjs_int32 Size; // Œ»İ–„‚Ü‚Á‚Ä‚¢‚éˆÊ’u
-		tjs_int32 Capacity; // ƒf[ƒ^À‘ÌÅ‘åƒTƒCƒY
+		tjs_uint8* Data; // ãƒ‡ãƒ¼ã‚¿å®Ÿä½“
+		tjs_int32 Size; // ç¾åœ¨åŸ‹ã¾ã£ã¦ã„ã‚‹ä½ç½®
+		tjs_int32 Capacity; // ãƒ‡ãƒ¼ã‚¿å®Ÿä½“æœ€å¤§ã‚µã‚¤ã‚º
 
 		BinaryPack() : Size(0), Capacity(DATA_CAPACITY) {
 			Data = new tjs_uint8[DATA_CAPACITY];
@@ -114,7 +114,7 @@ public:
 	}
 	*/
 
-	static inline void PutInteger( tTJSBinaryStream* stream, tjs_int64 b ) {
+	static inline void PutInteger( iTJSBinaryStream* stream, tjs_int64 b ) {
 		if( b < 0 ) {
 			if( b >= TYPE_NEGATIVE_FIX_NUM_MIN ) {
 				tjs_uint8 tmp[1];
@@ -197,7 +197,7 @@ public:
 			}
 		}
 	}
-	static inline void PutString( tTJSBinaryStream* stream, const tjs_char* val, tjs_uint len ) {
+	static inline void PutString( iTJSBinaryStream* stream, const tjs_char* val, tjs_uint len ) {
 		if( len <= TYPE_FIX_STRING_LEN ) {
 			tjs_uint8 tmp[1];
 			tmp[0] = TYPE_FIX_STRING_MIN+len;
@@ -244,9 +244,9 @@ public:
 #endif
 	}
 	/**
-	 * •‚“®¬”“_’l‚ğŠi”[‚·‚é
+	 * æµ®å‹•å°æ•°ç‚¹å€¤ã‚’æ ¼ç´ã™ã‚‹
 	 */
-	static inline void PutDouble( tTJSBinaryStream* stream, double b ) {
+	static inline void PutDouble( iTJSBinaryStream* stream, double b ) {
 		tjs_uint64 v = *(tjs_uint64*)&b;
 		tjs_uint8 tmp[9];
 		tmp[0] = TYPE_DOUBLE;
@@ -260,7 +260,7 @@ public:
 		tmp[8] = (v>>56)&0xff;
 		stream->Write( tmp, sizeof(tmp) );
 	}
-	static inline void PutBytes( tTJSBinaryStream* stream, const tjs_uint8* val, tjs_uint len ) {
+	static inline void PutBytes( iTJSBinaryStream* stream, const tjs_uint8* val, tjs_uint len ) {
 		if( len <= TYPE_FIX_RAW_LEN ) {
 			tjs_uint8 tmp[1];
 			tmp[0] = TYPE_FIX_RAW_MIN + len;
@@ -287,9 +287,9 @@ public:
 		stream->Write( val, len );
 	}
 	/**
-	 * ƒIƒNƒeƒbƒgŒ^‚Ì’l‚ğŠi”[‚·‚é
+	 * ã‚ªã‚¯ãƒ†ãƒƒãƒˆå‹ã®å€¤ã‚’æ ¼ç´ã™ã‚‹
 	 */
-	static inline void PutOctet( tTJSBinaryStream* stream, tTJSVariantOctet* val ) {
+	static inline void PutOctet( iTJSBinaryStream* stream, tTJSVariantOctet* val ) {
 		tjs_uint len = 0;
 		const tjs_uint8* data = NULL;
 		if( val ) {
@@ -300,9 +300,9 @@ public:
 	}
 
 	/**
-	 * •¶š—ñ‚ğŠi”[‚·‚é
+	 * æ–‡å­—åˆ—ã‚’æ ¼ç´ã™ã‚‹
 	 */
-	static inline void PutString( tTJSBinaryStream* stream, const tTJSVariantString* val ) {
+	static inline void PutString( iTJSBinaryStream* stream, const tTJSVariantString* val ) {
 		const tjs_char* data = NULL;
 		tjs_int len = 0;
 		if( val ) {
@@ -315,7 +315,7 @@ public:
 		}
 		PutString( stream, data, len );
 	}
-	static inline void PutStartMap( tTJSBinaryStream* stream, tjs_uint count ) {
+	static inline void PutStartMap( iTJSBinaryStream* stream, tjs_uint count ) {
 		if( count <= TYPE_FIX_MAP_LEN ) {
 			tjs_uint8 tmp[1];
 			tmp[0] = TYPE_FIX_MAP_MIN + count;
@@ -340,7 +340,7 @@ public:
 			TJS_eTJSError(TJSWriteError);
 		}
 	}
-	static inline void PutStartArray( tTJSBinaryStream* stream, tjs_uint count ) {
+	static inline void PutStartArray( iTJSBinaryStream* stream, tjs_uint count ) {
 		if( count <= TYPE_FIX_ARRAY_LEN ) {
 			tjs_uint8 tmp[1];
 			tmp[0] = TYPE_FIX_ARRAY_MIN + count;
@@ -365,7 +365,7 @@ public:
 			TJS_eTJSError(TJSWriteError);
 		}
 	}
-	static inline void PutNull( tTJSBinaryStream* stream ) {
+	static inline void PutNull( iTJSBinaryStream* stream ) {
 		tjs_uint8 tmp[1];
 		tmp[0] = TYPE_NIL;
 		stream->Write( tmp, sizeof(tmp) );
@@ -415,7 +415,7 @@ public:
 				index++;
 			}
 			ret = TJSAllocVariantString( str, len );
-			delete []str;
+			delete[] str;
 		}
 		return ret;
 	}
@@ -441,16 +441,16 @@ public:
 	}
 
 	/**
-	 * ƒoƒCƒAƒ“ƒg’l‚ğŠi”[‚·‚é
-	 * ƒIƒuƒWƒFƒNƒgŒ^‚Í–³‹‚µ‚Ä‚¢‚é
+	 * ãƒã‚¤ã‚¢ãƒ³ãƒˆå€¤ã‚’æ ¼ç´ã™ã‚‹
+	 * ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆå‹ã¯ç„¡è¦–ã—ã¦ã„ã‚‹
 	 */
-	static void PutVariant( tTJSBinaryStream* stream, tTJSVariant& v );
+	static void PutVariant( iTJSBinaryStream* stream, tTJSVariant& v );
 	
 	tTJSBinarySerializer();
 	tTJSBinarySerializer( class tTJSDictionaryObject* root );
 	tTJSBinarySerializer( class tTJSArrayObject* root );
 	~tTJSBinarySerializer();
-	tTJSVariant* Read( tTJSBinaryStream* stream );
+	tTJSVariant* Read( iTJSBinaryStream* stream );
 
 private:
 	iTJSDispatch2* DicClass;

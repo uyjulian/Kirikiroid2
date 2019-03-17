@@ -7,7 +7,7 @@ using namespace std;
 
 //---------------------------------------------------------------------------
 
-// Array ƒNƒ‰ƒXƒƒ“ƒo
+// Array ã‚¯ãƒ©ã‚¹ãƒ¡ãƒ³ãƒ
 static iTJSDispatch2 *ArrayClearMethod   = NULL;   // Array.clear
 
 // -----------------------------------------------------------------
@@ -44,7 +44,7 @@ public:
 	}
 
 	/**
-	 * ‰üsƒ`ƒFƒbƒN
+	 * æ”¹è¡Œãƒã‚§ãƒƒã‚¯
 	 */
 	bool endOfLine(tjs_char c) {
 		bool eol = (c =='\r' || c == '\n');
@@ -80,11 +80,11 @@ addMember(iTJSDispatch2 *dispatch, const tjs_char *name, iTJSDispatch2 *member)
 	tTJSVariant var (member);
 	member->Release();
 	dispatch->PropSet(
-		TJS_MEMBERENSURE, // ƒƒ“ƒo‚ª‚È‚©‚Á‚½ê‡‚É‚Íì¬‚·‚é‚æ‚¤‚É‚·‚éƒtƒ‰ƒO
-		name, // ƒƒ“ƒo–¼ ( ‚©‚È‚ç‚¸ TJS_W( ) ‚ÅˆÍ‚Ş )
-		NULL, // ƒqƒ“ƒg ( –{—ˆ‚Íƒƒ“ƒo–¼‚ÌƒnƒbƒVƒ…’l‚¾‚ªANULL ‚Å‚à‚æ‚¢ )
-		&var, // “o˜^‚·‚é’l
-		dispatch // ƒRƒ“ƒeƒLƒXƒg
+		TJS_MEMBERENSURE, // ãƒ¡ãƒ³ãƒãŒãªã‹ã£ãŸå ´åˆã«ã¯ä½œæˆã™ã‚‹ã‚ˆã†ã«ã™ã‚‹ãƒ•ãƒ©ã‚°
+		name, // ãƒ¡ãƒ³ãƒå ( ã‹ãªã‚‰ãš TJS_W( ) ã§å›²ã‚€ )
+		NULL, // ãƒ’ãƒ³ãƒˆ ( æœ¬æ¥ã¯ãƒ¡ãƒ³ãƒåã®ãƒãƒƒã‚·ãƒ¥å€¤ã ãŒã€NULL ã§ã‚‚ã‚ˆã„ )
+		&var, // ç™»éŒ²ã™ã‚‹å€¤
+		dispatch // ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆ
 		);
 }
 
@@ -117,10 +117,10 @@ static void
 delMember(iTJSDispatch2 *dispatch, const tjs_char *name)
 {
 	dispatch->DeleteMember(
-		0, // ƒtƒ‰ƒO ( 0 ‚Å‚æ‚¢ )
-		name, // ƒƒ“ƒo–¼
-		NULL, // ƒqƒ“ƒg
-		dispatch // ƒRƒ“ƒeƒLƒXƒg
+		0, // ãƒ•ãƒ©ã‚° ( 0 ã§ã‚ˆã„ )
+		name, // ãƒ¡ãƒ³ãƒå
+		NULL, // ãƒ’ãƒ³ãƒˆ
+		dispatch // ã‚³ãƒ³ãƒ†ã‚­ã‚¹ãƒˆ
 		);
 }
 //---------------------------------------------------------------------------
@@ -138,27 +138,27 @@ static tjs_int32 TJS_NATIVE_CLASSID_NAME = -1;
 /**
  * CSVParser
  */
-class NI_CSVParser : public tTJSNativeInstance // ƒlƒCƒeƒBƒuƒCƒ“ƒXƒ^ƒ“ƒX
+class NI_CSVParser : public tTJSNativeInstance // ãƒã‚¤ãƒ†ã‚£ãƒ–ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹
 {
 protected:
 	iTJSDispatch2 *target;
 	IFile *file;
 	tjs_int32 lineNo;
 
-	// ‹æØ‚è•¶š
+	// åŒºåˆ‡ã‚Šæ–‡å­—
 	tjs_char separator;
 
-	// ‰üs•¶š
+	// æ”¹è¡Œæ–‡å­—
 	ttstr newline;
 	
-	// sî•ñ(ƒƒCƒhƒLƒƒƒ‰‚Åˆ—‚·‚é)
+	// è¡Œæƒ…å ±(ãƒ¯ã‚¤ãƒ‰ã‚­ãƒ£ãƒ©ã§å‡¦ç†ã™ã‚‹)
 	ttstr line;
 	
 	bool addline() {
 		return file->addNextLine(line);
 	}
 	
-	// •¶š‚³‚ª‚µ
+	// æ–‡å­—ã•ãŒã—
 	int find(ttstr &line, tjs_char ch, int start) {
 		int i;
 		for (i=start; i < line.length(); i++) {
@@ -169,7 +169,7 @@ protected:
 		return i;
 	}
 
-	// •ªŠ„ˆ—
+	// åˆ†å‰²å‡¦ç†
 	void split(iTJSDispatch2 *fields) {
 
 		ttstr fld;
@@ -198,7 +198,7 @@ protected:
 						}
 						fld += line[j];
 					}
-					// ‰üs’Ç‰Áˆ—
+					// æ”¹è¡Œè¿½åŠ å‡¦ç†
 					fld += newline;
 				} while (addline());
 			} else {
@@ -210,7 +210,7 @@ protected:
 			}
 		next:
 			{
-				// “o˜^
+				// ç™»éŒ²
 				tTJSVariant var(fld);
 				fields->PropSetByNum(TJS_MEMBERENSURE, cnt++, &var, fields);
 			}
@@ -221,7 +221,7 @@ protected:
 public:
 
 	/**
-	 * ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+	 * ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 	 */
 	NI_CSVParser() {
 		target = NULL;
@@ -236,10 +236,10 @@ public:
 	}
 
 	/**
-	 * TJS ƒRƒ“ƒXƒgƒ‰ƒNƒ^
-	 * @param numparams ƒpƒ‰ƒ[ƒ^”
+	 * TJS ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+	 * @param numparams ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿æ•°
 	 * @param param
-	 * @param tjs_obj this ƒIƒuƒWƒFƒNƒg
+	 * @param tjs_obj this ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
 	 */
 	tjs_error TJS_INTF_METHOD Construct(tjs_int numparams, tTJSVariant **param, iTJSDispatch2 *tjs_obj) {
 		if (numparams > 0) {
@@ -255,7 +255,7 @@ public:
 	}
 
 	/**
-	 * ƒtƒ@ƒCƒ‹ƒNƒ[ƒYˆ—
+	 * ãƒ•ã‚¡ã‚¤ãƒ«ã‚¯ãƒ­ãƒ¼ã‚ºå‡¦ç†
 	 */
 	void clear() {
 		if (file) {
@@ -276,7 +276,7 @@ public:
 	}
 
 	/**
-	 * ƒp[ƒT‚Ì‰Šú‰»ˆ—
+	 * ãƒ‘ãƒ¼ã‚µã®åˆæœŸåŒ–å‡¦ç†
 	 */
 	void init(tTJSVariantString *text) {
 		clear();
@@ -285,7 +285,7 @@ public:
 	}
 
 	/**
-	 * ‰Šú‰»ˆ—
+	 * åˆæœŸåŒ–å‡¦ç†
 	 */
 	void initStorage(tTJSVariantString *filename, bool utf8=false) {
 		clear();
@@ -309,7 +309,7 @@ public:
 	}
 
 
-	// 1s“Ç‚İo‚µ
+	// 1è¡Œèª­ã¿å‡ºã—
 	bool getNextLine(tTJSVariant *result = NULL) {
 		bool ret = false;
 		if (file) {
@@ -331,15 +331,15 @@ public:
 	}
 	
 	/**
-	 * Œ»İ‚Ìs”Ô†‚Ìæ“¾
-	 * @return s”Ô†
+	 * ç¾åœ¨ã®è¡Œç•ªå·ã®å–å¾—
+	 * @return è¡Œç•ªå·
 	 */
 	tjs_int32 getLineNumber() {
 		return lineNo;
 	}
 	
 	/**
-	 * ƒp[ƒX‚ÌÀs
+	 * ãƒ‘ãƒ¼ã‚¹ã®å®Ÿè¡Œ
 	 */
 	void parse(iTJSDispatch2 *objthis) {
 		iTJSDispatch2 *target = this->target ? this->target : objthis;
@@ -445,26 +445,26 @@ static iTJSDispatch2 * Create_NC_CSVParser()
 
 	TJS_END_NATIVE_MEMBERS
 
-	// ’è”‚Ì“o˜^
+	// å®šæ•°ã®ç™»éŒ²
 
 	/*
-	 * ‚±‚ÌŠÖ”‚Í classobj ‚ğ•Ô‚µ‚Ü‚·B
+	 * ã“ã®é–¢æ•°ã¯ classobj ã‚’è¿”ã—ã¾ã™ã€‚
 	 */
 	return classobj;
 }
 
 void InitPlugin_CSVParser() {
-    // TJS ‚ÌƒOƒ[ƒoƒ‹ƒIƒuƒWƒFƒNƒg‚ğæ“¾‚·‚é
+    // TJS ã®ã‚°ãƒ­ãƒ¼ãƒãƒ«ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å–å¾—ã™ã‚‹
     iTJSDispatch2 * global = TVPGetScriptDispatch();
 
     if (global) {
 
-        // Arary ƒNƒ‰ƒXƒƒ“ƒo[æ“¾
+        // Arary ã‚¯ãƒ©ã‚¹ãƒ¡ãƒ³ãƒãƒ¼å–å¾—
         {
             tTJSVariant varScripts;
             TVPExecuteExpression(TJS_W("Array"), &varScripts);
             iTJSDispatch2 *dispatch = varScripts.AsObjectNoAddRef();
-            // ƒƒ“ƒoæ“¾
+            // ãƒ¡ãƒ³ãƒå–å¾—
             ArrayClearMethod = getMember(dispatch, TJS_W("clear"));
         }
 
@@ -475,10 +475,10 @@ void InitPlugin_CSVParser() {
 //---------------------------------------------------------------------------
 // extern "C" __declspec(dllexport) HRESULT _stdcall V2Unlink()
 // {
-// 	// - ‚Ü‚¸ATJS ‚ÌƒOƒ[ƒoƒ‹ƒIƒuƒWƒFƒNƒg‚ğæ“¾‚·‚é
+// 	// - ã¾ãšã€TJS ã®ã‚°ãƒ­ãƒ¼ãƒãƒ«ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å–å¾—ã™ã‚‹
 // 	iTJSDispatch2 * global = TVPGetScriptDispatch();
 // 
-// 	// - global ‚Ì DeleteMember ƒƒ\ƒbƒh‚ğ—p‚¢AƒIƒuƒWƒFƒNƒg‚ğíœ‚·‚é
+// 	// - global ã® DeleteMember ãƒ¡ã‚½ãƒƒãƒ‰ã‚’ç”¨ã„ã€ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’å‰Šé™¤ã™ã‚‹
 // 	if (global)	{
 // 		delMember(global, L"CSVParser");
 // 		if (ArrayClearMethod) {

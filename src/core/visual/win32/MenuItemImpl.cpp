@@ -174,12 +174,12 @@ void tTJSNI_MenuItem::Insert(tTJSNI_MenuItem *item, tjs_int index)
 // 	if(MenuItem && item->MenuItem)
 // 	{
 // 		MenuItem->Insert(index, item->MenuItem);
-	if (Children.Add(item, index))
-	{
-		ChildrenArrayValid = false;
-		if (item->Owner) item->Owner->AddRef();
-		item->Parent = this;
-	}
+	// if (Children.Add(item, index))
+	// {
+	// 	ChildrenArrayValid = false;
+	// 	if (item->Owner) item->Owner->AddRef();
+	// 	item->Parent = this;
+	// }
 		//AddChild(item);
 	//}
 }
@@ -236,13 +236,13 @@ void tTJSNI_MenuItem::SetChecked(bool b)
 {
 	//if(!MenuItem) return;
 	//MenuItem->setChecked (b);
-	if (b && IsRadio && Parent) {
-		for (tTJSNI_BaseMenuItem *_item : Parent->Children) {
-			tTJSNI_MenuItem *item = static_cast<tTJSNI_MenuItem*>(_item);
-			if (item->IsRadio && item->GroupIndex == GroupIndex)
-				item->IsChecked = false;
-		}
-	}
+	// if (b && IsRadio && Parent) {
+	// 	for (tTJSNI_BaseMenuItem *_item : Parent->Children) {
+	// 		tTJSNI_MenuItem *item = static_cast<tTJSNI_MenuItem*>(_item);
+	// 		if (item->IsRadio && item->GroupIndex == GroupIndex)
+	// 			item->IsChecked = false;
+	// 	}
+	// }
 	IsChecked = b;
 }
 //---------------------------------------------------------------------------
@@ -401,7 +401,7 @@ static void CreateShortCutKeyCodeTable() {
 	}
 #endif
 
-	// ¼ªÀï¼ªÀï£²»¥“QÓÃ¥·¥ç©`¥È¥«¥Ã¥ÈÎÄ×ÖÁĞ
+	// ¼ªÀï¼ªÀï£²»\“QÓÃ\·\ç©`\È\«\Ã\ÈÎÄ×ÖÁĞ
 	SetShortCutKeyCode(TJS_W("BkSp"), VK_BACK, false);
 	SetShortCutKeyCode(TJS_W("PgUp"), VK_PRIOR, false);
 	SetShortCutKeyCode(TJS_W("PgDn"), VK_NEXT, false);

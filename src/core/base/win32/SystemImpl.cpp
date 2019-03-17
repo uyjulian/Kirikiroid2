@@ -626,7 +626,7 @@ enum tTVPTouchDevice {
 	tdMouseWheel		= 0x00000200
 };
 /**
- * �^�b�`�f�o�C�X(�ƃ}�E�X)�̐ڑ���Ԃ��擾����
+ * タッチデバイス(とマウス)の接続状態を取得する
  **/
 static int TVPGetSupportTouchDevice()
 {

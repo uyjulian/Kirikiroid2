@@ -97,7 +97,7 @@ bool eTJSScriptError::AddTrace(tTJSScriptBlock *block, tjs_int srcpos)
 	tjs_int len = Trace.GetLen();
 	if(len >= TJS_MAX_TRACE_TEXT_LEN) return false;
 
-	if(len != 0) Trace += TJS_W("\n<-- ");
+	if(len != 0) Trace += TJS_W(" <-- ");
 	Trace += block->GetLineDescriptionString(srcpos);
 
 	return true;

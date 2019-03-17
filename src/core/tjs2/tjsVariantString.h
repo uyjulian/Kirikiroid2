@@ -14,7 +14,6 @@
 #include "tjsConfig.h"
 #include <stdlib.h>
 #include <string.h>
-#include <atomic>
 
 namespace TJS
 {
@@ -62,8 +61,7 @@ TJS_EXP_FUNC_DEF(void, TJSVS_free, (tjs_char *buf));
 #pragma pack(push, 4)
 struct tTJSVariantString_S
 {
-	//tjs_int RefCount; // reference count - 1
-	std::atomic_long  RefCount;
+	tjs_int RefCount; // reference count - 1
 	tjs_char *LongString;
 	tjs_char ShortString[TJS_VS_SHORT_LEN +1];
 	tjs_int Length; // string length
@@ -72,8 +70,10 @@ struct tTJSVariantString_S
 };
 #pragma pack(pop)
 /*]*/
-
-
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wundefined-bool-conversion"
+#endif
 /*start-of-tTJSVariantString*/
 class tTJSVariantString : public tTJSVariantString_S
 {
@@ -218,9 +218,16 @@ public:
 		}
 	}
 
-	TJS_CONST_METHOD_DEF(TJS_METHOD_RET(const tjs_char *), operator const tjs_char *, ());
+	TJS_CONST_METHOD_DEF(TJS_METHOD_RET(const tjs_char *), operator const tjs_char *, ())
+	{
+		return (!this)?(NULL):(LongString?LongString:ShortString);
+	}
 
-	TJS_CONST_METHOD_DEF(tjs_int, GetLength, ());
+	TJS_CONST_METHOD_DEF(tjs_int, GetLength, ())
+	{
+		if(!this) return 0;
+		return Length;
+	}
 
 	TJS_METHOD_DEF(tTJSVariantString *, FixLength, ());
 
@@ -257,7 +264,9 @@ public:
 };
 /*end-of-tTJSVariantString*/
 //---------------------------------------------------------------------------
-
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 
 

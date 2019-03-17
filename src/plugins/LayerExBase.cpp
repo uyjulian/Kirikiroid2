@@ -1,4 +1,6 @@
-﻿#include "LayerExBase.h"
+﻿#include <string>
+#include "tjs.h"
+#include "LayerExBase.h"
 #include "MsgIntf.h"
 #include "SysInitIntf.h"
 

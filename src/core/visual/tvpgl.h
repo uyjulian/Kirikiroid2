@@ -68,7 +68,7 @@ extern unsigned char TVP252DitherPalette[3][256];
 #if defined( __BORLANDC__ ) || ( _MSC_VER )
 	#define TVP_INLINE_FUNC __inline
 #else
-	#define TVP_INLINE_FUNC 
+	#define TVP_INLINE_FUNC inline
 #endif
 
 static tjs_uint32 TVP_INLINE_FUNC TVPSaturatedAdd(tjs_uint32 a, tjs_uint32 b)

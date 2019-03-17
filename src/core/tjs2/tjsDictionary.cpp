@@ -11,6 +11,8 @@
 
 #include "tjsCommHead.h"
 
+#include <memory>
+
 #include "tjsDictionary.h"
 #include "tjsArray.h"
 #include "tjsBinarySerializer.h"
@@ -18,6 +20,131 @@
 
 namespace TJS
 {
+//---------------------------------------------------------------------------
+struct tListKeysCallback : public tTJSDispatch {
+	tTJSArrayObject* Array;
+	tTJSArrayNI* ArrayNI;
+	tListKeysCallback( tTJSArrayObject* array, tTJSArrayNI* ni ) : Array( array ), ArrayNI(ni) {}
+	tjs_error TJS_INTF_METHOD
+		FuncCall( tjs_uint32 flag, const tjs_char * membername,
+			tjs_uint32 *hint, tTJSVariant *result, tjs_int numparams,
+			tTJSVariant **param, iTJSDispatch2 *objthis ) {
+		if( numparams < 2 ) return TJS_E_BADPARAMCOUNT;
+
+		tTVInteger flags = param[1]->AsInteger();
+		static tjs_uint addHint = NULL;
+		if( !( flags & TJS_HIDDENMEMBER ) ) {
+			Array->Add( ArrayNI, *param[0] );
+		}
+		if( result ) *result = (tjs_int)1;
+		return TJS_S_OK;
+	}
+};
+//---------------------------------------------------------------------------
+struct tListValuesCallback : public tTJSDispatch {
+	tTJSArrayObject* Array;
+	tTJSArrayNI* ArrayNI;
+	tListValuesCallback( tTJSArrayObject* array, tTJSArrayNI* ni ) : Array( array ), ArrayNI( ni ) {}
+	tjs_error TJS_INTF_METHOD
+		FuncCall( tjs_uint32 flag, const tjs_char * membername,
+			tjs_uint32 *hint, tTJSVariant *result, tjs_int numparams,
+			tTJSVariant **param, iTJSDispatch2 *objthis ) {
+		if( numparams < 3 ) return TJS_E_BADPARAMCOUNT;
+
+		tTVInteger flags = param[1]->AsInteger();
+		static tjs_uint addHint = NULL;
+		if( !( flags & TJS_HIDDENMEMBER ) ) {
+			Array->Add( ArrayNI, *param[2] );
+		}
+		if( result ) *result = (tjs_int)1;
+		return TJS_S_OK;
+	}
+};
+//---------------------------------------------------------------------------
+template<typename EnumFunction>
+static tjs_error tTJSGetKeyValue( tTJSVariant* result, tjs_int numparams, tTJSVariant** param, iTJSDispatch2* objthis )
+{
+	if( numparams < 1 ) return TJS_E_BADPARAMCOUNT;
+	if( result ) {
+		iTJSDispatch2 *array = TJSCreateArrayObject();
+		tTJSArrayNI* ni = nullptr;
+		if( TJS_SUCCEEDED( array->NativeInstanceSupport( TJS_NIS_GETINSTANCE, TJSGetArrayClassID(), (iTJSNativeInstance**)&ni ) ) ) {
+			tjs_int count = 0;
+			tjs_error hr = param[0]->AsObjectClosureNoAddRef().GetCount( &count, nullptr, nullptr, nullptr );
+			if( TJS_SUCCEEDED( hr ) ) {
+				ni->Items.reserve( count );
+			}
+			EnumFunction* caller = new EnumFunction( (tTJSArrayObject*)array, ni );
+			tTJSVariantClosure closure( caller );
+			param[0]->AsObjectClosureNoAddRef().EnumMembers( TJS_IGNOREPROP | TJS_ENUM_NO_VALUE, &closure, nullptr );
+			caller->Release();
+
+			*result = tTJSVariant( array, array );
+			array->Release();
+		} else {
+			*result = tTJSVariant( array, array );
+			array->Release();
+		}
+	}
+	return TJS_S_OK;
+}
+//---------------------------------------------------------------------------
+struct tForEachCallback : public tTJSDispatch {
+	iTJSDispatch2* Func;
+	iTJSDispatch2* FuncThis;
+	std::unique_ptr<tTJSVariant*[]> Params;
+	tjs_int NumParams;
+	tTJSVariant Result;
+
+	tForEachCallback( iTJSDispatch2* func, iTJSDispatch2* funcThis, tTJSVariant* params[], tjs_int numparams )
+		: Func( func ), FuncThis( funcThis ), Params( params ), NumParams( numparams ) {
+	}
+	tjs_error TJS_INTF_METHOD
+		FuncCall( tjs_uint32 flag, const tjs_char * membername,
+			tjs_uint32 *hint, tTJSVariant *result, tjs_int numparams,
+			tTJSVariant **param, iTJSDispatch2 *objthis ) {
+		if( numparams >= 3 ) {
+			if( (tjs_int)*param[1] != TJS_HIDDENMEMBER ) {
+				Params[0] = param[2];
+				Params[1] = param[0];
+				Func->FuncCall( 0, nullptr, nullptr, &Result, NumParams, Params.get(), FuncThis );
+			}
+		}
+		if( result ) {
+			*result = Result.Type() == tvtVoid;
+		}
+		return TJS_S_OK;
+	}
+};
+//---------------------------------------------------------------------------
+struct tForEachNameCallback : public tTJSDispatch {
+	tTJSVariantString* FuncName;
+	std::unique_ptr<tTJSVariant*[]> Params;
+	tjs_int NumParams;
+
+	tForEachNameCallback( tTJSVariantString* funcName, tTJSVariant* params[], tjs_int numparams )
+		: FuncName( funcName ), Params( params ), NumParams( numparams ) {
+	}
+	tjs_error TJS_INTF_METHOD
+		FuncCall( tjs_uint32 flag, const tjs_char * membername,
+			tjs_uint32 *hint, tTJSVariant *result, tjs_int numparams,
+			tTJSVariant **param, iTJSDispatch2 *objthis ) {
+
+		if( numparams >= 3 ) {
+			if( (tjs_int)*param[1] != TJS_HIDDENMEMBER ) {
+				tjs_error hr = param[2]->AsObjectClosureNoAddRef().FuncCall( 0, *FuncName, FuncName->GetHint(), nullptr, NumParams, Params.get(), param[2]->AsObjectThisNoAddRef() );
+				if( TJS_FAILED( hr ) ) {
+					TJSThrowFrom_tjs_error( hr, *FuncName );
+					return TJS_E_FAIL;
+				}
+			}
+		}
+		if( result ) {
+			*result = true;
+		}
+		return TJS_S_OK;
+	}
+};
 //---------------------------------------------------------------------------
 static tjs_int32 ClassID_Dictionary;
 //---------------------------------------------------------------------------
@@ -69,40 +196,53 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/loadStruct)
 	ttstr mode;
 	if(numparams >= 2 && param[1]->Type() != tvtVoid) mode =*param[1];
 
-	tTJSBinaryStream* stream = TJSCreateBinaryStreamForRead(name, mode);
-	if( !stream ) return TJS_E_INVALIDPARAM;
+	{
+		iTJSBinaryStream* stream = TJSCreateBinaryStreamForRead(name, mode);
+		if( !stream ) return TJS_E_INVALIDPARAM;
 
-	bool isbin = false;
-	try {
-		tjs_uint64 streamlen = stream->GetSize();
-		if( streamlen >= tTJSBinarySerializer::HEADER_LENGTH ) {
-			tjs_uint8 header[tTJSBinarySerializer::HEADER_LENGTH];
-			stream->Read( header, tTJSBinarySerializer::HEADER_LENGTH );
-			if( tTJSBinarySerializer::IsBinary( header ) ) {
-				if( !dic ) dic = (tTJSDictionaryObject*)TJSCreateDictionaryObject();
-				tTJSBinarySerializer binload(dic);
-				tTJSVariant* var = binload.Read( stream );
-				if( var ) {
-					if( result ) *result = *var;
-					delete var;
-					isbin = true;
-				}
-				if( dicfree ) {
-					if( dic ) dic->Release();
-					dic = NULL;
+		bool isbin = false;
+		try {
+			tjs_uint64 streamlen = stream->GetSize();
+			if( streamlen >= tTJSBinarySerializer::HEADER_LENGTH ) {
+				tjs_uint8 header[tTJSBinarySerializer::HEADER_LENGTH];
+				stream->Read( header, tTJSBinarySerializer::HEADER_LENGTH );
+				if( tTJSBinarySerializer::IsBinary( header ) ) {
+					if( !dic ) dic = (tTJSDictionaryObject*)TJSCreateDictionaryObject();
+					tTJSBinarySerializer binload(dic);
+					tTJSVariant* var = binload.Read( stream );
+					if( var ) {
+						if( result ) *result = *var;
+						delete var;
+						isbin = true;
+					}
+					if( dicfree ) {
+						if( dic ) dic->Release();
+						dic = NULL;
+					}
 				}
 			}
+		} catch(...) {
+			delete stream;
+			if( dicfree ) {
+				if( dic ) dic->Release();
+				dic = NULL;
+			}
+			throw;
 		}
-	} catch(...) {
 		delete stream;
-		if( dicfree ) {
-			if( dic ) dic->Release();
-			dic = NULL;
-		}
-		throw;
+		if( isbin ) return TJS_S_OK;
 	}
-	delete stream;
-	if( isbin ) return TJS_S_OK;
+	if( result )
+	{
+		iTJSTextReadStream * stream = TJSCreateTextStreamForRead(name, mode);
+		if( tTJS::LoadTextDictionaryArray( stream, result, name.c_str() ) ) {
+			return TJS_S_OK;
+		}
+	}
+	else
+	{
+		return TJS_S_OK;
+	}
 	return TJS_E_INVALIDPARAM;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/loadStruct)
@@ -132,7 +272,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func.name*/saveStruct)
 	if(numparams >= 2 && param[1]->Type() != tvtVoid) mode = *param[1];
 
 	if( TJS_strchr(mode.c_str(), TJS_W('b')) != NULL ) {
-		tTJSBinaryStream* stream = TJSCreateBinaryStreamForWrite(name, mode);
+		iTJSBinaryStream* stream = TJSCreateBinaryStreamForWrite(name, mode);
 		try {
 			stream->Write( tTJSBinarySerializer::HEADER, tTJSBinarySerializer::HEADER_LENGTH );
 			std::vector<iTJSDispatch2 *> stack;
@@ -217,6 +357,108 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func.name*/clear)
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL(/*func.name*/clear)
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/*func.name*/getCount ) {
+	if( numparams<1 ) return TJS_E_BADPARAMCOUNT;
+	if( result ) {
+		tjs_int ret = 0;
+		tjs_error hr = param[0]->AsObjectClosureNoAddRef().GetCount( &ret, nullptr, nullptr, nullptr );
+		if( TJS_SUCCEEDED( hr ) ) {
+			*result = ret;
+		} else {
+			*result = 0;
+		}
+	}
+	return TJS_S_OK;
+}
+TJS_END_NATIVE_STATIC_METHOD_DECL(/*func.name*/getCount )
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/*func.name*/keys ) {
+	return tTJSGetKeyValue<tListKeysCallback>( result, numparams, param, objthis );
+}
+TJS_END_NATIVE_STATIC_METHOD_DECL(/*func.name*/keys )
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/*func.name*/values ) {
+	return tTJSGetKeyValue<tListValuesCallback>( result, numparams, param, objthis );
+}
+TJS_END_NATIVE_STATIC_METHOD_DECL(/*func.name*/values )
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/*func.name*/contains ) {
+	if( objthis ) {
+		// call from incontextof
+		if( numparams < 1 ) return TJS_E_BADPARAMCOUNT;
+		if( param[0]->Type() != tvtString ) return TJS_E_INVALIDPARAM;
+		if( result ) {
+			tTJSVariant tmp;
+			if( TJS_SUCCEEDED( objthis->PropGet( TJS_MEMBERMUSTEXIST, *( param[1]->AsStringNoAddRef() ), nullptr, &tmp, objthis ) ) ) {
+				*result = (tjs_int)1;
+			} else {
+				*result = (tjs_int)0;
+			}
+		}
+		return TJS_S_OK;
+	}
+	// static call Dictionary.contains( object, name );
+	if( numparams < 2 ) return TJS_E_BADPARAMCOUNT;
+	iTJSDispatch2 *disp = param[0]->AsObjectThisNoAddRef();
+	if( !disp ) return TJS_E_INVALIDPARAM;
+	if( param[1]->Type() != tvtString ) return TJS_E_INVALIDPARAM;
+	if( result ) {
+		tTJSVariant tmp;
+		if( TJS_SUCCEEDED( disp->PropGet( TJS_MEMBERMUSTEXIST, *(param[1]->AsStringNoAddRef()), nullptr, &tmp, disp ) ) ) {
+			*result = (tjs_int)1;
+		} else {
+			*result = (tjs_int)0;
+		}
+	}
+	return TJS_S_OK;
+}
+TJS_END_NATIVE_STATIC_METHOD_DECL(/*func.name*/contains )
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/*func.name*/forEach ) {
+	if( numparams < 2 ) return TJS_E_BADPARAMCOUNT;
+
+	if( param[1]->Type() == tvtString ) {
+		tTJSVariantClosure &obj = param[0]->AsObjectClosureNoAddRef();
+		tjs_int paramCount = numparams - 2;
+		std::unique_ptr<tTJSVariant*[]> paramList;
+		if( paramCount > 0 ) {
+			paramList.reset( new tTJSVariant*[paramCount] );
+			for( tjs_int i = 2; i < numparams; i++ ) {
+				paramList[i - 2] = param[i];
+			}
+		}
+		auto deleter = []( tForEachNameCallback *callback ) {
+			callback->Release();
+		};
+		std::unique_ptr<tForEachNameCallback, decltype( deleter )> callback( new tForEachNameCallback( param[1]->AsStringNoAddRef(), paramList.release(), numparams ), std::move( deleter ) );
+		tTJSVariantClosure closure( callback.get() );
+		obj.EnumMembers( TJS_IGNOREPROP, &closure, nullptr );
+		return TJS_S_OK;
+	} else if( param[1]->Type() == tvtObject ) {
+		tTJSVariantClosure &obj = param[0]->AsObjectClosureNoAddRef();
+		tTJSVariantClosure &funcClosure = param[1]->AsObjectClosureNoAddRef();
+		iTJSDispatch2 *func = funcClosure.Object;
+		iTJSDispatch2 *functhis = funcClosure.ObjThis;
+		if( !functhis ) functhis = objthis;
+
+		std::unique_ptr<tTJSVariant*[]> paramList( new tTJSVariant*[numparams] );
+		for( tjs_int i = 2; i < numparams; i++ )
+			paramList[i] = param[i];
+		auto deleter = []( tForEachCallback *callback ) {
+			callback->Release();
+		};
+		std::unique_ptr<tForEachCallback, decltype( deleter )> callback( new tForEachCallback( func, functhis, paramList.release(), numparams), std::move( deleter ) );
+		tTJSVariantClosure closure( callback.get() );
+		obj.EnumMembers( TJS_IGNOREPROP, &closure, nullptr );
+		if( result ) {
+			*result = callback->Result;
+		}
+		return TJS_S_OK;
+	}
+	return TJS_E_INVALIDPARAM;
+}
+TJS_END_NATIVE_STATIC_METHOD_DECL(/*func.name*/forEach )
 //----------------------------------------------------------------------
 
 	ClassID_Dictionary = TJS_NCM_CLASSID;
@@ -350,8 +592,8 @@ void tTJSDictionaryNI::Assign(iTJSDispatch2 * dsp, bool clear)
 		if(clear) Owner->Clear();
 		
 		tSaveMemberCountCallback countCallback;
-		tTJSVariantClosure clo1(&countCallback, NULL);
-		dsp->EnumMembers(TJS_IGNOREPROP, &clo1, dsp);
+		tTJSVariantClosure clo(&countCallback, NULL);
+		dsp->EnumMembers(TJS_IGNOREPROP, &clo, dsp);
 		tjs_int reqcount = countCallback.Count + Owner->Count;
 		Owner->RebuildHash( reqcount );
 
@@ -408,7 +650,8 @@ void tTJSDictionaryNI::SaveStructuredData(std::vector<iTJSDispatch2 *> &stack,
 	callback.Stream = &stream;
 	callback.IndentStr = &indentstr2;
 	callback.First = true;
-    tTJSVariantClosure clo(&callback, NULL);
+
+	tTJSVariantClosure clo(&callback, NULL);
 	Owner->EnumMembers(TJS_IGNOREPROP, &clo, Owner);
 
 #ifdef TJS_TEXT_OUT_CRLF
@@ -468,11 +711,11 @@ tjs_error TJS_INTF_METHOD tTJSDictionaryNI::tSaveStructCallback::FuncCall(
 	return TJS_S_OK;
 }
 //---------------------------------------------------------------------------
-void tTJSDictionaryNI::SaveStructuredBinary(std::vector<iTJSDispatch2 *> &stack, tTJSBinaryStream &stream )
+void tTJSDictionaryNI::SaveStructuredBinary(std::vector<iTJSDispatch2 *> &stack, iTJSBinaryStream &stream )
 {
 	tSaveMemberCountCallback countCallback;
-    tTJSVariantClosure cclo(&countCallback, NULL);
-	Owner->EnumMembers(TJS_IGNOREPROP, &cclo, Owner);
+	tTJSVariantClosure clo(&countCallback, NULL);
+	Owner->EnumMembers(TJS_IGNOREPROP, &clo, Owner);
 
 	tjs_int count = countCallback.Count;
 	tTJSBinarySerializer::PutStartMap( &stream, count );
@@ -480,8 +723,8 @@ void tTJSDictionaryNI::SaveStructuredBinary(std::vector<iTJSDispatch2 *> &stack,
 	tSaveStructBinayCallback callback;
 	callback.Stack = &stack;
 	callback.Stream = &stream;
-    tTJSVariantClosure clo(&callback, NULL);
-	Owner->EnumMembers(TJS_IGNOREPROP, &clo, Owner);
+	tTJSVariantClosure clo2(&callback, NULL);
+	Owner->EnumMembers(TJS_IGNOREPROP, &clo2, Owner);
 }
 //---------------------------------------------------------------------------
 tjs_error TJS_INTF_METHOD tTJSDictionaryNI::tSaveStructBinayCallback::FuncCall(
@@ -548,16 +791,17 @@ void tTJSDictionaryNI::AssignStructure(iTJSDispatch2 * dsp,
 			
 			// reserve area
 			tSaveMemberCountCallback countCallback;
-            tTJSVariantClosure cclo(&countCallback, NULL);
-			dsp->EnumMembers(TJS_IGNOREPROP, &cclo, dsp);
+			tTJSVariantClosure clo(&countCallback, NULL);
+			dsp->EnumMembers(TJS_IGNOREPROP, &clo, dsp);
 			tjs_int reqcount = countCallback.Count + Owner->Count;
 			Owner->RebuildHash( reqcount );
 
 			tAssignStructCallback callback;
 			callback.Dest = Owner;
 			callback.Stack = &stack;
-            tTJSVariantClosure clo(&callback, NULL);
-			dsp->EnumMembers(TJS_IGNOREPROP, &clo, dsp);
+
+			tTJSVariantClosure clo2(&callback, NULL);
+			dsp->EnumMembers(TJS_IGNOREPROP, &clo2, dsp);
 		}
 		catch(...)
 		{
@@ -803,6 +1047,51 @@ iTJSDispatch2 * TJSCreateDictionaryObject(iTJSDispatch2 **classout)
 }
 //---------------------------------------------------------------------------
 
+//---------------------------------------------------------------------------
+// TJSReadDictionaryObject
+//---------------------------------------------------------------------------
+tjs_error TJSReadDictionaryObject( tTJSVariant &result, const ttstr& name, const ttstr& mode )
+{
+	tTJSDictionaryObject* dic = nullptr;
+	bool isbin = false;
+
+	// try binary fromat
+	iTJSBinaryStream* stream = TJSCreateBinaryStreamForRead(name, mode);
+	if( !stream ) return TJS_E_INVALIDPARAM;
+	try {
+		tjs_uint64 streamlen = stream->GetSize();
+		if( streamlen >= tTJSBinarySerializer::HEADER_LENGTH ) {
+			tjs_uint8 header[tTJSBinarySerializer::HEADER_LENGTH];
+			stream->Read( header, tTJSBinarySerializer::HEADER_LENGTH );
+			if( tTJSBinarySerializer::IsBinary( header ) ) {
+				if( !dic ) dic = (tTJSDictionaryObject*)TJSCreateDictionaryObject();
+				tTJSBinarySerializer binload( dic );
+				tTJSVariant* var = binload.Read( stream );
+				if( var ) {
+					result = *var;
+					delete var;
+					isbin = true;
+				}
+				if( dic ) dic->Release();
+				dic = nullptr;
+			}
+		}
+	} catch(...) {
+		delete stream;
+		if( dic ) dic->Release();
+		dic = nullptr;
+		throw;
+	}
+	delete stream;
+	if( isbin ) return TJS_S_OK;
+
+	// try text style
+	iTJSTextReadStream * txtstream = TJSCreateTextStreamForRead(name, mode);
+	if( tTJS::LoadTextDictionaryArray( txtstream, &result, name.c_str() ) ) {
+		return TJS_S_OK;
+	}
+	return TJS_E_FAIL;
+}
 
 
 

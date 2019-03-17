@@ -11,16 +11,18 @@
 
 #include "tjsCommHead.h"
 
-#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
-#endif
 #include "MsgIntf.h"
 #include "DebugIntf.h"
 #include "EventIntf.h"
 #include "UtilStreams.h"
 #include "SysInitIntf.h"
 
+#ifdef ANDROID
 #include <zlib.h>
+#else
+#include <zlib/zlib.h>
+#endif
 #include <algorithm>
 
 bool TVPAllowExtractProtectedStorage = true;
@@ -36,11 +38,6 @@ void TVPSetXP3ArchiveExtractionFilter(tTVPXP3ArchiveExtractionFilter filter)
 }
 //---------------------------------------------------------------------------
 
-static tTVPXP3ArchiveContentFilter TVPXP3ArchiveContentFilter = nullptr;
-void TVPSetXP3ArchiveContentFilter(tTVPXP3ArchiveContentFilter filter)
-{
-	TVPXP3ArchiveContentFilter = filter;
-}
 
 
 //---------------------------------------------------------------------------
@@ -60,7 +57,7 @@ static bool TVPArchiveHandleCacheInit = false;
 static bool TVPArchiveHandleCacheShutdown = false;
 static tTJSCriticalSection TVPArchiveHandleCacheCS;
 //---------------------------------------------------------------------------
-tTJSBinaryStream * TVPGetCachedArchiveHandle(void * pointer, const ttstr & name)
+static tTJSBinaryStream * TVPGetCachedArchiveHandle(void * pointer, const ttstr & name)
 {
 	// get cached archive file handle from the pool
 	if(TVPArchiveHandleCacheShutdown)
@@ -105,7 +102,7 @@ tTJSBinaryStream * TVPGetCachedArchiveHandle(void * pointer, const ttstr & name)
 	return TVPCreateStream(name);
 }
 //---------------------------------------------------------------------------
-/*static*/ void TVPReleaseCachedArchiveHandle(void * pointer,
+static void TVPReleaseCachedArchiveHandle(void * pointer,
 						tTJSBinaryStream * stream)
 {
 	// release archive file handle
@@ -152,7 +149,7 @@ tTJSBinaryStream * TVPGetCachedArchiveHandle(void * pointer, const ttstr & name)
 	oldest_item->Age = ++TVPArchiveHandleCacheAge;
 }
 //---------------------------------------------------------------------------
-/*static*/ void TVPFreeArchiveHandlePoolByPointer(void * pointer)
+static void TVPFreeArchiveHandlePoolByPointer(void * pointer)
 {
 	// free all streams which have specified pointer
 	if(TVPArchiveHandleCacheShutdown) return;
@@ -230,7 +227,7 @@ static tTVPAtExit TVPShutdownArchiveCacheAtExit
 	archive.
 */
 //---------------------------------------------------------------------------
-bool TVPGetXP3ArchiveOffset(tTJSBinaryStream *st, const ttstr name,
+static bool TVPGetXP3ArchiveOffset(tTJSBinaryStream *st, const ttstr name,
 	tjs_uint64 & offset, bool raise)
 {
 	st->SetPosition(0);
@@ -282,7 +279,7 @@ bool TVPGetXP3ArchiveOffset(tTJSBinaryStream *st, const ttstr name,
 		// XP3 mark must be aligned by a paragraph ( 16 bytes )
 		const tjs_uint one_read_size = 256*1024;
 		tjs_uint read;
-		tjs_uint8 *buffer = new tjs_uint8[one_read_size]; // read 256kbytes at once
+		tjs_uint8 buffer[one_read_size]; // read 256kbytes at once
 
 		while(0!=(read = st->Read(buffer, one_read_size)))
 		{
@@ -301,7 +298,7 @@ bool TVPGetXP3ArchiveOffset(tTJSBinaryStream *st, const ttstr name,
 			if(found) break;
 			offset += one_read_size;
 		}
-        delete[] buffer;
+
 		if(!found)
 		{
 			if(raise)
@@ -317,11 +314,8 @@ bool TVPGetXP3ArchiveOffset(tTJSBinaryStream *st, const ttstr name,
 	}
 	else
 	{
-		if (raise) {
-			ttstr msg(TVPGetMessageByLocale("err_not_xp3_archive"));
-			TVPThrowExceptionMessage(msg.c_str(), name);
-			//TVPThrowExceptionMessage(TVPCannotFindXP3Mark, name);
-		}
+		if(raise)
+			TVPThrowExceptionMessage(TVPCannotFindXP3Mark, name);
 		return false;
 	}
 
@@ -341,30 +335,34 @@ bool TVPIsXP3Archive(const ttstr &name)
 		return false;
 	}
 }
-
 //---------------------------------------------------------------------------
-void tTVPXP3Archive::Init(tTJSBinaryStream *st, tjs_int64 off, bool normalizeName)
+tTVPXP3Archive::tTVPXP3Archive(const ttstr & name) : tTVPArchive(name)
 {
-	tjs_uint64 offset = off;
+	Name = name;
+	Count = 0;
+
+	tjs_uint64 offset;
+
+	tTJSBinaryStream *st = TVPCreateStream(name);
 
 	tjs_uint8 *indexdata = NULL;
 
-	static const tjs_uint8 cn_File[] =
+	static tjs_uint8 cn_File[] =
 		{ 0x46/*'F'*/, 0x69/*'i'*/, 0x6c/*'l'*/, 0x65/*'e'*/ };
-	static const tjs_uint8 cn_info[] =
+	static tjs_uint8 cn_info[] =
 		{ 0x69/*'i'*/, 0x6e/*'n'*/, 0x66/*'f'*/, 0x6f/*'o'*/ };
-	static const tjs_uint8 cn_segm[] =
+	static tjs_uint8 cn_segm[] =
 		{ 0x73/*'s'*/, 0x65/*'e'*/, 0x67/*'g'*/, 0x6d/*'m'*/ };
-	static const tjs_uint8 cn_adlr[] =
+	static tjs_uint8 cn_adlr[] =
 		{ 0x61/*'a'*/, 0x64/*'d'*/, 0x6c/*'l'*/, 0x72/*'r'*/ };
 
-	TVPAddLog( TVPFormatMessage(TVPInfoTryingToReadXp3VirtualFileSystemInformationFrom, ArchiveName) );
+	TVPAddLog( TVPFormatMessage(TVPInfoTryingToReadXp3VirtualFileSystemInformationFrom, name) );
 
 	int segmentcount = 0;
 	try
 	{
 		// retrieve archive offset
-		if(off < 0) TVPGetXP3ArchiveOffset(st, ArchiveName, offset, true);
+		TVPGetXP3ArchiveOffset(st, name, offset, true);
 
 		// read index position and seek
 		st->SetPosition(11 + offset);
@@ -464,8 +462,7 @@ void tTVPXP3Archive::Init(tTJSBinaryStream *st, tjs_int64 off, bool normalizeNam
 				ttstr name = TVPStringFromBMPUnicode(
 						(const tjs_uint16 *)(indexdata + ch_info_start + 22), len);
 				item.Name = name;
-				if (normalizeName)
-					NormalizeInArchiveStorageName(item.Name);
+				NormalizeInArchiveStorageName(item.Name);
 
 				// find 'segm' sub-chunk
 				// Each of in-archive storages can be splitted into some segments.
@@ -528,8 +525,7 @@ void tTVPXP3Archive::Init(tTJSBinaryStream *st, tjs_int64 off, bool normalizeNam
 		}
 
 		// sort item vector by its name (required for tTVPArchive specification)
-		if(normalizeName)
-			std::stable_sort(ItemVector.begin(), ItemVector.end());
+		std::stable_sort(ItemVector.begin(), ItemVector.end());
 	}
 	catch(...)
 	{
@@ -543,33 +539,11 @@ void tTVPXP3Archive::Init(tTJSBinaryStream *st, tjs_int64 off, bool normalizeNam
 
 	TVPAddLog( TVPFormatMessage( TVPInfoDoneWithContains, ttstr(Count), ttstr(segmentcount) ) );
 }
-
-//---------------------------------------------------------------------------
-tTVPXP3Archive::tTVPXP3Archive(const ttstr & name, tTJSBinaryStream *st, tjs_int64 offset, bool normalizeFileName) : tTVPArchive(name)
-{
-	if (!st) st = TVPCreateStream(name);
-	Init(st, offset, normalizeFileName);
-}
 //---------------------------------------------------------------------------
 tTVPXP3Archive::~tTVPXP3Archive()
 {
 	TVPFreeArchiveHandlePoolByPointer(this);
 }
-
-tTVPArchive * tTVPXP3Archive::Create(const ttstr & name, tTJSBinaryStream *st, bool normalizeFileName)
-{
-	bool refStream = st;
-	if (!st) {
-		st = TVPCreateStream(name);
-	}
-	tjs_uint64 offset;
-	if (!TVPGetXP3ArchiveOffset(st, name, offset, false)) {
-		if (!refStream) delete st;
-		return nullptr;
-	}
-	return new tTVPXP3Archive(name, st, offset, normalizeFileName);
-}
-
 //---------------------------------------------------------------------------
 tTJSBinaryStream * tTVPXP3Archive::CreateStreamByIndex(tjs_uint idx)
 {
@@ -577,24 +551,13 @@ tTJSBinaryStream * tTVPXP3Archive::CreateStreamByIndex(tjs_uint idx)
 
 	tArchiveItem &item = ItemVector[idx];
 
-	tTJSBinaryStream *stream = TVPGetCachedArchiveHandle(this, ArchiveName);
+	tTJSBinaryStream *stream = TVPGetCachedArchiveHandle(this, Name);
 
-	tTVPXP3ArchiveStream *out;
+	tTJSBinaryStream *out;
 	try
 	{
 		out = new tTVPXP3ArchiveStream(this, idx, &(item.Segments), stream,
 			item.OrgSize);
-		if (TVPXP3ArchiveContentFilter) {
-			tjs_int result = TVPXP3ArchiveContentFilter(item.Name, ArchiveName, item.OrgSize, &out->GetFilterContext());
-#define XP3_CONTENT_FILTER_FETCH_FULLDATA 1
-			if (result == XP3_CONTENT_FILTER_FETCH_FULLDATA) {
-				tTVPMemoryStream *memstr = new tTVPMemoryStream();
-				memstr->SetSize(item.OrgSize);
-				out->ReadBuffer(memstr->GetInternalBuffer(), item.OrgSize);
-				delete out;
-				return memstr;
-			}
-		}
 	}
 	catch(...)
 	{
@@ -1049,9 +1012,9 @@ tjs_uint TJS_INTF_METHOD tTVPXP3ArchiveStream::Read(void *buffer, tjs_uint read_
 		if(TVPXP3ArchiveExtractionFilter)
 		{
 			tTVPXP3ExtractionFilterInfo info(CurPos, (tjs_uint8*)buffer + write_size,
-				one_size, Owner->GetFileHash(StorageIndex), Owner->GetName(StorageIndex));
+				one_size, Owner->GetFileHash(StorageIndex));
 			TVPXP3ArchiveExtractionFilter
-				( (tTVPXP3ExtractionFilterInfo*) &info, &FilterContext );
+				( (tTVPXP3ExtractionFilterInfo*) &info );
 		}
 
 		// adjust members

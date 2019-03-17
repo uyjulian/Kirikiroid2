@@ -500,6 +500,33 @@ protected:
 		// override this instead of FuncCall
 };
 //---------------------------------------------------------------------------
+// Utility
+//---------------------------------------------------------------------------
+inline iTJSNativeInstance *TJSGetNativeInstance( tjs_int32 classid, tTJSVariant *param ) {
+	if( param && (param->Type() == tvtObject) ) {
+		tTJSVariantClosure clo = param->AsObjectClosureNoAddRef();
+		if( clo.Object ) {
+			iTJSNativeInstance *ret = nullptr;
+			if( TJS_SUCCEEDED(clo.Object->NativeInstanceSupport(TJS_NIS_GETINSTANCE, classid, &ret)) )
+				return ret;
+		}
+	}
+	return nullptr;
+}
+//---------------------------------------------------------------------------
+inline const iTJSNativeInstance *TJSGetNativeInstance( tjs_int32 classid, const tTJSVariant *param ) {
+	if( param && (param->Type() == tvtObject) ) {
+		tTJSVariant *p = const_cast<tTJSVariant *>(param);
+		tTJSVariantClosure clo = p->AsObjectClosureNoAddRef();
+		if( clo.Object ) {
+			iTJSNativeInstance *ret = nullptr;
+			if( TJS_SUCCEEDED(clo.Object->NativeInstanceSupport(TJS_NIS_GETINSTANCE, classid, &ret)) )
+				return ret;
+		}
+	}
+	return nullptr;
+}
+//---------------------------------------------------------------------------
 } // namespace TJS
 
 #endif

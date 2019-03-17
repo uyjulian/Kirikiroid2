@@ -16,8 +16,8 @@ extern void TVPDumpHWException();
 
 extern void TVPInitializeBaseSystems();
 
-extern ttstr TVPNativeProjectDir;
-extern ttstr TVPNativeDataPath;
+extern tjs_string TVPNativeProjectDir;
+extern tjs_string TVPNativeDataPath;
 
 extern bool TVPProjectDirSelected;
 extern void TVPEnsureDataPathDirectory();

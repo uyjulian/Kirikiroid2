@@ -21,6 +21,8 @@
 #include "tjsObject.h"
 #include "tjsMath.h"
 
+#include <ctype.h>
+
 namespace TJS
 {
 
@@ -590,7 +592,7 @@ static bool TJSParseNonDecimalNumber(tTJSVariant &val, const tjs_char **ptr,
 
 static bool TJSParseDecimalReal(tTJSVariant &val, const tjs_char **pp)
 {
-	val = (tTVReal)TJS_strtod(*pp, NULL);
+	val = (tTVReal)TJS_strtod(*pp, nullptr);
 	return true;
 }
 

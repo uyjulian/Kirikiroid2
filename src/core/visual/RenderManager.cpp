@@ -1,3 +1,4 @@
+#include <string>
 #include "RenderManager.h"
 // #include "renderer/CCTexture2D.h"
 // typedef cocos2d::Texture2D::PixelFormat CCPixelFormat;
@@ -31,6 +32,7 @@ extern "C" {
 #ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
 #include <lz4.h>
 #endif
+#include "DebugIntf.h"
 
 #ifdef _MSC_VER
 #pragma comment(lib,"opencv_ts300d.lib")
@@ -2202,9 +2204,7 @@ iTVPRenderMethod* iTVPRenderManager::GetRenderMethod(const char *name, tjs_uint3
 	}
 	auto it = AllMethods.find(hash);
 	if (it != AllMethods.end()) return it->second;
-	TVPShowSimpleMessageBox(
-		ttstr(TJS_W("Operation \"")) + name + TJS_W("\" is not supported under ") + GetName() + TJS_W(" mode."),
-		TJS_W("Please use software renderer"));
+	TVPAddLog(ttstr(TJS_W("Renderer Warning: Operation \"")) + name + TJS_W("\" is not supported under ") + GetName() + TJS_W(" mode."));
 	return nullptr;
 }
 

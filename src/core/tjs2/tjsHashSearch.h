@@ -614,43 +614,32 @@ public:
 	void Add(const KeyT &key, const ValueT &value)
 	{
 		inherited::Add(key, value);
-		if (this->GetCount() > MaxCount)
+		if(inherited::GetCount() > MaxCount)
 		{
-			this->ChopLast(this->GetCount() - MaxCount);
+			inherited::ChopLast(inherited::GetCount() - MaxCount);
 		}
 	}
 
 	void AddWithHash(const KeyT &key, tjs_uint32 hash, const ValueT &value)
 	{
 		inherited::AddWithHash(key, hash, value);
-		if (this->GetCount() > MaxCount)
+		if(inherited::GetCount() > MaxCount)
 		{
-			this->ChopLast(this->GetCount() - MaxCount);
+			inherited::ChopLast(inherited::GetCount() - MaxCount);
 		}
 	}
 
 	void SetMaxCount(tjs_uint maxcount)
 	{
 		MaxCount = maxcount;
-		if (this->GetCount() > MaxCount)
+		if(inherited::GetCount() > MaxCount)
 		{
-			this->ChopLast(this->GetCount() - MaxCount);
+			inherited::ChopLast(inherited::GetCount() - MaxCount);
 		}
 	}
 
 	tjs_uint GetMaxCount() { return MaxCount; }
 };
-
-// for std::hash
-struct ttstr_hasher {
-	tjs_uint32 operator ()(const ttstr &str) const {
-		tjs_uint32 *hint = const_cast<ttstr*>(&str)->GetHint();
-		if (!hint) return 0;
-		if (*hint) return *hint;
-		return (*hint = tTJSHashFunc<ttstr>::Make(str));
-	}
-};
-
 //---------------------------------------------------------------------------
 } // namespace TJS
 //---------------------------------------------------------------------------

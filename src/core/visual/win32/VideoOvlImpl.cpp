@@ -153,7 +153,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 		param = param_pos;
 		name = ttstr(name, param_pos_ind);
 	}
-
+#if 0
 	IStream *istream = NULL;
 	long size;
 	ttstr ext = TVPExtractStorageExt(name).c_str();
@@ -179,60 +179,61 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 	// 'istream' is an IStream instance at this point
 
 	// create video overlay object
-// 	try
-// 	{
-// 		if (CachedOverlay && CachedOverlayMode == Mode && CachedPlayingFile == _name) {
-// 			VideoOverlay = CachedOverlay;
-// 			CachedOverlay = nullptr;
-// 			VideoOverlay->Rewind();
-// 		} else {
-// 			if (CachedOverlay) {
-// 				CachedOverlay->Release();
-// 				CachedOverlay = nullptr;
-// 			}
-// 			if (Mode == vomLayer)
-// 				GetVideoLayerObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
-// 			else if(Mode == vomMixer)
-// 				GetMixingVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
-// 			else if(Mode == vomMFEVR)
-// 				GetMFVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
-// 			else
-// 				GetVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
-// 		}
-// 		if( (Mode == vomOverlay) || (Mode == vomMixer) || (Mode == vomMFEVR) )
-// 		{
-// 			ResetOverlayParams();
-// 		}
-// 		else
-// 		{	// set font and back buffer to layerVideo
-// 			long	width, height;
-// 			long			size;
-// 			VideoOverlay->GetVideoSize( &width, &height );
+	try
+	{
+		if (CachedOverlay && CachedOverlayMode == Mode && CachedPlayingFile == _name) {
+			VideoOverlay = CachedOverlay;
+			CachedOverlay = nullptr;
+			VideoOverlay->Rewind();
+		} else {
+			if (CachedOverlay) {
+				CachedOverlay->Release();
+				CachedOverlay = nullptr;
+			}
+			if (Mode == vomLayer)
+				GetVideoLayerObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
+			else if(Mode == vomMixer)
+				GetMixingVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
+			else if(Mode == vomMFEVR)
+				GetMFVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
+			else
+				GetVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
+		}
+		if( (Mode == vomOverlay) || (Mode == vomMixer) || (Mode == vomMFEVR) )
+		{
+			ResetOverlayParams();
+		}
+		else
+		{	// set font and back buffer to layerVideo
+			long	width, height;
+			long			size;
+			VideoOverlay->GetVideoSize( &width, &height );
 			
-// 			if( width <= 0 || height <= 0 )
-// 				TVPThrowExceptionMessage(TVPErrorInKrMovieDLL, (const tjs_char*)TVPInvalidVideoSize);
+			if( width <= 0 || height <= 0 )
+				TVPThrowExceptionMessage(TVPErrorInKrMovieDLL, (const tjs_char*)TVPInvalidVideoSize);
 
-// 			size = width * height * 4;
-// 			if( Bitmap[0] != NULL )
-// 				delete Bitmap[0];
-// 			if( Bitmap[1] != NULL )
-// 				delete Bitmap[1];
-// 			Bitmap[0] = new tTVPBaseTexture(width, height, 32);
-// 			Bitmap[1] = new tTVPBaseTexture(width, height, 32);
-// #if 0
-// 			BmpBits[0] = static_cast<BYTE*>(Bitmap[0]->GetBitmap()->GetScanLine( Bitmap[0]->GetBitmap()->GetHeight()-1 ));
-// 			BmpBits[1] = static_cast<BYTE*>(Bitmap[1]->GetBitmap()->GetScanLine( Bitmap[1]->GetBitmap()->GetHeight()-1 ));
-// #endif
-// 			VideoOverlay->SetVideoBuffer(Bitmap[0], Bitmap[1], size);
-// 		}
-// 	}
-// 	catch(...)
-// 	{
-// 		if(istream) istream->Release();
-// 		Close();
-// 		throw;
-// 	}
+			size = width * height * 4;
+			if( Bitmap[0] != NULL )
+				delete Bitmap[0];
+			if( Bitmap[1] != NULL )
+				delete Bitmap[1];
+			Bitmap[0] = new tTVPBaseTexture(width, height, 32);
+			Bitmap[1] = new tTVPBaseTexture(width, height, 32);
+#if 0
+			BmpBits[0] = static_cast<BYTE*>(Bitmap[0]->GetBitmap()->GetScanLine( Bitmap[0]->GetBitmap()->GetHeight()-1 ));
+			BmpBits[1] = static_cast<BYTE*>(Bitmap[1]->GetBitmap()->GetScanLine( Bitmap[1]->GetBitmap()->GetHeight()-1 ));
+#endif
+			VideoOverlay->SetVideoBuffer(Bitmap[0], Bitmap[1], size);
+		}
+	}
+	catch(...)
+	{
+		if(istream) istream->Release();
+		Close();
+		throw;
+	}
 	if(istream) istream->Release();
+
 
 	// set Status
 	ClearWndProcMessages();
@@ -240,6 +241,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 	CachedPlayingFile = _name;
 	CachedOverlayMode = Mode;
 	if (Loop) VideoOverlay->SetLoopSegement(0, -1);
+#endif
 }
 //---------------------------------------------------------------------------
 void tTJSNI_VideoOverlay::Close()
@@ -582,7 +584,7 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 							if( Layer1 == NULL && Layer2 == NULL )	// nothing to do.
 								return;
 
-							// 2ƒtƒŒ[ƒ€ˆÈã·‚ª‚ ‚é‚Æ‚«‚ÍGetFrame() ‚ğŒ»İ‚ÌƒtƒŒ[ƒ€‚Æ‚·‚é
+							// 2ãƒ•ãƒ¬ãƒ¼ãƒ ä»¥ä¸Šå·®ãŒã‚ã‚‹ã¨ãã¯GetFrame() ã‚’ç¾åœ¨ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã¨ã™ã‚‹
 							int frame = GetFrame();
 							if( (frame+1) < curFrame || (frame-1) > curFrame )
 								curFrame = frame;
@@ -590,7 +592,7 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 							if( (!IsPrepare) && (SegLoopEndFrame > 0) && (frame >= SegLoopEndFrame) ) {
 								SetFrame( SegLoopStartFrame > 0 ? SegLoopStartFrame : 0 );
 								FirePeriodEvent(perSegLoop); // fire period event by segment loop rewind
-								return; // Update‚ğs‚í‚È‚¢
+								return; // Updateã‚’è¡Œã‚ãªã„
 							}
 
 							// get video image size
@@ -621,7 +623,7 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 								if( l1 ) l1->AssignMainImage( Bitmap[0] );
 								if( l2 ) l2->AssignMainImage( Bitmap[0] );
 							}
-							else	// 0‚¶‚á‚È‚©‚Á‚½‚çA1‚Æ‚İ‚È‚·B
+							else	// 0ã˜ã‚ƒãªã‹ã£ãŸã‚‰ã€1ã¨ã¿ãªã™ã€‚
 							{
 								if( l1 ) l1->AssignMainImage( Bitmap[1] );
 								if( l2 ) l2->AssignMainImage( Bitmap[1] );
@@ -822,7 +824,7 @@ void tTJSNI_VideoOverlay::SetLayer2( tTJSNI_BaseLayer *l )
 }
 void tTJSNI_VideoOverlay::SetMode( tTVPVideoOverlayMode m )
 {
-	// ƒrƒfƒIƒI[ƒvƒ“Œã‚Ìƒ‚[ƒh•ÏX‚Í‹Ö~
+	// ãƒ“ãƒ‡ã‚ªã‚ªãƒ¼ãƒ—ãƒ³å¾Œã®ãƒ¢ãƒ¼ãƒ‰å¤‰æ›´ã¯ç¦æ­¢
 	if( !VideoOverlay )
 	{
 		Mode = m;
@@ -956,7 +958,7 @@ void tTJSNI_VideoOverlay::SetMixingLayer( tTJSNI_BaseLayer *l )
 				tTVPBitmap *bmp = l->GetMainImage()->GetBitmap();
 				if( bmp )
 				{
-					// ©‘O‚ÅDC‚ğì‚é
+					// è‡ªå‰ã§DCã‚’ä½œã‚‹
 					HDC hdc;
 					HDC			ref = GetDC(0);
 					HBITMAP		myDIB = CreateDIBitmap( ref, bmp->GetBITMAPINFOHEADER(), CBM_INIT, bmp->GetBits(), bmp->GetBITMAPINFO(), bmp->Is8bit() ? DIB_PAL_COLORS : DIB_RGB_COLORS );

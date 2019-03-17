@@ -81,9 +81,9 @@ static void quoteOctet(tTJSVariantOctet *octet, tTVPStringStream *writer)
 static void getVariantString(tTJSVariant &var, tTVPStringStream *writer);
 
 /**
- * «‘‚Ì“à—e•\¦—p‚ÌŒÄ‚Ño‚µƒƒWƒbƒN
+ * è¾æ›¸ã®å†…å®¹è¡¨ç¤ºç”¨ã®å‘¼ã³å‡ºã—ãƒ­ã‚¸ãƒƒã‚¯
  */
-class DictMemberDispCaller : public tTJSDispatch /** EnumMembers —p */
+class DictMemberDispCaller : public tTJSDispatch /** EnumMembers ç”¨ */
 {
 protected:
 	tTVPStringStream *writer;
@@ -133,7 +133,7 @@ static void getDictString(iTJSDispatch2 *dict, tTVPStringStream *writer)
 	writer->write((tjs_char)']');
 }
 
-// Array ƒNƒ‰ƒXƒƒ“ƒo
+// Array ã‚¯ãƒ©ã‚¹ãƒ¡ãƒ³ãƒ
 static iTJSDispatch2 *ArrayCountProp   = NULL;   // Array.count
 
 static void getArrayString(iTJSDispatch2 *array, tTVPStringStream *writer)
@@ -210,7 +210,7 @@ getVariantString(tTJSVariant &var, tTVPStringStream *writer)
 //---------------------------------------------------------------------------
 
 /**
- * ƒƒ\ƒbƒh’Ç‰Á—p
+ * ãƒ¡ã‚½ãƒƒãƒ‰è¿½åŠ ç”¨
  */
 class ArrayAdd {
 
@@ -218,11 +218,11 @@ public:
 	ArrayAdd(){};
 
 	/**
-	 * save Œ`®‚Å‚Ì«‘‚Ü‚½‚Í”z—ñ‚Ì•Û‘¶
-	 * @param filename ƒtƒ@ƒCƒ‹–¼
-	 * @param utf true ‚È‚ç UTF-8 ‚Åo—Í
-	 * @param newline ‰üsƒR[ƒh 0:CRLF 1:LF
-	 * @return ÀsŒ‹‰Ê
+	 * save å½¢å¼ã§ã®è¾æ›¸ã¾ãŸã¯é…åˆ—ã®ä¿å­˜
+	 * @param filename ãƒ•ã‚¡ã‚¤ãƒ«å
+	 * @param utf true ãªã‚‰ UTF-8 ã§å‡ºåŠ›
+	 * @param newline æ”¹è¡Œã‚³ãƒ¼ãƒ‰ 0:CRLF 1:LF
+	 * @return å®Ÿè¡Œçµæœ
 	 */
 	static tjs_error TJS_INTF_METHOD save2(tTJSVariant *result,
 										   tjs_int numparams,
@@ -258,11 +258,11 @@ public:
 	}
 
 	/**
-	 * saveStruct Œ`®‚Å‚ÌƒIƒuƒWƒFƒNƒg‚Ì•Û‘¶
-	 * @param filename ƒtƒ@ƒCƒ‹–¼
-	 * @param utf true ‚È‚ç UTF-8 ‚Åo—Í
-	 * @param newline ‰üsƒR[ƒh 0:CRLF 1:LF
-	 * @return ÀsŒ‹‰Ê
+	 * saveStruct å½¢å¼ã§ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¿å­˜
+	 * @param filename ãƒ•ã‚¡ã‚¤ãƒ«å
+	 * @param utf true ãªã‚‰ UTF-8 ã§å‡ºåŠ›
+	 * @param newline æ”¹è¡Œã‚³ãƒ¼ãƒ‰ 0:CRLF 1:LF
+	 * @return å®Ÿè¡Œçµæœ
 	 */
 	static tjs_error TJS_INTF_METHOD saveStruct2(tTJSVariant *result,
 												 tjs_int numparams,
@@ -285,9 +285,9 @@ public:
 	}
 	
 	/**
-	 * saveStruct Œ`®‚Å•¶š—ñ‰»
-	 * @param newline ‰üsƒR[ƒh 0:CRLF 1:LF
-	 * @return ÀsŒ‹‰Ê
+	 * saveStruct å½¢å¼ã§æ–‡å­—åˆ—åŒ–
+	 * @param newline æ”¹è¡Œã‚³ãƒ¼ãƒ‰ 0:CRLF 1:LF
+	 * @return å®Ÿè¡Œçµæœ
 	 */
 	static tjs_error TJS_INTF_METHOD toStructString(tTJSVariant *result,
 													tjs_int numparams,
@@ -310,7 +310,7 @@ NCB_ATTACH_CLASS(ArrayAdd, Array) {
 };
 
 /**
- * ƒƒ\ƒbƒh’Ç‰Á—p
+ * ãƒ¡ã‚½ãƒƒãƒ‰è¿½åŠ ç”¨
  */
 class DictAdd {
 
@@ -318,11 +318,11 @@ public:
 	DictAdd(){};
 
 	/**
-	 * saveStruct Œ`®‚Å‚ÌƒIƒuƒWƒFƒNƒg‚Ì•Û‘¶
-	 * @param filename ƒtƒ@ƒCƒ‹–¼
-	 * @param utf true ‚È‚ç UTF-8 ‚Åo—Í
-	 * @param newline ‰üsƒR[ƒh 0:CRLF 1:LF
-	 * @return ÀsŒ‹‰Ê
+	 * saveStruct å½¢å¼ã§ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ä¿å­˜
+	 * @param filename ãƒ•ã‚¡ã‚¤ãƒ«å
+	 * @param utf true ãªã‚‰ UTF-8 ã§å‡ºåŠ›
+	 * @param newline æ”¹è¡Œã‚³ãƒ¼ãƒ‰ 0:CRLF 1:LF
+	 * @return å®Ÿè¡Œçµæœ
 	 */
 	static tjs_error TJS_INTF_METHOD saveStruct2(tTJSVariant *result,
 												 tjs_int numparams,
@@ -340,9 +340,9 @@ public:
 	}
 	
 	/**
-	 * saveStruct Œ`®‚Å•¶š—ñ‰»
-	 * @param newline ‰üsƒR[ƒh 0:CRLF 1:LF
-	 * @return ÀsŒ‹‰Ê
+	 * saveStruct å½¢å¼ã§æ–‡å­—åˆ—åŒ–
+	 * @param newline æ”¹è¡Œã‚³ãƒ¼ãƒ‰ 0:CRLF 1:LF
+	 * @return å®Ÿè¡Œçµæœ
 	 */
 	static tjs_error TJS_INTF_METHOD toStructString(tTJSVariant *result,
 													tjs_int numparams,
@@ -365,11 +365,11 @@ NCB_ATTACH_CLASS(DictAdd, Dictionary) {
 };
 
 /**
- * “o˜^ˆ—Œã
+ * ç™»éŒ²å‡¦ç†å¾Œ
  */
 static void PostRegistCallback()
 {
-	// Array.count ‚ğæ“¾
+	// Array.count ã‚’å–å¾—
 	{
 		tTJSVariant varScripts;
 		TVPExecuteExpression(TJS_W("Array"), &varScripts);
@@ -387,7 +387,7 @@ static void PostRegistCallback()
 }
 
 /**
- * ŠJ•úˆ—‘O
+ * é–‹æ”¾å‡¦ç†å‰
  */
 static void PreUnregistCallback()
 {

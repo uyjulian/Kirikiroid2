@@ -9,6 +9,7 @@
 // KAG Parser Utility Class
 //---------------------------------------------------------------------------
 
+#include <string>
 #include "KAGParser.h"
 #include "EventIntf.h"
 namespace TJS { ttstr TJSMapGlobalStringMap(const ttstr & string); }

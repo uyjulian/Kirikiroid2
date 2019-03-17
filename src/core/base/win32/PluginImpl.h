@@ -14,7 +14,6 @@
 #include <memory.h>
 
 #include "PluginIntf.h"
-#include "win32type.h"
 #ifdef TVP_SUPPORT_KPI
 	#include "kmp_pi.h"
 #endif

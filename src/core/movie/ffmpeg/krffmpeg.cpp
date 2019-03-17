@@ -11,7 +11,7 @@ extern "C" {
 #include <mutex>
 #include "MsgIntf.h"
 #include "StorageIntf.h"
-#include "VideoOvlImpl.h"
+// #include "VideoOvlImpl.h"
 #include "KRMoviePlayer.h"
 #include "KRMovieLayer.h"
 

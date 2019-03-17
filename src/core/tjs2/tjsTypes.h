@@ -13,19 +13,18 @@
 #define __TJSTYPES_H__
 
 #include <stdint.h>
-#include <stddef.h> // ptrdiff_t
 
-#ifdef HAVE_CONFIG_H
- #include "config.h"
+// #ifdef HAVE_CONFIG_H
+//  #include "config.h"
 
- #ifndef HAVE_STRINGIZE
- # error "preprocessor stringize required."
- #endif
+//  #ifndef HAVE_STRINGIZE
+//  # error "preprocessor stringize required."
+//  #endif
 
- #if SIZEOF_INT < 4
- # error "sizeof(int) must be larger than or equal to 4."
- #endif
-#endif /* end of HAVE_CONFIG_H */
+//  #if SIZEOF_INT < 4
+//  # error "sizeof(int) must be larger than or equal to 4."
+//  #endif
+// #endif /* end of HAVE_CONFIG_H */
 
 
 
@@ -43,12 +42,11 @@
 #define TJS_METHOD_RET(type)
 
 
-
-#if defined(_WIN32)  && !defined(__GNUC__)
-
+/*[*/
+//#if defined(_WIN32)  && !defined(__GNUC__)
+#if defined(_WIN32)  
 /* VC++/BCC */
 
-/*[*/
 typedef __int8 tjs_int8;
 typedef unsigned __int8 tjs_uint8;
 typedef __int16 tjs_int16;
@@ -61,13 +59,12 @@ typedef int tjs_int;    /* at least 32bits */
 typedef unsigned int tjs_uint;    /* at least 32bits */
 
 #ifdef __cplusplus
+//typedef char16_t tjs_char;
 typedef wchar_t tjs_char;
+typedef std::wstring tjs_string;
 #else
 typedef unsigned short tjs_char;
 #endif
-
-#define TJS_W(X) L##X
-#define TJS_N(X) X
 
 typedef char tjs_nchar;
 typedef double tjs_real;
@@ -76,15 +73,15 @@ typedef double tjs_real;
 #define TJS_HOST_IS_LITTLE_ENDIAN 1
 
 #ifndef TJS_INTF_METHOD
-#define TJS_INTF_METHOD
+#define TJS_INTF_METHOD __cdecl
 	/* TJS_INTF_METHOD is "cdecl" (by default)
 		since TJS2 2.4.14 (kirikir2 2.25 beta 1) */
 #endif
 
 #define TJS_USERENTRY __cdecl
 
-#define TJS_I64_VAL(x) ((tjs_int64)(x##i64))
-#define TJS_UI64_VAL(x) ((tjs_uint64)(x##i64))
+#define TJS_I64_VAL(x) ((tjs_int64)(x##ll))
+#define TJS_UI64_VAL(x) ((tjs_uint64)(x##ull))
 
 #ifdef _M_X64
 #define TJS_64BIT_OS	/* 64bit windows */
@@ -93,7 +90,8 @@ typedef double tjs_real;
 typedef intptr_t tjs_intptr_t;
 typedef uintptr_t tjs_uintptr_t;
 
-/*]*/
+#define TJS_W(X) L##X
+
 
 #else
 
@@ -109,7 +107,6 @@ typedef uintptr_t tjs_uintptr_t;
 */
 #include <sys/types.h>
 #include <stdint.h>
-
 
 #if defined(__linux__)
 	typedef int8_t tjs_int8;
@@ -132,12 +129,11 @@ typedef uintptr_t tjs_uintptr_t;
 #endif
 
 #ifdef __cplusplus
-    typedef char16_t tjs_char;
+typedef char16_t tjs_char;
+typedef std::u16string tjs_string;
 #else
-    typedef unsigned short tjs_char;
+typedef unsigned short tjs_char;
 #endif
-#define TJS_W(X) u##X
-#define TJS_N(X) X
 
 typedef char tjs_nchar;
 typedef double tjs_real;
@@ -162,10 +158,13 @@ typedef uintptr_t tjs_uintptr_t;
 #define TJS_INTF_METHOD
 #define TJS_USERENTRY
 
+#define TJS_W(X) u##X
 
 #endif /* end of defined(_WIN32) && !defined(__GNUC__) */
+/*]*/
 
 /*[*/
+#define TJS_N(X) X
 
 
 typedef tjs_int32 tjs_error;

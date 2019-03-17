@@ -227,7 +227,7 @@ void tTVPWaveSegmentQueue::Scale(tjs_int64 new_total_filtered_length)
 	for(std::deque<tTVPWaveLabel>::iterator i = Labels.begin();
 		i != Labels.end(); i++)
 	{
-		i->Offset = static_cast<tjs_int64>(i->Offset * ratio);
+		i->Offset = static_cast<tjs_int>(i->Offset * ratio);
 	}
 }
 //---------------------------------------------------------------------------

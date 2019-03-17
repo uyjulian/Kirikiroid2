@@ -63,8 +63,6 @@ private:
 
 	tTJSHashTable<ttstr, tjs_uint, tTJSHashFunc<ttstr>, 1024> Hash;
 	bool Init;
-
-public:
 	ttstr ArchiveName;
 
 public:
@@ -109,7 +107,6 @@ public:
 class iTVPStorageMedia
 {
 public:
-	virtual ~iTVPStorageMedia() {} // add by ZeaS
 	virtual void TJS_INTF_METHOD AddRef() = 0;
 	virtual void TJS_INTF_METHOD Release() = 0;
 
@@ -152,7 +149,7 @@ public:
 //---------------------------------------------------------------------------
 // must be implemented in each platform
 //---------------------------------------------------------------------------
-extern tTVPArchive * TVPOpenArchive(const ttstr & name, bool normalizeFileName);
+extern tTVPArchive * TVPOpenArchive(const ttstr & name);
 	// open archive and return tTVPArchive instance.
 
 TJS_EXP_FUNC_DEF(ttstr, TVPGetTemporaryName, ());
@@ -273,7 +270,7 @@ TJS_EXP_FUNC_DEF(bool, TVPIsExistentStorage, (const ttstr &name));
 
 TJS_EXP_FUNC_DEF(void, TVPClearStorageCaches, ());
 	// clear all internal storage related caches.
-void TVPRemoveFromStorageCache(const ttstr &name);
+
 extern tjs_uint TVPSegmentCacheLimit; // XP3 segment cache limit, in bytes.
 
 //---------------------------------------------------------------------------
@@ -300,68 +297,6 @@ protected:
 extern tTJSNativeClass * TVPCreateNativeClass_Storages();
 //---------------------------------------------------------------------------
 
-class tTVPStorageMedia : public iTVPStorageMedia {
-protected:
-	tjs_int refCount;
-	tTVPStorageMedia() : refCount(1) {}
 
-	virtual void TJS_INTF_METHOD AddRef() override { refCount++; }
-	virtual void TJS_INTF_METHOD Release() override {
-		if (refCount == 1) {
-			delete this;
-		} else {
-			refCount--;
-		}
-	}
-	virtual void TJS_INTF_METHOD NormalizeDomainName(ttstr &name) override {}
-	virtual void TJS_INTF_METHOD NormalizePathName(ttstr &name) override {}
-	virtual void TJS_INTF_METHOD GetLocallyAccessibleName(ttstr &name) override {}
-};
 
-class TArchiveStream : public tTJSBinaryStream {
-	tTVPArchive *Owner;
-	tjs_int64 CurrentPos;
-	tjs_uint64 StartPos, DataLength;
-	tTJSBinaryStream *_instr;
-
-public:
-	TArchiveStream(tTVPArchive *owner, tjs_uint64 off, tjs_uint64 len);
-	virtual ~TArchiveStream();
-	virtual tjs_uint64 TJS_INTF_METHOD Seek(tjs_int64 offset, tjs_int whence) {
-		switch (whence) {
-		case TJS_BS_SEEK_SET:
-			CurrentPos = offset;
-			break;
-
-		case TJS_BS_SEEK_CUR:
-			CurrentPos = offset + CurrentPos;
-			break;
-
-		case TJS_BS_SEEK_END:
-			CurrentPos = offset + DataLength;
-			break;
-		}
-		if (CurrentPos < 0) CurrentPos = 0;
-		else if (CurrentPos > (tjs_int64)DataLength) CurrentPos = DataLength;
-		_instr->SetPosition(CurrentPos + StartPos);
-		return CurrentPos;
-	}
-	virtual tjs_uint TJS_INTF_METHOD Read(void *buffer, tjs_uint read_size) {
-		if (CurrentPos + read_size >= (tjs_int64)DataLength) {
-			read_size = (tjs_uint)(DataLength - CurrentPos);
-		}
-
-		_instr->ReadBuffer(buffer, read_size);
-
-		CurrentPos += read_size;
-
-		return read_size;
-	}
-	virtual tjs_uint TJS_INTF_METHOD Write(const void *buffer, tjs_uint write_size) {
-		return 0;
-	}
-	virtual tjs_uint64 TJS_INTF_METHOD GetSize() {
-		return DataLength;
-	}
-};
 #endif

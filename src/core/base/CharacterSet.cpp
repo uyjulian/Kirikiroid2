@@ -46,10 +46,10 @@ static tjs_int inline TVPWideCharToUtf8(tjs_char in, char * out)
 #if 1
 	else
 	{
-		TVPThrowExceptionMessage(TJS_W("Out of UTF-16 range conversion from UTF-8 code"));
+		TVPThrowExceptionMessage( TVPIllegalCharacterConversionUTF16toUTF8 );
 	}
 #else
-	// �ȉ��I���W�i���̃R�[�h�����ǁA�ʂ�Ȃ��͂��B
+	// 以下オリジナルのコードだけど、通らないはず。
 	else if(in < (1<<21))
 	{
 		if(out)
@@ -258,4 +258,37 @@ tjs_int TVPUtf8ToWideCharString(const char * in, tjs_uint length, tjs_char *out)
 	return count;
 }
 //---------------------------------------------------------------------------
-
+bool TVPUtf8ToUtf16( tjs_string& out, const std::string& in ) {
+	tjs_int len = TVPUtf8ToWideCharString( in.c_str(), NULL );
+	if( len < 0 ) return false;
+	tjs_char* buf = new tjs_char[len];
+	if( buf ) {
+		try {
+			len = TVPUtf8ToWideCharString( in.c_str(), buf );
+			if( len > 0 ) out.assign( buf, len );
+			delete[] buf;
+		} catch(...) {
+			delete[] buf;
+			throw;
+		}
+	}
+	return len > 0;
+}
+//---------------------------------------------------------------------------
+bool TVPUtf16ToUtf8( std::string& out, const tjs_string& in ) {
+	tjs_int len = TVPWideCharToUtf8String( in.c_str(), NULL );
+	if( len < 0 ) return false;
+	char* buf = new char[len];
+	if( buf ) {
+		try {
+			len = TVPWideCharToUtf8String( in.c_str(), buf );
+			if( len > 0 ) out.assign( buf, len );
+			delete[] buf;
+		} catch(...) {
+			delete[] buf;
+			throw;
+		}
+	}
+	return len > 0;
+}
+//---------------------------------------------------------------------------

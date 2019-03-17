@@ -11,10 +11,9 @@
 #ifndef ARGBH
 #define ARGBH
 
-#include "tjsTypes.h"
 #include "tvpgl.h"
 //---------------------------------------------------------------------------
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(__GNUC__)
 	// for assembler compatibility
 	#pragma pack(push,1)
 #endif
@@ -22,8 +21,6 @@
 template <typename base_type>
 struct tTVPARGB
 {
-	union {
-		struct {
 #if TJS_HOST_IS_LITTLE_ENDIAN
 	base_type b;
 	base_type g;
@@ -36,11 +33,6 @@ struct tTVPARGB
 	base_type g;
 	base_type b;
 #endif
-		};
-		struct {
-			base_type packed;
-		};
-	};
 
 	typedef base_type base_int_type;
 
@@ -107,26 +99,63 @@ struct tTVPARGB
 //---------------------------------------------------------------------------
 // special member functions for tjs_uint8
 template <>
-void tTVPARGB<tjs_uint8>::Zero();
+inline void tTVPARGB<tjs_uint8>::Zero()
+{
+	*(tjs_uint32 *)this = 0;
+}
 
 template <>
-void tTVPARGB<tjs_uint8>::operator = (tjs_uint32 v);
+inline void tTVPARGB<tjs_uint8>::operator = (tjs_uint32 v)
+{
+	*(tjs_uint32 *)this = v;
+}
 
 template <>
-tTVPARGB<tjs_uint8>::operator tjs_uint32() const;
+inline tTVPARGB<tjs_uint8>::operator tjs_uint32() const
+{
+	return *(const tjs_uint32 *)this;
+}
 
 template <>
-void tTVPARGB<tjs_uint8>::average(tjs_int n);
+inline void tTVPARGB<tjs_uint8>::average(tjs_int n)
+{
+	tjs_int half_n = n >> 1;
+
+	tjs_int recip = (1L<<23) / n;
+
+	b = (b+half_n)*recip >> 23;
+	g = (g+half_n)*recip >> 23;
+	r = (r+half_n)*recip >> 23;
+	a = (a+half_n)*recip >> 23;
+}
 
 //---------------------------------------------------------------------------
 // special member functions for tjs_uint16
 template <>
-void tTVPARGB<tjs_uint16>::average(tjs_int n);
+inline void tTVPARGB<tjs_uint16>::average(tjs_int n)
+{
+	tjs_int half_n = n >> 1;
+
+	tjs_int recip = (1L<<16) / n;
+
+	b = (b+half_n)*recip >> 16;
+	g = (g+half_n)*recip >> 16;
+	r = (r+half_n)*recip >> 16;
+	a = (a+half_n)*recip >> 16;
+}
 
 //---------------------------------------------------------------------------
 // special member functions for tjs_uint32
 template <>
-void tTVPARGB<tjs_uint32>::average(tjs_int n);
+inline void tTVPARGB<tjs_uint32>::average(tjs_int n)
+{
+	tjs_int half_n = n >> 1;
+
+	b = (b+half_n)/n;
+	g = (g+half_n)/n;
+	r = (r+half_n)/n;
+	a = (a+half_n)/n;
+}
 
 
 //---------------------------------------------------------------------------
@@ -147,29 +176,29 @@ struct tTVPARGB_AA : public tTVPARGB<base_type>
 	void operator += (tjs_uint32 v)
 	{
 		tjs_int aadj;
-		this->a += (aadj = (v >> 24));
+		this->a += (aadj = (v>>24));
 		aadj += aadj >> 7;
 		this->b += (v & 0xff) * aadj >> 8;
-		this->g += ((v >> 8) & 0xff) * aadj >> 8;
-		this->r += ((v >> 16) & 0xff) * aadj >> 8;
+		this->g += ((v>>8) & 0xff) * aadj >> 8;
+		this->r += ((v>>16) & 0xff) * aadj >> 8;
 	}
 
 	void operator -= (tjs_uint32 v)
 	{
 		tjs_int aadj;
-		this->a -= (aadj = (v >> 24));
+		this->a -= (aadj = (v>>24));
 		aadj += aadj >> 7;
 		this->b -= (v & 0xff) * aadj >> 8;
-		this->g -= ((v >> 8) & 0xff) * aadj >> 8;
-		this->r -= ((v >> 16) & 0xff) * aadj >> 8;
+		this->g -= ((v>>8) & 0xff) * aadj >> 8;
+		this->r -= ((v>>16) & 0xff) * aadj >> 8;
 	}
 
 	void operator = (tjs_uint32 v)
 	{
 		this->a = v >> 24;
 		tjs_int aadj = this->a + (this->a >> 7); // adjusted alpha
-		this->r = ((v >> 16) & 0xff) * aadj >> 8;
-		this->g = ((v >> 8) & 0xff) * aadj >> 8;
+		this->r = ((v >> 16) & 0xff) * aadj >> 8,
+		this->g = ((v >> 8) & 0xff) * aadj >> 8,
 		this->b = (v & 0xff) * aadj >> 8;
 	}
 
@@ -184,7 +213,7 @@ struct tTVPARGB_AA : public tTVPARGB<base_type>
 
 
 //---------------------------------------------------------------------------
-#ifdef __WIN32__
+#if defined(__WIN32__) || defined(__GNUC__)
 	// for assembler compatibility
 	#pragma pack(pop)
 #endif

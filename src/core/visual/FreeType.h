@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 /*
-	Risa [‚è‚³]      alias ‹g—¢‹g—¢3 [kirikiri-3]
+	Risa [ã‚Šã•]      alias å‰é‡Œå‰é‡Œ3 [kirikiri-3]
 	 stands for "Risa Is a Stagecraft Architecture"
 	Copyright (C) 2000 W.Dee <dee@kikyou.info> and contributors
 
@@ -8,7 +8,7 @@
 */
 //---------------------------------------------------------------------------
 //! @file
-//! @brief FreeType ƒtƒHƒ“ƒgƒhƒ‰ƒCƒo
+//! @brief FreeType ãƒ•ã‚©ãƒ³ãƒˆãƒ‰ãƒ©ã‚¤ãƒ
 //---------------------------------------------------------------------------
 #ifndef _FREETYPE_H_
 #define _FREETYPE_H_
@@ -16,7 +16,7 @@
 
 #include "CharacterData.h"
 #include "FreeTypeFace.h"
-//#include "NativeFreeTypeDriver.h"
+#include <memory>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -29,42 +29,102 @@
 #endif
 
 //---------------------------------------------------------------------------
-#define	TVP_GET_FACE_INDEX_FROM_OPTIONS(x) ((x) & 0xff) //!< ƒIƒvƒVƒ‡ƒ“®”‚©‚çFaceƒCƒ“ƒfƒbƒNƒX‚ğæ‚èo‚·ƒ}ƒNƒ
-#define	TVP_FACE_OPTIONS_FACE_INDEX(x)		((x) & 0xff) //!< FaceƒCƒ“ƒfƒbƒNƒX‚ğƒIƒvƒVƒ‡ƒ“®”‚É•ÏŠ·‚·‚éƒ}ƒNƒ
-#define	TVP_FACE_OPTIONS_FILE				0x00010000 //!< ƒtƒHƒ“ƒg–¼‚Å‚Í‚È‚­‚Äƒtƒ@ƒCƒ‹–¼‚É‚æ‚éƒtƒHƒ“ƒg‚Ìw’è‚ğs‚¤
-#define TVP_FACE_OPTIONS_NO_HINTING			0x00020000 //!< ƒqƒ“ƒeƒBƒ“ƒO‚ğs‚í‚È‚¢
-#define TVP_FACE_OPTIONS_FORCE_AUTO_HINTING	0x00020000 //!< ‹­§“I‚É auto hinting ‚ğs‚¤
-#define TVP_FACE_OPTIONS_NO_ANTIALIASING	0x00040000 //!< ƒAƒ“ƒ`ƒGƒCƒŠƒAƒX‚ğs‚í‚È‚¢
+#define	TVP_GET_FACE_INDEX_FROM_OPTIONS(x) ((x) & 0xff) //!< ã‚ªãƒ—ã‚·ãƒ§ãƒ³æ•´æ•°ã‹ã‚‰Faceã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’å–ã‚Šå‡ºã™ãƒã‚¯ãƒ­
+#define	TVP_FACE_OPTIONS_FACE_INDEX(x)		((x) & 0xff) //!< Faceã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ã‚ªãƒ—ã‚·ãƒ§ãƒ³æ•´æ•°ã«å¤‰æ›ã™ã‚‹ãƒã‚¯ãƒ­
+#define	TVP_FACE_OPTIONS_FILE				0x00010000 //!< ãƒ•ã‚©ãƒ³ãƒˆåã§ã¯ãªãã¦ãƒ•ã‚¡ã‚¤ãƒ«åã«ã‚ˆã‚‹ãƒ•ã‚©ãƒ³ãƒˆã®æŒ‡å®šã‚’è¡Œã†
+#define TVP_FACE_OPTIONS_NO_HINTING			0x00020000 //!< ãƒ’ãƒ³ãƒ†ã‚£ãƒ³ã‚°ã‚’è¡Œã‚ãªã„
+#define TVP_FACE_OPTIONS_FORCE_AUTO_HINTING	0x00020000 //!< å¼·åˆ¶çš„ã« auto hinting ã‚’è¡Œã†
+#define TVP_FACE_OPTIONS_NO_ANTIALIASING	0x00040000 //!< ã‚¢ãƒ³ãƒã‚¨ã‚¤ãƒªã‚¢ã‚¹ã‚’è¡Œã‚ãªã„
 
 //---------------------------------------------------------------------------
 /**
- * FreeType ƒtƒHƒ“ƒg face
+ * å­˜åœ¨ã—ãªã„ã‚°ãƒªãƒ•ã‚’è£œã†ãŸã‚ã«è¤‡æ•°ã®ãƒ•ã‚©ãƒ³ãƒˆã‚’æŒ‡å®šå¯èƒ½ãªã‚ˆã†ã«ã€è¤‡æ•°ã®ãƒ•ã‚§ã‚¤ã‚¹æƒ…å ±ã‚’ä¿æŒã§ãã‚‹ã‚ˆã†ã«
+ * å„ãƒ•ã‚§ã‚¤ã‚¹ã«å¿…è¦ãªæƒ…å ±ã‚’ä¿æŒã™ã‚‹ã€‚
+ */
+struct FaceSet {
+	/** ãƒ•ã‚©ãƒ³ãƒˆå */
+	tjs_string FontName;
+
+	/** Face ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ */
+	std::unique_ptr<tBaseFreeTypeFace> Face;
+
+	/** FreeType Face ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ */
+	FT_Face FTFace;
+
+	typedef std::vector<FT_ULong> tGlyphIndexToCharcodeVector;
+
+	/** ã‚°ãƒªãƒ•ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‹ã‚‰æ–‡å­—ã‚³ãƒ¼ãƒ‰ã¸ã®å¤‰æ›ãƒãƒƒãƒ— */
+	std::unique_ptr<tGlyphIndexToCharcodeVector> GlyphIndexToCharcodeVector;
+
+	/** SJISãªã©ã‚’Unicodeã«å¤‰æ›ã™ã‚‹é–¢æ•° */
+	tjs_uint (*UnicodeToLocalChar)(tjs_char in);
+
+	/** Unicodeã‚’SJISãªã©ã«å¤‰æ›ã™ã‚‹é–¢æ•° */
+	tjs_char (*LocalCharToUnicode)(tjs_uint in);
+
+	FaceSet() : UnicodeToLocalChar(nullptr), LocalCharToUnicode(nullptr) {}
+};
+
+
+//---------------------------------------------------------------------------
+/**
+ * FreeType ãƒ•ã‚©ãƒ³ãƒˆ face
  */
 class tFreeTypeFace
 {
-	ttstr FontName;		//!< ƒtƒHƒ“ƒg–¼
-	tBaseFreeTypeFace * Face; //!< Face ƒIƒuƒWƒFƒNƒg
-	FT_Face FTFace; //!< FreeType Face ƒIƒuƒWƒFƒNƒg
-	tjs_uint32 Options; //!< ƒtƒ‰ƒO
+/*
+	tjs_string FontName;		//!< ãƒ•ã‚©ãƒ³ãƒˆå
+	tBaseFreeTypeFace * Face; //!< Face ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
+	FT_Face FTFace; //!< FreeType Face ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
 
 	typedef std::vector<FT_ULong> tGlyphIndexToCharcodeVector;
-	tGlyphIndexToCharcodeVector * GlyphIndexToCharcodeVector;		//!< ƒOƒŠƒtƒCƒ“ƒfƒbƒNƒX‚©‚ç•¶šƒR[ƒh‚Ö‚Ì•ÏŠ·ƒ}ƒbƒv
-	tjs_int Height;		//!< ƒtƒHƒ“ƒgƒTƒCƒY(‚‚³) in pixel
+	tGlyphIndexToCharcodeVector * GlyphIndexToCharcodeVector;		//!< ã‚°ãƒªãƒ•ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‹ã‚‰æ–‡å­—ã‚³ãƒ¼ãƒ‰ã¸ã®å¤‰æ›ãƒãƒƒãƒ—
 
-	tjs_uint (*UnicodeToLocalChar)(tjs_char in); //!< SJIS‚È‚Ç‚ğUnicode‚É•ÏŠ·‚·‚éŠÖ”
-	tjs_char (*LocalCharToUnicode)(tjs_uint in); //!< Unicode‚ğSJIS‚È‚Ç‚É•ÏŠ·‚·‚éŠÖ”
+	tjs_uint (*UnicodeToLocalChar)(tjs_char in); //!< SJISãªã©ã‚’Unicodeã«å¤‰æ›ã™ã‚‹é–¢æ•°
+	tjs_char (*LocalCharToUnicode)(tjs_uint in); //!< Unicodeã‚’SJISãªã©ã«å¤‰æ›ã™ã‚‹é–¢æ•°
+*/
+
+	tjs_uint32 Options; //!< ãƒ•ãƒ©ã‚°
+	tjs_int Height;		//!< ãƒ•ã‚©ãƒ³ãƒˆã‚µã‚¤ã‚º(é«˜ã•) in pixel
+
+	std::vector<std::unique_ptr<FaceSet> >	Faces;
 
 	static inline tjs_int FT_PosToInt( tjs_int x ) { return (((x) + (1 << 5)) >> 6); }
+
+private:
+	void GetUnderline( tjs_int& pos, tjs_int& thickness, tjs_int index ) const {
+		FT_Face face = Faces[index]->FTFace;
+		tjs_int ppem = face->size->metrics.y_ppem;
+		tjs_int upe = face->units_per_EM;
+		tjs_int liney = 0; //ä¸‹ç·šã®ä½ç½®
+		tjs_int height = FT_PosToInt( face->size->metrics.height );
+		liney = ((face->ascender - face->underline_position) * ppem) / upe;
+		thickness = (face->underline_thickness * ppem) / upe;
+		if( thickness < 1 ) thickness = 1;
+		if( liney > height ) {
+			liney = height - 1;
+		}
+		pos = liney;
+	}
+	void GetStrikeOut( tjs_int& pos, tjs_int& thickness, tjs_int index ) const {
+		FT_Face face = Faces[index]->FTFace;
+		tjs_int ppem = face->size->metrics.y_ppem;
+		tjs_int upe = face->units_per_EM;
+		thickness = face->underline_thickness * ppem / upe;
+		if( thickness < 1 ) thickness = 1;
+		pos = face->ascender * 7 * ppem / (10 * upe);
+	}
+
 public:
-	tFreeTypeFace(const ttstr &fontname, tjs_uint32 options);
+	tFreeTypeFace(const std::vector<tjs_string> &fontname, tjs_uint32 options);
 	~tFreeTypeFace();
 
-	tjs_uint GetGlyphCount();
-	tjs_char GetCharcodeFromGlyphIndex(tjs_uint index);
+	//tjs_uint GetGlyphCount();
+	//tjs_char GetCharcodeFromGlyphIndex(tjs_uint index);
 
-	void GetFaceNameList(std::vector<ttstr> &dest);
+	void GetFaceNameList(std::vector<tjs_string> &dest);
 
-	const ttstr& GetFontName() const { return FontName; }
+	const tjs_string& GetFontName() const { return Faces[0]->FontName; }
 
 	tjs_int GetHeight() { return Height; }
 	void SetHeight(int height);
@@ -79,48 +139,26 @@ public:
 		return (Options&opt) == opt;
 	}
 	tjs_char GetDefaultChar() const {
-		return Face->GetDefaultChar();
+		return Faces[0]->Face->GetDefaultChar();
 	}
 	tjs_char GetFirstChar() {
 		FT_UInt gindex;
-		return static_cast<tjs_char>( FT_Get_First_Char( FTFace, &gindex ) );
+		return static_cast<tjs_char>( FT_Get_First_Char( Faces[0]->FTFace, &gindex ) );
 	}
 
 	tjs_int GetAscent() const {
-		tjs_int ppem = FTFace->size->metrics.y_ppem;
-		tjs_int upe = FTFace->units_per_EM;
-		return FTFace->ascender * ppem / upe;
-	}
-	void GetUnderline( tjs_int& pos, tjs_int& thickness ) const {
-		tjs_int ppem = FTFace->size->metrics.y_ppem;
-		tjs_int upe = FTFace->units_per_EM;
-		tjs_int liney = 0; //‰ºü‚ÌˆÊ’u
-		tjs_int height = FT_PosToInt( FTFace->size->metrics.height );
-		liney = ((FTFace->ascender-FTFace->underline_position) * ppem) / upe;
-		thickness = (FTFace->underline_thickness * ppem) / upe;
-		if( thickness < 1 ) thickness = 1;
-		if( liney > height ) {
-			liney = height - 1;
-		}
-		pos = liney;
-	}
-	void GetStrikeOut( tjs_int& pos, tjs_int& thickness ) const {
-		tjs_int ppem = FTFace->size->metrics.y_ppem;
-		tjs_int upe = FTFace->units_per_EM;
-		thickness = FTFace->underline_thickness * ppem / upe;
-		if( thickness < 1 ) thickness = 1;
-		pos = FTFace->ascender * 7 * ppem / (10 * upe);
+		FT_Face face = Faces[0]->FTFace;
+		tjs_int ppem = face->size->metrics.y_ppem;
+		tjs_int upe = face->units_per_EM;
+		return face->ascender * ppem / upe;
 	}
 	tTVPCharacterData * GetGlyphFromCharcode(tjs_char code);
 	bool GetGlyphRectFromCharcode(struct tTVPRect& rt, tjs_char code, tjs_int& advancex, tjs_int& advancey );
-	bool GetGlyphMetricsFromCharcode(tjs_char code, tGlyphMetrics & metrics);
 	bool GetGlyphSizeFromCharcode(tjs_char code, tGlyphMetrics & metrics);
 
-	const FT_Outline* GetOulineData(tjs_char code, float &w, float &h);
-	tBaseFreeTypeFace *GetBaseFace() { return Face; }
-
 private:
-	bool LoadGlyphSlotFromCharcode(tjs_char code);
+	tjs_int GetGlyphMetricsFromCharcode(tjs_char code, tGlyphMetrics & metrics);
+	tjs_int LoadGlyphSlotFromCharcode(tjs_char code);
 };
 //---------------------------------------------------------------------------
 

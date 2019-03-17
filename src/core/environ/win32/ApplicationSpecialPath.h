@@ -9,14 +9,14 @@
 class ApplicationSpecialPath {
 public:
 #if 0
-	static std::wstring GetSpecialFolderPath(int csidl) {
+	static tjs_string GetSpecialFolderPath(int csidl) {
 		wchar_t path[MAX_PATH+1];
 		if(!SHGetSpecialFolderPath(NULL, path, csidl, false))
-			return std::wstring();
-		return std::wstring(path);
+			return tjs_string();
+		return tjs_string(path);
 	}
-	static inline std::wstring GetPersonalPath() {
-		std::wstring path = GetSpecialFolderPath(CSIDL_PERSONAL);
+	static inline tjs_string GetPersonalPath() {
+		tjs_string path = GetSpecialFolderPath(CSIDL_PERSONAL);
 		if( path.empty() ) path = GetSpecialFolderPath(CSIDL_APPDATA);
 
 		if(path != L"") {
@@ -24,46 +24,50 @@ public:
 		}
 		return L"";
 	}
-	static inline std::wstring GetAppDataPath() {
-		std::wstring path = GetSpecialFolderPath(CSIDL_APPDATA);
+	static inline tjs_string GetAppDataPath() {
+		tjs_string path = GetSpecialFolderPath(CSIDL_APPDATA);
 		if(path != L"" ) {
 			return path;
 		}
 		return L"";
 	}
-	static inline std::wstring GetSavedGamesPath() {
-		std::wstring result;
+	static inline tjs_string GetSavedGamesPath() {
+		tjs_string result;
 		PWSTR ppszPath = NULL;
 		HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_SavedGames, 0, NULL, &ppszPath);
 		if( hr == S_OK ) {
-			result = std::wstring(ppszPath);
+			result = tjs_string(ppszPath);
 			::CoTaskMemFree( ppszPath );
 		}
 		return result;
 	}
 #endif
-	static inline ttstr ReplaceStringAll(ttstr src, const ttstr& target, const ttstr& dest) {
-		src.Replace(target, dest);
+#if 1
+	static inline tjs_string ReplaceStringAll( tjs_string src, const tjs_string& target, const tjs_string& dest ) {
+		tjs_string::size_type nPos = 0;
+		while( (nPos = src.find(target, nPos)) != tjs_string::npos ) {
+			src.replace( nPos, target.length(), dest );
+		}
 		return src;
 	}
-
+#endif
 #if 0
-	static inline ttstr GetConfigFileName(const ttstr& exename) {
-		return ChangeFileExt(exename.AsNarrowStdString(), ".cf");
+	static inline tjs_string GetConfigFileName(const tjs_string& exename) {
+		return ChangeFileExt(exename, TJS_W(".cf"));
 	}
 #endif
-	static ttstr GetDataPathDirectory(ttstr datapath, const ttstr& exename) {
-		ttstr nativeDataPath = TVPGetAppPath();
+	static tjs_string GetDataPathDirectory(tjs_string datapath, const tjs_string& exename) {
+		ttstr nativeDataPath = ttstr(TVPGetAppPath().AsStdString());
 		TVPGetLocalName(nativeDataPath);
-		nativeDataPath += "/savedata/";
-		return nativeDataPath;
+		nativeDataPath += TJS_W("/savedata/");
+		return nativeDataPath.AsStdString();
 #if 0
-		if(datapath == L"" ) datapath = std::wstring(L"$(exepath)\\savedata");
+		if(datapath == L"" ) datapath = tjs_string(L"$(exepath)\\savedata");
 
-		std::wstring exepath = ExcludeTrailingBackslash(ExtractFileDir(exename));
-		std::wstring personalpath = ExcludeTrailingBackslash(GetPersonalPath());
-		std::wstring appdatapath = ExcludeTrailingBackslash(GetAppDataPath());
-		std::wstring savedgamespath = ExcludeTrailingBackslash(GetSavedGamesPath());
+		tjs_string exepath = ExcludeTrailingBackslash(ExtractFileDir(exename));
+		tjs_string personalpath = ExcludeTrailingBackslash(GetPersonalPath());
+		tjs_string appdatapath = ExcludeTrailingBackslash(GetAppDataPath());
+		tjs_string savedgamespath = ExcludeTrailingBackslash(GetSavedGamesPath());
 		if(personalpath == L"") personalpath = exepath;
 		if(appdatapath == L"") appdatapath = exepath;
 		if(savedgamespath == L"") savedgamespath = exepath;
@@ -74,7 +78,7 @@ public:
 
 		bool vista_or_later = osinfo.dwPlatformId == VER_PLATFORM_WIN32_NT && osinfo.dwMajorVersion >= 6;
 
-		std::wstring vistapath = vista_or_later ? appdatapath : exepath;
+		tjs_string vistapath = vista_or_later ? appdatapath : exepath;
 
 		datapath = ReplaceStringAll(datapath, L"$(exepath)", exepath);
 		datapath = ReplaceStringAll(datapath, L"$(personalpath)", personalpath);
@@ -85,9 +89,9 @@ public:
 #endif
 	}
 #if 0
-	static ttstr GetUserConfigFileName(const ttstr& datapath, const ttstr& exename) {
+	static tjs_string GetUserConfigFileName(const tjs_string& datapath, const tjs_string& exename) {
 		// exepath, personalpath, appdatapath
-		return GetDataPathDirectory(datapath, exename) + ExtractFileName(ChangeFileExt(exename.AsNarrowStdString(), ".cfu"));
+		return GetDataPathDirectory(datapath, exename) + ExtractFileName(ChangeFileExt(exename, ".cfu"));
 	}
 #endif
 };

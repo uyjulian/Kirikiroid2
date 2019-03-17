@@ -515,13 +515,14 @@ bool TVPUnloadPlugin(const ttstr & name)
 //---------------------------------------------------------------------------
 struct tTVPFoundPlugin
 {
-	std::string Path;
-	std::string Name;
+	tjs_string Path;
+	tjs_string Name;
 	bool operator < (const tTVPFoundPlugin &rhs) const { return Name < rhs.Name; }
 };
 static tjs_int TVPAutoLoadPluginCount = 0;
-static void TVPSearchPluginsAt(std::vector<tTVPFoundPlugin> &list, std::string folder)
+static void TVPSearchPluginsAt(std::vector<tTVPFoundPlugin> &list, tjs_string folder)
 {
+#if 0
 	TVPListDir(folder, [&](const std::string &filename, int mask){
 		if (mask & S_IFREG) {
 			if (!strcasecmp(filename.c_str() + filename.length() - 4, ".tpm")) {
@@ -532,9 +533,10 @@ static void TVPSearchPluginsAt(std::vector<tTVPFoundPlugin> &list, std::string f
 			}
 		}
 	});
+#endif
 #if 0
 	WIN32_FIND_DATA ffd;
-	HANDLE handle = ::FindFirstFile((folder + L"*.tpm").c_str(), &ffd);
+	HANDLE handle = ::FindFirstFile((folder + TJS_W("*.tpm")).c_str(), &ffd);
 	if(handle != INVALID_HANDLE_VALUE)
 	{
 		BOOL cont;
@@ -566,26 +568,26 @@ void TVPLoadPluigins(void)
 	// aaa.tpm is to be loaded before aab.tpm (sorted by ASCII order)
 
 	// search plugins from path: (exepath), (exepath)\system, (exepath)\plugin
-	std::vector<tTVPFoundPlugin> list;
+	// std::vector<tTVPFoundPlugin> list;
 
-	std::string exepath = ExtractFileDir(TVPNativeProjectDir.AsNarrowStdString());
+	// tjs_string exepath = ExtractFileDir(TVPNativeProjectDir.AsNarrowStdString());
 
-	TVPSearchPluginsAt(list, exepath);
-	TVPSearchPluginsAt(list, exepath + "/system");
-	TVPSearchPluginsAt(list, exepath + "/plugin");
+	// TVPSearchPluginsAt(list, exepath);
+	// TVPSearchPluginsAt(list, exepath + "/system");
+	// TVPSearchPluginsAt(list, exepath + "/plugin");
 
-	// sort by filename
-	std::sort(list.begin(), list.end());
+	// // sort by filename
+	// std::sort(list.begin(), list.end());
 
-	// load each plugin
-	TVPAutoLoadPluginCount = (tjs_int)list.size();
-	for(std::vector<tTVPFoundPlugin>::iterator i = list.begin();
-		i != list.end();
-		i++)
-	{
-		TVPAddImportantLog(ttstr(TJS_W("(info) Loading ")) + ttstr(i->Name.c_str()));
-		TVPLoadPlugin((i->Path + "/" + i->Name).c_str());
-	}
+	// // load each plugin
+	// TVPAutoLoadPluginCount = (tjs_int)list.size();
+	// for(std::vector<tTVPFoundPlugin>::iterator i = list.begin();
+	// 	i != list.end();
+	// 	i++)
+	// {
+	// 	TVPAddImportantLog(ttstr(TJS_W("(info) Loading ")) + ttstr(i->Name.c_str()));
+	// 	TVPLoadPlugin((i->Path + "/" + i->Name).c_str());
+	// }
 }
 //---------------------------------------------------------------------------
 tjs_int TVPGetAutoLoadPluginCount() { return TVPAutoLoadPluginCount; }
@@ -622,7 +624,7 @@ ITSSWaveDecoder * TVPSearchAvailTSSWaveDecoder(const ttstr & storage, const ttst
 			// retrieve instance from (*i)->TSSModule
 			IUnknown *intf = NULL;
 			HRESULT hr = (*i)->TSSModule->GetMediaInstance(
-				(wchar_t*)storage.c_str(), &intf);
+				(tjs_char*)storage.c_str(), &intf);
 			if(SUCCEEDED(hr))
 			{
 				try
@@ -908,7 +910,7 @@ void TVPDoTryBlock(
 //---------------------------------------------------------------------------
 // TVPGetFileVersionOf
 //---------------------------------------------------------------------------
-bool TVPGetFileVersionOf(const wchar_t* module_filename, tjs_int &major, tjs_int &minor, tjs_int &release, tjs_int &build)
+bool TVPGetFileVersionOf(const tjs_char* module_filename, tjs_int &major, tjs_int &minor, tjs_int &release, tjs_int &build)
 {
 	// retrieve file version
 	major = minor = release = build = 0;
@@ -920,7 +922,7 @@ bool TVPGetFileVersionOf(const wchar_t* module_filename, tjs_int &major, tjs_int
 	UINT dum;
 	DWORD dum2;
 
-	wchar_t* filename = new wchar_t[TJS_strlen(module_filename) + 1];
+	tjs_char* filename = new tjs_char[TJS_strlen(module_filename) + 1];
 	try
 	{
 		TJS_strcpy(filename, module_filename);
@@ -933,7 +935,7 @@ bool TVPGetFileVersionOf(const wchar_t* module_filename, tjs_int &major, tjs_int
 			{
 				if(::GetFileVersionInfo(filename, 0, size, (void*)VersionInfo))
 				{
-					if(::VerQueryValue((void*)VersionInfo, L"\\", (void**)(&FixedFileInfo),
+					if(::VerQueryValue((void*)VersionInfo, TJS_W("\\"), (void**)(&FixedFileInfo),
 						&dum))
 					{
 						major   = FixedFileInfo->dwFileVersionMS >> 16;

@@ -79,7 +79,7 @@ public:
 
 	tjs_int TrackPopup(tjs_uint32 flags, tjs_int x, tjs_int y) const;
 
-	const ObjectVector<tTJSNI_BaseMenuItem>& GetChildren() const { return Children; }
+	// const ObjectVector<tTJSNI_BaseMenuItem>& GetChildren() const { return Children; }
 
 //-- interface to plugin
 	/*HMENU*/void* GetMenuItemHandleForPlugin() const;

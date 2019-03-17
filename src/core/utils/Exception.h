@@ -4,18 +4,18 @@
 
 
 class Exception /*: public std::exception*/ {
-	ttstr message_;
+	tjs_string message_;
 public:
-	Exception(const ttstr& mes) : message_(mes) {
+	Exception( const tjs_string& mes ) : message_(mes) {
 	}
-	virtual const ttstr& what() const {
-		return message_;
+	virtual const tjs_char* what() const {
+		return message_.c_str();
 	}
 };
 
 class EAbort : public Exception {
 public:
-	EAbort(const ttstr& mes) : Exception(mes) {
+	EAbort( const tjs_char* mes ) : Exception(tjs_string(mes)) {
 	}
 };
 

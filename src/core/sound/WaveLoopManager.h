@@ -179,7 +179,6 @@ public:
 	virtual const tTVPWaveFormat & GetFormat() const  = 0;
 
 	virtual ~ tTVPSampleAndLabelSource() { }
-	virtual bool DesiredFormat(const tTVPWaveFormat & format) { return false; }
 };
 //---------------------------------------------------------------------------
 
@@ -247,7 +246,6 @@ public:
 
 	const tTVPWaveFormat & GetFormat() const { return *Format; }
 			// from tTVPSampleAndLabelSource
-	virtual bool DesiredFormat(const tTVPWaveFormat & format);
 
 private:
 	bool GetNearestEvent(tjs_int64 current,

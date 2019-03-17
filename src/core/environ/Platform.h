@@ -44,6 +44,12 @@ void TVPPrintLog(const char *str);
 
 void TVPFetchSDCardPermission(); // for android only
 
+
+#undef st_atime
+#undef st_ctime
+#undef st_mtime
+
+
 struct tTVP_stat {
 	uint16_t st_mode;
 	uint64_t st_size;

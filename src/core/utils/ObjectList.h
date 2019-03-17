@@ -73,7 +73,7 @@ private:
 	{
 		// commit the current array
 		// this simply free BackupedObjects ( and its related things )
-		if(BackupedObjects) delete [](BackupedObjects);
+		if(BackupedObjects) TJS_free(BackupedObjects);
 		BackupedObjects = NULL;
 		BackupedCount = 0;
 		Backuped = false;

@@ -34,11 +34,6 @@ tTJSString::tTJSString(tjs_int n) // from int
 	Ptr = TJSIntegerToString(n);
 }
 //---------------------------------------------------------------------------
-tTJSString::tTJSString(tjs_int64 n) // from int64
-{
-	Ptr = TJSIntegerToString(n);
-}
-//---------------------------------------------------------------------------
 tjs_int tTJSString::GetNarrowStrLen() const
 {
 	// note that this function will return -1 when there are invalid chars in string.
@@ -223,9 +218,9 @@ tTJSString tTJSString::EscapeC() const
 		default:
 			if(hexflag)
 			{
-				if((*p >= TJS_W('a') && *p <= TJS_W('f')) ||
-					(*p >= TJS_W('A') && *p <= TJS_W('F')) ||
-						(*p >= TJS_W('0') && *p <= TJS_W('9')) )
+				if(*p >= TJS_W('a') && *p <= TJS_W('f') ||
+					*p >= TJS_W('A') && *p <= TJS_W('F') ||
+						*p >= TJS_W('0') && *p <= TJS_W('9') )
 				{
 					tjs_char buf[20];
 					TJS_snprintf(buf, sizeof(buf)/sizeof(tjs_char), TJS_W("\\x%02x"), (int)*p);
@@ -275,50 +270,6 @@ bool tTJSString::StartsWith(const tjs_char *string) const
 	if(!*string) return true;
 	return false;
 }
-
-TJS::tTJSString tTJSString::SubString( unsigned int pos, unsigned int len ) const
-{
-    if(Ptr == NULL || len == 0 || pos >= Ptr->GetLength()) return tTJSString();
-    if(pos == 0 && len >= Ptr->GetLength()) return tTJSString(*this);
-    return tTJSString(Ptr->operator const tjs_char *() + pos, len);
-}
-
-TJS::tTJSString tTJSString::Trim()
-{
-    const tjs_char * p = c_str();
-    while( *p > '\0' && *p < 0x20 )
-        p++;
-
-    tTJSString _str(p);
-    tjs_char * p0 = (tjs_char *)_str.c_str();
-    tjs_char * p1 = (tjs_char *)_str.c_str() + _str.length() - 1;
-    while( p0 < p1 && *p1 != '\0' && *p1 < 0x20 )
-        *p1-- = '\0';
-    _str.Ptr->FixLength();
-    return _str;
-}
-
-int tTJSString::IndexOf( const tTJSString& str, unsigned int pos /*= 0*/ ) const
-{
-    if(!Ptr || !str.Ptr) return -1;
-    //    if(str.length() == 0 || pos >= length()) return -1;
-    const tjs_char *p = TJS_strstr(Ptr->operator const tjs_char *() + pos, str.Ptr->operator const tjs_char *());
-    if(p == NULL) return -1;
-    return p - Ptr->operator const tjs_char*();
-}
-#if 0
-const std::string tTJSString::AsStdString() const {
-	if (!Ptr) return "";
-	// this constant string value must match std::string in type
-	const tjs_char * wide = Ptr->operator const tjs_char*();
-	int n = TJS_wcstombs(nullptr, wide, 0);
-	if (n == -1) return "";
-	std::string ret;
-	ret.resize(n);
-	TJS_wcstombs((char*)ret.c_str(), wide, n);
-	return ret;
-}
-#endif
 //---------------------------------------------------------------------------
 tTJSString operator + (const tjs_char *lhs, const tTJSString &rhs)
 {

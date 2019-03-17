@@ -218,7 +218,7 @@ public:
             TVPThrowExceptionMessage(msg.c_str());
             return false;
         }
-        // UTF8¤Ê¥Õ¥¡¥¤¥ëÃû¤«¤É¤¦¤«¤ÎÅÐ¶¨¡£×î³õ¤Î¥Õ¥¡¥¤¥ë¤Ç›Q¤á¤ë
+        // UTF8¤Ê\Õ\¡\¤\ëÃû¤«¤É¤¦¤«¤ÎÅÐ¶¨¡£×î³õ¤Î\Õ\¡\¤\ë¤Ç›Q¤á¤ë
         unzGoToFirstFile(uf);
         unz_file_info file_info;
         if (unzGetCurrentFileInfo(uf, &file_info, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK) {

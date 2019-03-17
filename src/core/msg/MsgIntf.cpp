@@ -150,11 +150,15 @@ tjs_int TVPVersionMinor;
 tjs_int TVPVersionRelease;
 tjs_int TVPVersionBuild;
 //---------------------------------------------------------------------------
-
-#ifndef WIDEN2
-#define WIDEN2(x) TJS_W(x)
+/*
+#ifdef _WIN32
+#define WIDEN2(x) L ## x
+#define WIDEN(x) WIDEN2(x)
+#else
+#define WIDEN2(x) u ## x
 #define WIDEN(x) WIDEN2(x)
 #endif
+*/
 const tjs_char* TVPCompileDate = WIDEN(__DATE__);
 const tjs_char* TVPCompileTime = WIDEN(__TIME__);
 
@@ -190,8 +194,8 @@ ttstr TVPGetVersionInformation(void)
 		TJSVersionMajor, TJSVersionMinor, TJSVersionRelease);
 
 	ttstr version = TVPFormatMessage(TVPVersionInformation, verstr, tjsverstr);
-	ttstr str = ApplicationSpecialPath::ReplaceStringAll(version.AsStdString(), TJS_W("%DATE%"), ttstr(TVPCompileDate));
-	str = ApplicationSpecialPath::ReplaceStringAll(str, TJS_W("%TIME%"), ttstr(TVPCompileTime));
+	tjs_string str = ApplicationSpecialPath::ReplaceStringAll( version.AsStdString(), tjs_string(TJS_W("%DATE%")), tjs_string(TVPCompileDate) );
+	str = ApplicationSpecialPath::ReplaceStringAll( str, tjs_string(TJS_W("%TIME%")), tjs_string(TVPCompileTime) );
 	return ttstr(str);
 }
 //---------------------------------------------------------------------------

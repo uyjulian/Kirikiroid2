@@ -11,76 +11,9 @@
 #include "tjsCommHead.h"
 
 #include "tjsUtils.h"
-#include <mutex>
-#include <thread>
-#include "TickCount.h"
-#include "Platform.h"
 
 namespace TJS
 {
-
-struct tTJSCriticalSectionImpl {
-	std::mutex _mutex;
-	std::thread::id _tid;
-	bool lock();
-	void unlock();
-};
-
-bool tTJSCriticalSectionImpl::lock() {
-	std::thread::id id = std::this_thread::get_id();
-	if (_tid == id) return false;
-	_mutex.lock();
-	_tid = id;
-	return true;
-}
-
-void tTJSCriticalSectionImpl::unlock() {
-	_tid = std::thread::id();
-	_mutex.unlock();
-}
-
-bool tTJSCriticalSection::lock() {
-	return _impl->lock();
-}
-
-void tTJSCriticalSection::unlock() {
-	_impl->unlock();
-}
-
-tTJSCriticalSection::tTJSCriticalSection() {
-	_impl = new tTJSCriticalSectionImpl;
-}
-
-tTJSCriticalSection::~tTJSCriticalSection() {
-	delete _impl;
-}
-
-void tTJSSpinLock::lock() {
-	while (atom_lock.test_and_set(std::memory_order_acquire)) {
-		std::this_thread::yield();
-//		TVPRelinquishCPU();
-	}
-}
-
-void tTJSSpinLock::unlock() {
-	atom_lock.clear(std::memory_order_release);
-}
-
-tTJSSpinLock::tTJSSpinLock() {
-	unlock();
-}
-
-tTJSSpinLockHolder::tTJSSpinLockHolder(tTJSSpinLock &lock) {
-	lock.lock();
-	Lock = &lock;
-}
-
-tTJSSpinLockHolder::~tTJSSpinLockHolder() {
-	if (Lock) {
-		Lock->unlock();
-	}
-}
-
 //---------------------------------------------------------------------------
 iTJSDispatch2 * TJSObjectTraceTarget;
 //---------------------------------------------------------------------------

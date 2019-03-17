@@ -264,7 +264,7 @@ public:
 
 	void GetClientRect( struct tTVPRect& rt );
 
-	// メッセージハンドラ
+	// 繝｡繝�繧ｻ繝ｼ繧ｸ繝上Φ繝峨Λ
 	virtual void OnActive( HWND preactive ) {}
 	virtual void OnDeactive( HWND postactive ) {}
 	virtual void OnClose( CloseAction& action ){}
@@ -341,7 +341,7 @@ public:
 	virtual bool GetVisible() = 0;
 	virtual void SetVisible(bool bVisible) = 0;
 	virtual const char *GetCaption() = 0;
-	virtual void SetCaption(const std::string &) = 0;
+	virtual void SetCaption(const tjs_string &) = 0;
 	virtual void SetWidth(tjs_int w) = 0;
 	virtual void SetHeight(tjs_int h) = 0;
 	virtual void SetSize(tjs_int w, tjs_int h) = 0;

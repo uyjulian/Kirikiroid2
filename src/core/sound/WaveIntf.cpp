@@ -89,8 +89,8 @@ tjs_uint8 TVP_GUID_KSDATAFORMAT_SUBTYPE_IEEE_FLOAT[16] =
 //---------------------------------------------------------------------------
 // CPU specific optimized routine prototypes
 //---------------------------------------------------------------------------
-extern void (*PCMConvertLoopInt16ToFloat32)(void * dest, const void * src, size_t numsamples);
-extern void (*PCMConvertLoopFloat32ToInt16)(void * dest, const void * src, size_t numsamples);
+extern void PCMConvertLoopInt16ToFloat32(void * __restrict dest, const void * __restrict src, size_t numsamples);
+extern void PCMConvertLoopFloat32ToInt16(void * __restrict dest, const void * __restrict src, size_t numsamples);
 #if 0
 extern void PCMConvertLoopInt16ToFloat32_sse(void * __restrict dest, const void * __restrict src, size_t numsamples);
 extern void PCMConvertLoopFloat32ToInt16_sse(void * __restrict dest, const void * __restrict src, size_t numsamples);

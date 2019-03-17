@@ -30,11 +30,12 @@
 #include <thread>
 // #include "ConfigManager/LocaleConfigManager.h"
 #include "StorageIntf.h"
-extern "C" {
-#include <libavutil/avstring.h>
-}
+// extern "C" {
+// #include <libavutil/avstring.h>
+// }
 #include "TVPColor.h"
 #include "FontImpl.h"
+#include <unistd.h>
 
 //#include "resource.h"
 
@@ -45,59 +46,60 @@ kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32
 */
 
 tTVPApplication* Application = new tTVPApplication;
-std::thread::id TVPMainThreadID;
-static tTJSCriticalSection _NoMemCallBackCS;
-static void *_reservedMem = malloc(1024 * 1024 * 4); // 4M reserved mem
+// std::thread::id TVPMainThreadID;
+// static tTJSCriticalSection _NoMemCallBackCS;
+// static void *_reservedMem = malloc(1024 * 1024 * 4); // 4M reserved mem
 static bool _project_startup = false;
 tTJS *TVPAppScriptEngine;
-#define HOOK_MALLOC
+// #define HOOK_MALLOC
 
-static void _do_compact() {
-	TVPDeliverCompactEvent(TVP_COMPACT_LEVEL_MAX);
-}
+// static void _do_compact() {
+// 	TVPDeliverCompactEvent(TVP_COMPACT_LEVEL_MAX);
+// }
 
-static void _no_memory_cb() {
-	tTJSCSH lock(_NoMemCallBackCS);
-	free(_reservedMem);
-	if (TVPMainThreadID == std::this_thread::get_id()) {
-		_do_compact();
-	} else {
-		Application->PostUserMessage(_do_compact);
-	}
-	_reservedMem = realloc(0, 1024 * 1024 * 4);
-}
+// static void _no_memory_cb() {
+// 	tTJSCSH lock(_NoMemCallBackCS);
+// 	free(_reservedMem);
+// 	if (TVPMainThreadID == std::this_thread::get_id()) {
+// 		_do_compact();
+// 	} else {
+// 		Application->PostUserMessage(_do_compact);
+// 	}
+// 	_reservedMem = realloc(0, 1024 * 1024 * 4);
+// }
 
-static std::string _title, _msg, _retry, _cancel;
-static tTJSCriticalSection _cs;
-typedef void* F_alloc_t(void*, size_t);
-static void* __do_alloc_func(F_alloc_t *f, void *p, size_t c) {
-	void *ptr = f(p, c);
+// static std::string _title, _msg, _retry, _cancel;
+// static tTJSCriticalSection _cs;
+// typedef void* F_alloc_t(void*, size_t);
+// static void* __do_alloc_func(F_alloc_t *f, void *p, size_t c) {
+// 	void *ptr = f(p, c);
 
-	if (!ptr) {
-		_no_memory_cb();
-		ptr = f(p, c);
-		if (!ptr) {
-			tTJSCSH lock(_cs);
-			const char *btns[2] = { _retry.c_str(), _cancel.c_str() };
-			while (!ptr && TVPShowSimpleMessageBox(_msg.c_str(), _title.c_str(), 2, btns) == 0) {
-				ptr = f(p, c);
-			}
-			//TVPExitApplication(-1);
-		}
-	}
-	return ptr;
-}
+// 	if (!ptr) {
+// 		_no_memory_cb();
+// 		ptr = f(p, c);
+// 		if (!ptr) {
+// 			tTJSCSH lock(_cs);
+// 			const char *btns[2] = { _retry.c_str(), _cancel.c_str() };
+// 			while (!ptr && TVPShowSimpleMessageBox(_msg.c_str(), _title.c_str(), 2, btns) == 0) {
+// 				ptr = f(p, c);
+// 			}
+// 			//TVPExitApplication(-1);
+// 		}
+// 	}
+// 	return ptr;
+// }
 
 ttstr TVPGetErrorDialogTitle() {
-	const ttstr &title = Application->GetTitle();
-	if (title.IsEmpty()) {
-		return TVPGetPackageVersionString() + " Error";
-	} else {
-		return ttstr(TVPGetPackageVersionString()) + " " + title;
-	}
+	// const ttstr &title = Application->GetTitle();
+	// if (title.IsEmpty()) {
+	// 	return TVPGetPackageVersionString() + " Error";
+	// } else {
+	// 	return ttstr(TVPGetPackageVersionString()) + " " + title;
+	// }
+	return "Error";
 }
 
-#ifdef HOOK_MALLOC
+// #ifdef HOOK_MALLOC
 // extern "C" {
 // 	void* tc_malloc(size_t size);
 // 	void tc_free(void* ptr);
@@ -236,7 +238,7 @@ ttstr TVPGetErrorDialogTitle() {
 // #endif
 // 	}
 // }
-#endif
+// #endif
 
 #if 0
 #ifdef TJS_64BIT_OS
@@ -245,7 +247,7 @@ extern void TVPHandleSEHException( int ErrorCode, EXCEPTION_RECORD *P, unsigned 
 extern void TVPHandleSEHException( int ErrorCode, EXCEPTION_RECORD *P, unsigned long osEsp, PCONTEXT ctx);
 #endif
 
-// ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ÌŠJn‚ÉŒÄ‚Ô
+// ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã®é–‹å§‹æ™‚ã«å‘¼ã¶
 inline void CheckMemoryLeaksStart()
 {
 #ifdef  _DEBUG
@@ -263,7 +265,12 @@ inline void DumpMemoryLeaks()
 #endif
 
 ttstr ExePath() {
-	return TVPNativeProjectDir;
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		// strncat(cwd, "/Kirikiri", PATH_MAX);
+		return cwd;
+	}
+	
 }
 
 bool TVPCheckAbout();
@@ -272,20 +279,20 @@ void TVPOnError();
 void TVPLockSoundMixer();
 void TVPUnlockSoundMixer();
 
-static bool _warnLowMem = true;
+// static bool _warnLowMem = true;
 void TVPCheckMemory() {
-#if defined(_DEBUG)
-	if (_warnLowMem) {
-		tjs_int freeMem = TVPGetSystemFreeMemory();
-		if (freeMem < 24) {
-			char buf[256];
-			sprintf(buf, "Insufficient memory (%dMB available)\nYou can diable this notice in global preference.", freeMem);
-			const char *btn = "OK";
-			TVPShowSimpleMessageBox(buf, "No Memory Warning", 1, &btn);
-			_warnLowMem = false;
-		}
-	}
-#endif
+// #if defined(_DEBUG)
+// 	if (_warnLowMem) {
+// 		tjs_int freeMem = TVPGetSystemFreeMemory();
+// 		if (freeMem < 24) {
+// 			char buf[256];
+// 			sprintf(buf, "Insufficient memory (%dMB available)\nYou can diable this notice in global preference.", freeMem);
+// 			const char *btn = "OK";
+// 			TVPShowSimpleMessageBox(buf, "No Memory Warning", 1, &btn);
+// 			_warnLowMem = false;
+// 		}
+// 	}
+// #endif
 }
 
 int TVPShowSimpleMessageBox(const ttstr & text, const ttstr & caption) {
@@ -311,7 +318,7 @@ char ** _argv;
 extern void TVPInitCompatibleNativeFunctions();
 extern void TVPLoadMessage();
 AcceleratorKeyTable::AcceleratorKeyTable() {
-	// ƒfƒtƒHƒ‹ƒg‚ğ“Ç‚İ‚Ş
+	// ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã‚’èª­ã¿è¾¼ã‚€
 	hAccel_ = ::LoadAccelerators( (HINSTANCE)GetModuleHandle(0), MAKEINTRESOURCE(IDC_TVPWIN32));
 }
 AcceleratorKeyTable::~AcceleratorKeyTable() {
@@ -351,7 +358,7 @@ AcceleratorKey::~AcceleratorKey() {
 	delete[] keys_;
 }
 void AcceleratorKey::AddKey( WORD id, WORD key, BYTE virt ) {
-	// ‚Ü‚¸‚Í‘¶İ‚·‚é‚©ƒ`ƒFƒbƒN‚·‚é
+	// ã¾ãšã¯å­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ã™ã‚‹
 	bool found = false;
 	int index = 0;
 	for( int i = 0; i < key_count_; i++ ) {
@@ -362,9 +369,9 @@ void AcceleratorKey::AddKey( WORD id, WORD key, BYTE virt ) {
 		}
 	}
 	if( found ) {
-		// Šù‚É“o˜^‚³‚ê‚Ä‚¢‚éƒRƒ}ƒ“ƒh‚È‚Ì‚ÅƒL[î•ñ‚ÌXV‚ğs‚¤
+		// æ—¢ã«ç™»éŒ²ã•ã‚Œã¦ã„ã‚‹ã‚³ãƒãƒ³ãƒ‰ãªã®ã§ã‚­ãƒ¼æƒ…å ±ã®æ›´æ–°ã‚’è¡Œã†
 		if( keys_[index].key == key && keys_[index].fVirt == virt ) {
-			// •ÏX‚³‚ê‚Ä‚¢‚È‚¢
+			// å¤‰æ›´ã•ã‚Œã¦ã„ãªã„
 			return;
 		}
 		keys_[index].key = key;
@@ -390,7 +397,7 @@ void AcceleratorKey::AddKey( WORD id, WORD key, BYTE virt ) {
 
 }
 void AcceleratorKey::DelKey( WORD id ) {
-	// ‚Ü‚¸‚Í‘¶İ‚·‚é‚©ƒ`ƒFƒbƒN‚·‚é
+	// ã¾ãšã¯å­˜åœ¨ã™ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ã™ã‚‹
 	bool found = false;
 	for( int i = 0; i < key_count_; i++ ) {
 		if( keys_[i].cmd == id ) {
@@ -400,7 +407,7 @@ void AcceleratorKey::DelKey( WORD id ) {
 	}
 	if( found == false ) return;
 
-	// ‘¶İ‚µ‚½ê‡ì‚è’¼‚µ
+	// å­˜åœ¨ã—ãŸå ´åˆä½œã‚Šç›´ã—
 	ACCEL* table = new ACCEL[key_count_-1];
 	int dest = 0;
 	for( int i = 0; i < key_count_; i++ ) {
@@ -420,12 +427,12 @@ void AcceleratorKey::DelKey( WORD id ) {
 int APIENTRY WinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow ) {
 	try {
 		CheckMemoryLeaksStart();
-		// ƒEƒHƒbƒ`‚Å _crtBreakAlloc ‚ÉƒZƒbƒg‚·‚é
+		// ã‚¦ã‚©ãƒƒãƒã§ _crtBreakAlloc ã«ã‚»ãƒƒãƒˆã™ã‚‹
 
-		// XP ‚æ‚èŒã‚Åg‚¦‚éAPI‚ğ“®“I‚É“Ç‚İ‚ñ‚ÅŒİŠ·«‚ğæ‚é
+		// XP ã‚ˆã‚Šå¾Œã§ä½¿ãˆã‚‹APIã‚’å‹•çš„ã«èª­ã¿è¾¼ã‚“ã§äº’æ›æ€§ã‚’å–ã‚‹
 		TVPInitCompatibleNativeFunctions();
 
-		// ƒƒbƒZ[ƒW•¶š—ñ‚ğƒŠƒ\[ƒX‚©‚ç“Ç‚İ
+		// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸æ–‡å­—åˆ—ã‚’ãƒªã‚½ãƒ¼ã‚¹ã‹ã‚‰èª­è¾¼ã¿
 		TVPLoadMessage();
 
 		_argc = __argc;
@@ -437,12 +444,12 @@ int APIENTRY WinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	
 		// delete application and exit forcely
 		// this prevents ugly exception message on exit
-		// ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ğíœ‚µ‹­§I—¹‚³‚¹‚éB
-		// ‚±‚ê‚ÍI—¹‚ÌX‚¢—áŠOƒƒbƒZ[ƒW‚ğ—}~‚·‚é
+		// ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã‚’å‰Šé™¤ã—å¼·åˆ¶çµ‚äº†ã•ã›ã‚‹ã€‚
+		// ã“ã‚Œã¯çµ‚äº†æ™‚ã®é†œã„ä¾‹å¤–ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’æŠ‘æ­¢ã™ã‚‹
 		delete Application;
 
 #ifndef _DEBUG
-//		::ExitProcess(TVPTerminateCode); // ‚±‚±‚ÅI—¹‚³‚¹‚é‚Æƒƒ‚ƒŠƒŠ[ƒN•\¦‚ªs‚í‚ê‚È‚¢
+//		::ExitProcess(TVPTerminateCode); // ã“ã“ã§çµ‚äº†ã•ã›ã‚‹ã¨ãƒ¡ãƒ¢ãƒªãƒªãƒ¼ã‚¯è¡¨ç¤ºãŒè¡Œã‚ã‚Œãªã„
 #endif
 	} catch (...) {
 		return 2;
@@ -458,7 +465,7 @@ tTVPApplication::~tTVPApplication() {
 // 	while( windows_list_.size() ) {
 // 		std::vector<TTVPWindowForm*>::iterator i = windows_list_.begin();
 // 		delete (*i);
-// 		// TTVPWindowForm ‚ÌƒfƒXƒgƒ‰ƒNƒ^“à‚ÅƒŠƒXƒg‚©‚çíœ‚³‚ê‚é‚Í‚¸
+// 		// TTVPWindowForm ã®ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿å†…ã§ãƒªã‚¹ãƒˆã‹ã‚‰å‰Šé™¤ã•ã‚Œã‚‹ã¯ãš
 // 	}
 // 	windows_list_.clear();
 	delete image_load_thread_;
@@ -557,11 +564,11 @@ bool tTVPApplication::StartApplication(ttstr path) {
 #endif
 	TVPTerminateCode = 0;
 	// LocaleConfigManager *mgr = LocaleConfigManager::GetInstance();
-	_retry = "Retry";
-	_cancel = "Cancel";
-	_msg = "No memory";
-	_title = "Error occurred";
-	TVPNativeProjectDir = path;
+	// _retry = "Retry";
+	// _cancel = "Cancel";
+	// _msg = "No memory";
+	// _title = "Error occurred";
+	TVPNativeProjectDir = path.AsStdString();
 
 	CheckConsole();
 
@@ -598,7 +605,7 @@ bool tTVPApplication::StartApplication(ttstr path) {
 		CheckDigitizer();
 
 		// start image load thread
-		image_load_thread_->Resume();
+		image_load_thread_->StartTread();
 
 		/*if(TVPProjectDirSelected)*/ TVPInitializeStartupScript();
 		_project_startup = true;
@@ -673,11 +680,11 @@ bool tTVPApplication::StartApplication(ttstr path) {
 	return false;
 }
 /**
- * ƒRƒ“ƒ\[ƒ‹‚©‚ç‚Ì‹N“®‚©Šm”F‚µAƒRƒ“ƒ\[ƒ‹‚©‚ç‚Ì‹N“®‚Ìê‡‚ÍA•W€o—Í‚ğŠ„‚è“–‚Ä‚é
+ * ã‚³ãƒ³ã‚½ãƒ¼ãƒ«ã‹ã‚‰ã®èµ·å‹•ã‹ç¢ºèªã—ã€ã‚³ãƒ³ã‚½ãƒ¼ãƒ«ã‹ã‚‰ã®èµ·å‹•ã®å ´åˆã¯ã€æ¨™æº–å‡ºåŠ›ã‚’å‰²ã‚Šå½“ã¦ã‚‹
  */
 void tTVPApplication::CheckConsole() {
 #ifdef TVP_LOG_TO_COMMANDLINE_CONSOLE
-	if( has_map_report_process_ ) return; // ‘‚«o‚µ—pqƒvƒƒZƒX‚µ‚Ä‹N“®‚³‚ê‚Ä‚¢‚½‚ÍƒRƒ“ƒ\[ƒ‹Ú‘±‚µ‚È‚¢
+	if( has_map_report_process_ ) return; // æ›¸ãå‡ºã—ç”¨å­ãƒ—ãƒ­ã‚»ã‚¹ã—ã¦èµ·å‹•ã•ã‚Œã¦ã„ãŸæ™‚ã¯ã‚³ãƒ³ã‚½ãƒ¼ãƒ«æ¥ç¶šã—ãªã„
 	HANDLE hin  = ::GetStdHandle(STD_INPUT_HANDLE);
 	HANDLE hout = ::GetStdHandle(STD_OUTPUT_HANDLE);
 	HANDLE herr = ::GetStdHandle(STD_ERROR_HANDLE);
@@ -701,7 +708,7 @@ void tTVPApplication::CheckConsole() {
 		wchar_t console[256];
 		::GetConsoleTitle( console, 256 );
 		console_title_ = std::wstring( console );
-		// Œ³‚Ìƒnƒ“ƒhƒ‹‚ğÄŠ„‚è“–‚Ä
+		// å…ƒã®ãƒãƒ³ãƒ‰ãƒ«ã‚’å†å‰²ã‚Šå½“ã¦
 		if (hin)  ::SetStdHandle(STD_INPUT_HANDLE, hin);
 		if (hout) ::SetStdHandle(STD_OUTPUT_HANDLE, hout);
 		if (herr) ::SetStdHandle(STD_ERROR_HANDLE, herr);
@@ -826,7 +833,7 @@ void tTVPApplication::ProcessMessages()
 	for (std::tuple<void*, int, tMsg>& it : lstUserMsg) {
 		std::get<2>(it)();
 	}
-	TVPTimer::ProgressAllTimer();
+	// TVPTimer::ProgressAllTimer();
 }
 
 #if 0
@@ -963,7 +970,7 @@ void tTVPApplication::DeleteAcceleratorKeyTable( HWND hWnd ) {
 }
 #endif
 void tTVPApplication::CheckDigitizer() {
-	// Windows 7 ˆÈ~‚Å‚Ì‚İ—LŒø
+	// Windows 7 ä»¥é™ã§ã®ã¿æœ‰åŠ¹
 #if 0
 	OSVERSIONINFOEX ovi;
 	ovi.dwOSVersionInfoSize = sizeof(ovi);
@@ -1069,7 +1076,7 @@ bool tTVPApplication::GetNotMinimizing() const
 	if( hWnd != INVALID_HANDLE_VALUE && hWnd != NULL ) {
 		return ::IsIconic( hWnd ) == 0;
 	}
-	return true; // ƒƒCƒ“‚ª‚È‚¢‚ÍÅ¬‰»‚³‚ê‚Ä‚¢‚é‚Æ‚İ‚È‚·
+	return true; // ãƒ¡ã‚¤ãƒ³ãŒãªã„æ™‚ã¯æœ€å°åŒ–ã•ã‚Œã¦ã„ã‚‹ã¨ã¿ãªã™
 #endif
 }
 #if 0
@@ -1134,18 +1141,6 @@ void TVPDeleteAcceleratorKeyTable( HWND hWnd ) {
 
 void TVPInitWindowOptions() {
 	;
-}
-
-#ifndef TVP_AUDIO_ENABLE_FFMPEG
-#include <libgen.h>
-#endif
-
-std::string ExtractFileDir(const std::string & FileName) {
-#ifdef TVP_AUDIO_ENABLE_FFMPEG
-	return av_dirname((char*)FileName.c_str());
-#else
-	return dirname((char*)FileName.c_str());
-#endif
 }
 
 unsigned long ColorToRGB(unsigned int col)

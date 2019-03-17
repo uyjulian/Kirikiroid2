@@ -22,10 +22,6 @@
 #include "Random.h"
 #include "ScriptMgnIntf.h"
 #include "DebugIntf.h"
-// #include "ConfigManager/LocaleConfigManager.h"
-#include "Platform.h"
-
-extern bool TVPStartupSuccess;
 
 //---------------------------------------------------------------------------
 // TVPFireOnApplicationActivateEvent
@@ -106,12 +102,8 @@ TJS_END_NATIVE_CONSTRUCTOR_DECL(/*TJS class name*/System)
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/terminate)
 {
-	int code = numparams > 0 ? param[0]->AsInteger() : 0;
-	if (!TVPStartupSuccess) {
-		;
-	} else {
+	int code = numparams > 0 ? static_cast<int>(*param[0]) : 0;
 	TVPTerminateAsync(code);
-	}
 
 	return TJS_S_OK;
 }
@@ -121,12 +113,8 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/exit)
 {
 	// this method does not return
 
-	int code = numparams > 0 ? param[0]->AsInteger() : 0;
-	if (!TVPStartupSuccess) {
-		;
-	} else {
+	int code = numparams > 0 ? static_cast<int>(*param[0]) : 0;
 	TVPTerminateSync(code);
-	}
 
 	return TJS_S_OK;
 }
@@ -140,23 +128,24 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/inputString)
 
 //	bool b = TVPInputQuery(*param[0], *param[1], value);
 
-	ttstr caption = *param[0], prompt = *param[1];
+	// ttstr caption = *param[0], prompt = *param[1];
 	// this shows a dialog box which let user to input a string.
 	// return false if the user selects "cancel", otherwise return true.
 	// implement in each platform.
-	std::vector<ttstr> btns;
-	btns.emplace_back("OK");
-	btns.emplace_back("Cancel");
-	int ret = TVPShowSimpleInputBox(value, caption, prompt, btns);
-	bool b = ret == 0; // the left button clicked
+	// std::vector<ttstr> btns;
+	// btns.emplace_back("OK");
+	// btns.emplace_back("Cancel");
+	// int ret = TVPShowSimpleInputBox(value, caption, prompt, btns);
+	// bool b = ret == 0; // the left button clicked
 
-	if(result)
-	{
-		if(b)
-			*result = value;
-		else
-			result->Clear();
-	}
+	// if(result)
+	// {
+	// 	if(b)
+	// 		*result = value;
+	// 	else
+	// 		result->Clear();
+	// }
+	result->Clear();
 
 	return TJS_S_OK;
 }
@@ -492,6 +481,34 @@ TJS_BEGIN_NATIVE_PROP_DECL(exitOnNoWindowStartup)
 	TJS_END_NATIVE_PROP_SETTER
 }
 TJS_END_NATIVE_STATIC_PROP_DECL(exitOnNoWindowStartup)
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_PROP_DECL(isWindows) {
+	TJS_BEGIN_NATIVE_PROP_GETTER {
+#ifdef WIN32
+		*result = (tjs_int)1;
+#else
+		*result = (tjs_int)0;
+#endif
+		return TJS_S_OK;
+	}
+	TJS_END_NATIVE_PROP_GETTER
+	TJS_DENY_NATIVE_PROP_SETTER
+}
+TJS_END_NATIVE_STATIC_PROP_DECL(isWindows)
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_PROP_DECL(isAndroid) {
+	TJS_BEGIN_NATIVE_PROP_GETTER {
+#ifdef ANDROID
+		*result = (tjs_int)1;
+#else
+		*result = (tjs_int)0;
+#endif
+		return TJS_S_OK;
+	}
+	TJS_END_NATIVE_PROP_GETTER
+	TJS_DENY_NATIVE_PROP_SETTER
+}
+TJS_END_NATIVE_STATIC_PROP_DECL(isAndroid)
 //----------------------------------------------------------------------
 	TJS_END_NATIVE_MEMBERS
 

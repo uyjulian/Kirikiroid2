@@ -13,7 +13,6 @@
 
 
 #include "StorageIntf.h"
-#include <functional>
 
 
 
@@ -175,75 +174,7 @@ public:
 
 };
 //---------------------------------------------------------------------------
-struct tTVPUnpackArchiveCallbacks {
-	std::function<void()> FuncOnEnded;
-	std::function<void(int, const char *)> FuncOnError;
-	std::function<void(tjs_uint64, tjs_uint64)> FuncOnProgress;
-	std::function<void(int, const std::string &, tjs_uint64)> FuncOnNewFile;
-	std::function<std::string()> FuncPassword;
-};
-class tTVPUnpackArchiveThread;
-class iTVPUnpackArchiveImpl {
-protected:
-	const tTVPUnpackArchiveCallbacks *_callbacks = nullptr;
 
-public:
-	bool StopRequired = false;
 
-	virtual ~iTVPUnpackArchiveImpl() {}
-	
-	void SetCallback(const tTVPUnpackArchiveCallbacks* cb) { _callbacks = cb; }
-
-	virtual bool Open(const std::string &path) = 0;
-	virtual int GetFileCount() = 0; // -1 for unknown file count
-	virtual tjs_int64 GetTotalSize() = 0; // -1 for unknown size
-	virtual void ExtractTo(const std::string &path) = 0;
-};
-
-class tTVPUnpackArchive : public tTVPUnpackArchiveCallbacks {
-public:
-	tTVPUnpackArchive();
-	virtual ~tTVPUnpackArchive(); // must ve deconstructed from main thread
-	int Prepare(const std::string &path, const std::string &_outpath, tjs_uint64 *totalSize);
-	void Start();
-	void Stop();
-	void Close();
-
-	void SetCallback(
-		const std::function<void()> &funcOnEnded,
-		const std::function<void(int, const char *)> &funcOnError,
-		const std::function<void(tjs_uint64, tjs_uint64)> &funcOnProgress,
-		const std::function<void(int, const std::string&, tjs_uint64)> &funcOnNewFile,
-		const std::function<std::string()>& funcPassword) {
-		FuncOnEnded = funcOnEnded;
-		FuncOnError = funcOnError;
-		FuncOnProgress = funcOnProgress;
-		FuncOnNewFile = funcOnNewFile;
-		FuncPassword = funcPassword;
-	}
-
-protected:
-	// these callbacks are not in main thread !
-	virtual void OnEnded() {
-		if (FuncOnEnded)
-			FuncOnEnded();
-	}
-	virtual void OnProgress(tjs_uint64 total_size, tjs_uint64 file_size) {
-		if (FuncOnProgress)
-			FuncOnProgress(total_size, file_size);
-	}
-	virtual void OnNewFile(int idx, const char * utf8name, tjs_uint64 file_size) {
-		if (FuncOnNewFile)
-			FuncOnNewFile(idx, utf8name, file_size);
-	}
-
-private:
-	void Process();
-
-	iTVPUnpackArchiveImpl *_impl = nullptr;
-	std::string OutPath;
-	friend class tTVPUnpackArchiveThread;
-	tTVPUnpackArchiveThread *ArcThread = nullptr;
-};
 
 #endif

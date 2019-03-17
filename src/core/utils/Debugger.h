@@ -1,6 +1,6 @@
 /****************************************************************************/
 /*! @file
-@brief ƒuƒŒ[ƒNƒ|ƒCƒ“ƒg‚Ì‚ ‚éƒtƒ@ƒCƒ‹‚Æs”Ô†‚ğ•Û‚·‚é
+@brief ãƒ–ãƒ¬ãƒ¼ã‚¯ãƒã‚¤ãƒ³ãƒˆã®ã‚ã‚‹ãƒ•ã‚¡ã‚¤ãƒ«ã¨è¡Œç•ªå·ã‚’ä¿æŒã™ã‚‹
 
 -----------------------------------------------------------------------------
 	Copyright (C) T.Imoto <http://www.kaede-software.com>
@@ -18,31 +18,31 @@
 #include <assert.h>
 
 enum tTJSDBGHOOKType {
-	DBGHOOK_PREV_EXE_LINE,	//!< ƒ‰ƒCƒ“Às
-	DBGHOOK_PREV_CALL,		//!< ŠÖ”ƒR[ƒ‹
-	DBGHOOK_PREV_RETURN,	//!< ƒŠƒ^[ƒ“
-	DBGHOOK_PREV_EXCEPT,	//!< —áŠOËo
-	DBGHOOK_PREV_BREAK,		//!< ƒXƒNƒŠƒvƒg’†‚ÌƒuƒŒ[ƒN
+	DBGHOOK_PREV_EXE_LINE,	//!< ãƒ©ã‚¤ãƒ³å®Ÿè¡Œæ™‚
+	DBGHOOK_PREV_CALL,		//!< é–¢æ•°ã‚³ãƒ¼ãƒ«
+	DBGHOOK_PREV_RETURN,	//!< ãƒªã‚¿ãƒ¼ãƒ³æ™‚
+	DBGHOOK_PREV_EXCEPT,	//!< ä¾‹å¤–å°„å‡ºæ™‚
+	DBGHOOK_PREV_BREAK,		//!< ã‚¹ã‚¯ãƒªãƒ—ãƒˆä¸­ã®ãƒ–ãƒ¬ãƒ¼ã‚¯
 };
 // gee = debuggee
 // ger = debugger
 enum tTJSDBGEvent {
-	DBGEV_GEE_LOG = 0x8000,		//!< gee -> ger ƒƒO‚ğo—Í (”’l‚É“Á‚ÉˆÓ–¡‚Í‚È‚¢)
-	DBGEV_GEE_BREAK,			//!< gee -> ger ’â~’Ê’m
-	DBGEV_GEE_STACK_TRACE,		//!< gee -> ger ƒXƒ^ƒbƒNƒgƒŒ[ƒXî•ñ’Ê’m
-	DBGEV_GEE_LOCAL_VALUE,		//!< gee -> ger ƒ[ƒJƒ‹•Ï”î•ñ
-	DBGEV_GEE_REQUEST_SETTINGS,	//!< gee -> ger —áŠO’Ê’m—L–³AƒuƒŒ[ƒNƒ|ƒCƒ“ƒgî•ñ“™‚ğ—v‹
-	DBGEV_GEE_CLASS_VALUE,		//!< gee -> ger ƒNƒ‰ƒX•Ï”î•ñ
+	DBGEV_GEE_LOG = 0x8000,		//!< gee -> ger ãƒ­ã‚°ã‚’å‡ºåŠ› (æ•°å€¤ã«ç‰¹ã«æ„å‘³ã¯ãªã„)
+	DBGEV_GEE_BREAK,			//!< gee -> ger åœæ­¢é€šçŸ¥
+	DBGEV_GEE_STACK_TRACE,		//!< gee -> ger ã‚¹ã‚¿ãƒƒã‚¯ãƒˆãƒ¬ãƒ¼ã‚¹æƒ…å ±é€šçŸ¥
+	DBGEV_GEE_LOCAL_VALUE,		//!< gee -> ger ãƒ­ãƒ¼ã‚«ãƒ«å¤‰æ•°æƒ…å ±
+	DBGEV_GEE_REQUEST_SETTINGS,	//!< gee -> ger ä¾‹å¤–é€šçŸ¥æœ‰ç„¡ã€ãƒ–ãƒ¬ãƒ¼ã‚¯ãƒã‚¤ãƒ³ãƒˆæƒ…å ±ç­‰ã‚’è¦æ±‚
+	DBGEV_GEE_CLASS_VALUE,		//!< gee -> ger ã‚¯ãƒ©ã‚¹å¤‰æ•°æƒ…å ±
 
-	DBGEV_GER_EXEC = 0x9000,	//!< ger -> gee Às
-	DBGEV_GER_BREAK,			//!< ger -> gee ˆê’â~
-	DBGEV_GER_STEP,				//!< ger -> gee ƒXƒeƒbƒv
-	DBGEV_GER_TRACE,			//!< ger -> gee ƒgƒŒ[ƒX
-	DBGEV_GER_RETURN,			//!< ger -> gee ƒŠƒ^[ƒ“
-	DBGEV_GER_BREAKPOINT_START,	//!< ger -> gee ƒuƒŒ[ƒNƒ|ƒCƒ“ƒgî•ñ‘—MŠJn
-	DBGEV_GER_BREAKPOINT,		//!< ger -> gee ƒuƒŒ[ƒNƒ|ƒCƒ“ƒgî•ñ
-	DBGEV_GER_BREAKPOINT_END,	//!< ger -> gee ƒuƒŒ[ƒNƒ|ƒCƒ“ƒgî•ñ‘—MI—¹
-	DBGEV_GER_EXCEPTION_FLG,	//!< ger -> gee —áŠO”­¶‚É’â~‚·‚é‚©‚Ç‚¤‚©
+	DBGEV_GER_EXEC = 0x9000,	//!< ger -> gee å®Ÿè¡Œ
+	DBGEV_GER_BREAK,			//!< ger -> gee ä¸€æ™‚åœæ­¢
+	DBGEV_GER_STEP,				//!< ger -> gee ã‚¹ãƒ†ãƒƒãƒ—
+	DBGEV_GER_TRACE,			//!< ger -> gee ãƒˆãƒ¬ãƒ¼ã‚¹
+	DBGEV_GER_RETURN,			//!< ger -> gee ãƒªã‚¿ãƒ¼ãƒ³
+	DBGEV_GER_BREAKPOINT_START,	//!< ger -> gee ãƒ–ãƒ¬ãƒ¼ã‚¯ãƒã‚¤ãƒ³ãƒˆæƒ…å ±é€ä¿¡é–‹å§‹
+	DBGEV_GER_BREAKPOINT,		//!< ger -> gee ãƒ–ãƒ¬ãƒ¼ã‚¯ãƒã‚¤ãƒ³ãƒˆæƒ…å ±
+	DBGEV_GER_BREAKPOINT_END,	//!< ger -> gee ãƒ–ãƒ¬ãƒ¼ã‚¯ãƒã‚¤ãƒ³ãƒˆæƒ…å ±é€ä¿¡çµ‚äº†
+	DBGEV_GER_EXCEPTION_FLG,	//!< ger -> gee ä¾‹å¤–ç™ºç”Ÿæ™‚ã«åœæ­¢ã™ã‚‹ã‹ã©ã†ã‹
 };
 
 struct BreakpointLine {
@@ -72,13 +72,13 @@ struct BreakpointLine {
 };
 
 struct Breakpoints {
-	typedef std::map<std::wstring,BreakpointLine>	breakpoints;
+	typedef std::map<tjs_string,BreakpointLine>	breakpoints;
 	typedef breakpoints::iterator					iterator;
 	typedef breakpoints::const_iterator				const_iterator;
 
 	breakpoints BreakPoint;
 
-	void SetBreakPoint( const std::wstring& filename, int lineno ) {
+	void SetBreakPoint( const tjs_string& filename, int lineno ) {
 		iterator i = BreakPoint.find( filename );
 		if( i == BreakPoint.end() ) {
 			std::pair<iterator, bool> ret = BreakPoint.insert( breakpoints::value_type( filename, BreakpointLine() ) );
@@ -87,35 +87,35 @@ struct Breakpoints {
 		}
 		i->second.SetBreakPoint(lineno);
 	}
-	void ClearBreakPoint( const std::wstring& filename, int lineno ) {
+	void ClearBreakPoint( const tjs_string& filename, int lineno ) {
 		iterator i = BreakPoint.find( filename );
 		if( i == BreakPoint.end() ) {
 			return;
 		}
 		i->second.ClearBreakPoint( lineno );
 	}
-	bool IsBreakPoint( const std::wstring& filename, int lineno ) const {
+	bool IsBreakPoint( const tjs_string& filename, int lineno ) const {
 		const_iterator i = BreakPoint.find( filename );
 		if( i != BreakPoint.end() ) {
 			return i->second.IsBreakPoint(lineno);
 		}
 		return false;
 	}
-	const BreakpointLine* GetBreakPointLines( const std::wstring& filename ) const {
+	const BreakpointLine* GetBreakPointLines( const tjs_string& filename ) const {
 		const_iterator i = BreakPoint.find( filename );
 		if( i != BreakPoint.end() ) {
 			return &(i->second);
 		}
 		return NULL;
 	}
-	BreakpointLine* GetBreakPointLines( const std::wstring& filename ) {
+	BreakpointLine* GetBreakPointLines( const tjs_string& filename ) {
 		iterator i = BreakPoint.find( filename );
 		if( i != BreakPoint.end() ) {
 			return &(i->second);
 		}
 		return NULL;
 	}
-	bool HasBreakPoint( const std::wstring& filename ) {
+	bool HasBreakPoint( const tjs_string& filename ) {
 		iterator i = BreakPoint.find( filename );
 		if( i != BreakPoint.end() ) {
 			return( i->second.Lines.size() > 0 );

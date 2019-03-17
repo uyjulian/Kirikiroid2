@@ -29,12 +29,11 @@ struct tTVPXP3ExtractionFilterInfo
 	void * Buffer; // target data buffer
 	const tjs_uint BufferSize; // buffer size in bytes pointed by "Buffer"
 	const tjs_uint32 FileHash; // hash value of the file (since inteface v2)
-	const ttstr &FileName;
 
 	tTVPXP3ExtractionFilterInfo(tjs_uint64 offset, void *buffer,
-		tjs_uint buffersize, tjs_uint32 filehash, const ttstr& filename) :
+		tjs_uint buffersize, tjs_uint32 filehash) :
 			Offset(offset), Buffer(buffer), BufferSize(buffersize),
-			FileHash(filehash), FileName(filename),
+			FileHash(filehash),
 			SizeOfSelf(sizeof(tTVPXP3ExtractionFilterInfo)) {;}
 };
 #pragma pack(pop)
@@ -50,14 +49,12 @@ struct tTVPXP3ExtractionFilterInfo
 	// for backward application compatibility.
 
 typedef void (TVP_tTVPXP3ArchiveExtractionFilter_CONVENTION *
-	tTVPXP3ArchiveExtractionFilter)(tTVPXP3ExtractionFilterInfo *info, tTJSVariant *ctx);
-typedef tjs_int (TVP_tTVPXP3ArchiveExtractionFilter_CONVENTION *
-	tTVPXP3ArchiveContentFilter)(const ttstr &filepath, const ttstr &archivename, tjs_uint64 filesize, tTJSVariant *ctx);
+	tTVPXP3ArchiveExtractionFilter)(tTVPXP3ExtractionFilterInfo *info);
+
 
 /*]*/
 //---------------------------------------------------------------------------
 TJS_EXP_FUNC_DEF(void, TVPSetXP3ArchiveExtractionFilter, (tTVPXP3ArchiveExtractionFilter filter));
-TJS_EXP_FUNC_DEF(void, TVPSetXP3ArchiveContentFilter, (tTVPXP3ArchiveContentFilter filter));
 //---------------------------------------------------------------------------
 
 
@@ -94,7 +91,8 @@ struct tTVPXP3ArchiveSegment
 //---------------------------------------------------------------------------
 class tTVPXP3Archive : public tTVPArchive
 {
-public:
+	ttstr Name;
+
 	struct tArchiveItem
 	{
 		ttstr Name;
@@ -108,24 +106,19 @@ public:
 		}
 	};
 
-	tjs_int Count = 0;
+	tjs_int Count;
 
 	std::vector<tArchiveItem> ItemVector;
-	void Init(tTJSBinaryStream *st, tjs_int64 offset, bool normalizeName = true);
-
 public:
-	tTVPXP3Archive(const ttstr & name, int) : tTVPArchive(name) {}
-	tTVPXP3Archive(const ttstr & name, tTJSBinaryStream *st = nullptr, tjs_int64 offset = -1, bool normalizeFileName = true);
+	tTVPXP3Archive(const ttstr & name);
 	~tTVPXP3Archive();
-
-	static tTVPArchive *Create(const ttstr & name, tTJSBinaryStream *st = nullptr, bool normalizeFileName = true);
 
 	tjs_uint GetCount() { return Count; }
 	const ttstr & GetName(tjs_uint idx) const { return ItemVector[idx].Name; }
 	tjs_uint32 GetFileHash(tjs_uint idx) const { return ItemVector[idx].FileHash; }
 	ttstr GetName(tjs_uint idx) { return ItemVector[idx].Name; }
 
-	const ttstr & GetName() const { return ArchiveName; }
+	const ttstr & GetName() const { return Name; }
 
 	tTJSBinaryStream * CreateStreamByIndex(tjs_uint idx);
 
@@ -170,14 +163,12 @@ class tTVPXP3ArchiveStream : public tTJSBinaryStream
 	tTVPSegmentData *SegmentData; // uncompressed segment data
 
 	bool SegmentOpened;
-	tTJSVariant FilterContext;
 
 public:
 	tTVPXP3ArchiveStream(tTVPXP3Archive *owner, tjs_int storageindex,
 		std::vector<tTVPXP3ArchiveSegment> *segments, tTJSBinaryStream *stream,
 			tjs_uint64 orgsize);
 	~tTVPXP3ArchiveStream();
-	tTJSVariant &GetFilterContext() { return FilterContext; }
 
 private:
 	void EnsureSegment(); // ensure accessing to current segment

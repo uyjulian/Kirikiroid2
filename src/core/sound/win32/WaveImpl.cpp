@@ -1475,7 +1475,7 @@ static void TVPMakeSilentWave(void *dest, tjs_int count, const tTVPWaveFormat *f
 //---------------------------------------------------------------------------
 // Buffer management
 //---------------------------------------------------------------------------
-std::vector<tTJSNI_WaveSoundBuffer *> &TVPWaveSoundBufferVector = *(new std::vector<tTJSNI_WaveSoundBuffer *>); // to avoid release order in shutdown
+std::vector<tTJSNI_WaveSoundBuffer *> TVPWaveSoundBufferVector;
 tTJSCriticalSection TVPWaveSoundBufferVectorCS;
 
 //---------------------------------------------------------------------------
@@ -1490,12 +1490,13 @@ tTJSCriticalSection TVPWaveSoundBufferVectorCS;
 class tTVPWaveSoundBufferThread : public tTVPThread
 {
 	tTVPThreadEvent Event;
+	std::mutex SuspendMutex;
+	bool SuspendThread;
 
-	//HWND UtilWindow; // utility window to notify the pending events occur
 	bool PendingLabelEventExists;
 	bool WndProcToBeCalled;
-	DWORD NextLabelEventTick;
-	DWORD LastFilledTick;
+	tjs_uint NextLabelEventTick;
+	tjs_uint LastFilledTick;
 
 	NativeEventQueue<tTVPWaveSoundBufferThread> EventQueue;
 public:
@@ -1503,8 +1504,18 @@ public:
 	~tTVPWaveSoundBufferThread();
 
 private:
-	//void __fastcall UtilWndProc(Messages::TMessage &Msg);
 	void UtilWndProc( NativeEvent& ev );
+
+	void SetSuspend()
+	{
+		std::lock_guard<std::mutex> lock( SuspendMutex );
+		SuspendThread = true;
+	}
+	void ResetSuspend()
+	{
+		std::lock_guard<std::mutex> lock( SuspendMutex );
+		SuspendThread = false;
+	}
 
 public:
 	void ReschedulePendingLabelEvent(tjs_int tick);
@@ -1515,6 +1526,8 @@ protected:
 public:
 	void Start(void);
 	void CheckBufferSleep();
+
+
 } static *TVPWaveSoundBufferThread = NULL;
 //---------------------------------------------------------------------------
 void TVPLockSoundMixer() {
@@ -1525,22 +1538,20 @@ void TVPUnlockSoundMixer() {
 }
 //---------------------------------------------------------------------------
 tTVPWaveSoundBufferThread::tTVPWaveSoundBufferThread()
-	: tTVPThread(true), EventQueue(this,&tTVPWaveSoundBufferThread::UtilWndProc)
+	: EventQueue(this,&tTVPWaveSoundBufferThread::UtilWndProc),
+	SuspendThread( false ), PendingLabelEventExists( false ),
+	NextLabelEventTick( 0 ), LastFilledTick( 0 ), WndProcToBeCalled( false )
 {
 	EventQueue.Allocate();
-	PendingLabelEventExists = false;
-	NextLabelEventTick = 0;
-	LastFilledTick = 0;
-	WndProcToBeCalled = false;
 	SetPriority(ttpHighest);
-	Resume();
+	StartTread();
 }
 //---------------------------------------------------------------------------
 tTVPWaveSoundBufferThread::~tTVPWaveSoundBufferThread()
 {
 	SetPriority(ttpNormal);
 	Terminate();
-	Resume();
+	ResetSuspend();
 	Event.Set();
 	WaitFor();
 	EventQueue.Deallocate();
@@ -1682,7 +1693,6 @@ void tTVPWaveSoundBufferThread::Start()
 {
 	TVPPrimaryBufferPlayingByProgram = true;
 	Event.Set();
-	Resume();
 }
 //---------------------------------------------------------------------------
 void tTVPWaveSoundBufferThread::CheckBufferSleep()
@@ -1841,14 +1851,13 @@ public:
 //---------------------------------------------------------------------------
 tTVPWaveSoundBufferDecodeThread::tTVPWaveSoundBufferDecodeThread(
 	tTJSNI_WaveSoundBuffer * owner)
-	: tTVPThread(true)
 {
 	TVPInitSoundOptions();
 
 	Owner = owner;
 	SetPriority(TVPDecodeThreadHighPriority);
 	Running = false;
-	Resume();
+	StartTread();
 }
 //---------------------------------------------------------------------------
 tTVPWaveSoundBufferDecodeThread::~tTVPWaveSoundBufferDecodeThread()
@@ -1856,7 +1865,6 @@ tTVPWaveSoundBufferDecodeThread::~tTVPWaveSoundBufferDecodeThread()
 	SetPriority(TVPDecodeThreadHighPriority);
 	Running = false;
 	Terminate();
-	Resume();
 	Event.Set();
 	WaitFor();
 }

@@ -193,11 +193,11 @@ tTJSVariantString * TJSObjectToString(const tTJSVariantClosure &dsp)
 	{
 		// retrieve object type information from debugging facility
 		tjs_char tmp[256];
-		TJS_snprintf(tmp, sizeof(tmp)/sizeof(tjs_char), TJS_W("(object %p"), dsp.Object);
+		TJS_snprintf(tmp, sizeof(tmp)/sizeof(tjs_char), TJS_W("(object 0x%p"), dsp.Object);
 		ttstr ret = tmp;
 		ttstr type = TJSGetObjectTypeInfo(dsp.Object);
 		if(!type.IsEmpty()) ret += TJS_W("[") + type + TJS_W("]");
-		TJS_snprintf(tmp, sizeof(tmp)/sizeof(tjs_char), TJS_W(":%p"), dsp.ObjThis);
+		TJS_snprintf(tmp, sizeof(tmp)/sizeof(tjs_char), TJS_W(":0x%p"), dsp.ObjThis);
 		ret += tmp;
 		type = TJSGetObjectTypeInfo(dsp.ObjThis);
 		if(!type.IsEmpty()) ret += TJS_W("[") + type + TJS_W("]");
@@ -209,7 +209,7 @@ tTJSVariantString * TJSObjectToString(const tTJSVariantClosure &dsp)
 	else
 	{
 		tjs_char tmp[256];
-		TJS_snprintf(tmp, sizeof(tmp)/sizeof(tjs_char), TJS_W("(object %p:%p)"), dsp.Object, dsp.ObjThis);
+		TJS_snprintf(tmp, sizeof(tmp)/sizeof(tjs_char), TJS_W("(object 0x%p:0x%p)"), dsp.Object, dsp.ObjThis);
 		return TJSAllocVariantString(tmp);
 	}
 }
@@ -253,15 +253,7 @@ tTJSVariantString * TJSRealToString(tjs_real r)
 	TJSSetFPUE();
 	tjs_char tmp[128];
 	TJS_snprintf(tmp, sizeof(tmp)/sizeof(tjs_char), TJS_W("%.15lg"), r);
-    tjs_char ttmp[64];
-    // fast convert from ascii-only string
-    for(int i = 0; i < sizeof(tmp); ++i) {
-        int c = tmp[i];
-        ttmp[i] = c;
-        if(!c) break;
-	}
-
-	return TJSAllocVariantString(ttmp);
+	return TJSAllocVariantString(tmp);
 }
 //---------------------------------------------------------------------------
 tTJSVariantString * TJSRealToHexString(tjs_real r)
@@ -355,7 +347,7 @@ tTJSVariant::tTJSVariant(const tjs_uint8 ** src)
 {
 	// from persistent storage
 	vt = (tTJSVariantType) **src;
-	src++;
+	*src++;
 
 	switch(vt)
 	{
@@ -409,8 +401,6 @@ void tTJSVariant::Clear()
 		break;
 	case tvtOctet:
 		if(Octet) Octet->Release();
-		break;
-	default:
 		break;
 	}
 }
@@ -751,19 +741,6 @@ bool tTJSVariant::NormalCompare(const tTJSVariant &val2) const
 			default:			return false;
 			}
 		}
-#if 1
-		static const bool TypeComparableTable[6][6] = {
-			//	   v, o, s, 8, i, r
-			/*v*/{ 1, 0, 1, 0, 1, 1 },
-			/*o*/{ 0, 1, 0, 0, 0, 0 },
-			/*s*/{ 1, 0, 1, 0, 1, 1 },
-			/*8*/{ 0, 0, 0, 1, 0, 0 },
-			/*i*/{ 1, 0, 1, 0, 1, 1 },
-			/*r*/{ 1, 0, 1, 0, 1, 1 },
-		};
-		if (!TypeComparableTable[vt][val2.vt])
-			return false;
-#endif
 
 		TJSSetFPUE();
 

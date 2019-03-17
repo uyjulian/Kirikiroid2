@@ -273,8 +273,6 @@ void tTJSNativeClass::RegisterNCM(const tjs_char *name, iTJSDispatch2 *dsp,
 			The information is not set here
 			(is to be set in tTJSNativeClass::tTJSNativeClass)
 		*/
-        default:
-            break;
 		}
 	}
 
@@ -370,7 +368,7 @@ tTJSNativeClass::FuncCall(tjs_uint32 flag, const tjs_char * membername,
 	callback.Dest = objthis;
 
 	// enumerate members
-    tTJSVariantClosure clo(&callback, (iTJSDispatch2*)NULL);
+	tTJSVariantClosure clo(&callback, (iTJSDispatch2*)NULL);
 	EnumMembers(TJS_IGNOREPROP, &clo, this);
 
 	return TJS_S_OK;

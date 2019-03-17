@@ -10,7 +10,12 @@
 //---------------------------------------------------------------------------
 #include "tjsCommHead.h"
 
+// #ifdef ANDROID
 #include <zlib.h>
+// #else
+// #include <zlib/zlib.h>
+// #endif
+
 #include "TextStream.h"
 #include "MsgIntf.h"
 #include "DebugIntf.h"
@@ -76,7 +81,16 @@ tTJSBinaryStream * TVPCreateBinaryStreamForWrite(const ttstr & name,
 	return stream;
 }
 //---------------------------------------------------------------------------
-
+iTJSBinaryStream *TVPCreateBinaryStreamInterfaceForRead(const ttstr &name, const ttstr &modestr)
+{
+	return TVPCreateBinaryStreamForRead( name, modestr );
+}
+//---------------------------------------------------------------------------
+iTJSBinaryStream *TVPCreateBinaryStreamInterfaceForWrite(const ttstr &name, const ttstr &modestr)
+{
+	return TVPCreateBinaryStreamForWrite( name, modestr );
+}
+//---------------------------------------------------------------------------
 
 
 

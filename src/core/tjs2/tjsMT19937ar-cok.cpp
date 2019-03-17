@@ -53,7 +53,6 @@
 #include <stdio.h>
 
 #include "tjsMT19937ar-cok.h"
-#include "TickCount.h"
 
 namespace TJS
 {
@@ -300,12 +299,6 @@ void tTJSMersenneTwister::SetData(const tTJSMersenneTwisterData & rhs)
 	next = rhs.next - rhs.state + state; // fix pointer
 }
 
-tTJSMersenneTwister& tTJSMersenneTwister::sharedInstance()
-{
-	static tTJSMersenneTwister* instance = nullptr;
-	if (!instance) instance = new tTJSMersenneTwister(TVPGetRoughTickCount32());
-	return *instance;
-}
 
 } // namespace TJS
 

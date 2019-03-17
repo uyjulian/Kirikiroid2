@@ -13,7 +13,11 @@
 #define ComplexRectUnitH
 
 #include <stdlib.h>
-#include "tjsTypes.h"
+
+#ifndef __TJSTYPES_H__
+	typedef int tjs_int;
+	typedef unsigned int tjs_uint;
+#endif
 
 //---------------------------------------------------------------------------
 // tTVPRect - intersection and union

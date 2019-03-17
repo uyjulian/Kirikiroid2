@@ -31,6 +31,15 @@
 #include <stdio.h>
 #include <limits.h>
 
+
+
+#include <wchar.h>
+
+#include <string> 
+#include <locale> 
+#include <codecvt> 
+
+
 class TVPWindowLayer;
 
 // static TVPWindowManagerOverlay *_windowMgrOverlay = nullptr;
@@ -259,7 +268,9 @@ public:
 		return SDL_GetWindowTitle(window);
 
 	}
-	virtual void SetCaption(const std::string & s) override {
+	virtual void SetCaption(const tjs_string & ws) override {
+		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
+		std::string s = convert.to_bytes(ws.c_str());  
 		SDL_SetWindowTitle(window, s.c_str());
 	}
 	virtual void SetWidth(tjs_int w) override {
@@ -461,7 +472,7 @@ public:
 						// this is the main window
 						iTJSDispatch2 * obj = TJSNativeInstance->GetOwnerNoAddRef();
 						obj->Invalidate(0, NULL, NULL, obj);
-						// TJSNativeInstance = NULL; // ¤³¤Î¶ÎëA¤Ç¤Ï¼È¤Ëthis¤¬Ï÷³ý¤µ¤ì¤Æ¤¤¤ë¤¿¤á¡¢¥á¥ó¥Ð©`¤Ø¥¢¥¯¥»¥¹¤·¤Æ¤Ï¤¤¤±¤Ê¤¤
+						// TJSNativeInstance = NULL; // ¤³¤Î¶ÎëA¤Ç¤Ï¼È¤Ëthis¤¬Ï÷³ý¤µ¤ì¤Æ¤¤¤ë¤¿¤á¡¢\á\ó\Ð©`¤Ø\¢\¯\»\¹¤·¤Æ¤Ï¤¤¤±¤Ê¤¤
 					}
 				} else {
 					delete this;
@@ -544,6 +555,8 @@ public:
 	virtual cocos2d::Node *GetPrimaryArea() override {
 		return NULL;
 	}
+	Sint32 mouseLastX = 0;
+	Sint32 mouseLastY = 0;
 	void sdlRecvEvent(SDL_Event event) {
 		if (isBeingDeleted) {
 			delete this;
@@ -591,6 +604,8 @@ public:
 			if (TJSNativeInstance->CanDeliverEvents()) {
 				switch (event.type) { 
 					case SDL_MOUSEMOTION: {
+						mouseLastX = event.motion.x;
+						mouseLastY = event.motion.y;
 						TVPPostInputEvent(new tTVPOnMouseMoveInputEvent(TJSNativeInstance, event.motion.x, event.motion.y, 0));
 						break;
 					}
@@ -612,6 +627,8 @@ public:
 								break;
 						}
 						if (hasbtn) {
+							mouseLastX = event.button.x;
+							mouseLastY = event.button.y;
 							TVPPostInputEvent(new tTVPOnMouseDownInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
 						}
 						break;
@@ -634,6 +651,8 @@ public:
 								break;
 						}
 						if (hasbtn) {
+							mouseLastX = event.button.x;
+							mouseLastY = event.button.y;
 							TVPPostInputEvent(new tTVPOnClickInputEvent(TJSNativeInstance, event.button.x, event.button.y));
 							TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
 						}
@@ -645,6 +664,10 @@ public:
 					}
 					case SDL_KEYUP: {
 						TVPPostInputEvent(new tTVPOnKeyUpInputEvent(TJSNativeInstance, event.key.keysym.sym, 0));
+						break;
+					}
+					case SDL_MOUSEWHEEL: {
+						TVPPostInputEvent(new tTVPOnMouseWheelInputEvent(TJSNativeInstance, 0, event.wheel.y, mouseLastX, mouseLastY));
 						break;
 					}
 					case SDL_WINDOWEVENT_CLOSE:
@@ -764,15 +787,15 @@ std::string TVPGetPackageVersionString() {
 	return "sdl2";
 }
 
-tjs_uint32 TVPGetRoughTickCount32()
-{
-	// tjs_uint32 uptime = 0;
-	// struct timespec on;
-	// if (clock_gettime(CLOCK_MONOTONIC, &on) == 0)
-	// 	uptime = on.tv_sec * 1000 + on.tv_nsec / 1000000;
-	// return uptime;
-	return SDL_GetTicks();
-}
+// tjs_uint32 TVPGetRoughTickCount32()
+// {
+// 	// tjs_uint32 uptime = 0;
+// 	// struct timespec on;
+// 	// if (clock_gettime(CLOCK_MONOTONIC, &on) == 0)
+// 	// 	uptime = on.tv_sec * 1000 + on.tv_nsec / 1000000;
+// 	// return uptime;
+// 	return SDL_GetTicks();
+// }
 
 bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 {
@@ -844,17 +867,20 @@ std::string TVPShowFileSelector(const std::string &title, const std::string &ini
 	return "";
 }
 
-bool TVPWriteDataToFile(const ttstr &filepath, const void *data, unsigned int size) {
-	std::string filename = filepath.AsStdString();
-	FILE *fp = fopen(filename.c_str(), "wb");
-	if (fp) {
-		// file api is OK
-		int writed = fwrite(data, 1, size, fp);
-		fclose(fp);
-		return writed == size;
-	}
-	return false;
-}
+// bool TVPWriteDataToFile(const ttstr &filepath, const void *data, unsigned int size) {
+// 	tjs_string wfilename(filepath.AsStdString());
+// 	std::string nfilename;
+// 	if (TVPUtf16ToUtf8(nfilename, wfilename)) {
+// 		FILE *fp = fopen(nfilename.c_str(), "wb");
+// 		if (fp) {
+// 			// file api is OK
+// 			int writed = fwrite(data, 1, size, fp);
+// 			fclose(fp);
+// 			return writed == size;
+// 		}
+// 	}
+// 	return false;
+// }
 
 void TVPExitApplication(int code) {
 	// TVPDeliverCompactEvent(TVP_COMPACT_LEVEL_MAX);
@@ -937,59 +963,14 @@ void TVPRelinquishCPU() {
 	SDL_Delay(0);
 }
 
-void TVP_utime(const char *name, time_t modtime) {
-	timeval mt[2];
-	mt[0].tv_sec = modtime;
-	mt[0].tv_usec = 0;
-	mt[1].tv_sec = modtime;
-	mt[1].tv_usec = 0;
-	utimes(name, mt);
-}
-
-int TVPShowSimpleMessageBox(const char *pszText, const char *pszTitle, unsigned int nButton, const char **btnText) {
-	// JniMethodInfo methodInfo;
-	// if (JniHelper::getStaticMethodInfo(methodInfo, "org/tvp/kirikiri2/KR2Activity", "ShowMessageBox", "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V"))
-	// {
-	// 	jstring jstrTitle = methodInfo.env->NewStringUTF(pszTitle);
-	// 	jstring jstrText = methodInfo.env->NewStringUTF(pszText);
-	// 	jclass strcls = methodInfo.env->FindClass("java/lang/String");
-	// 	jobjectArray btns = methodInfo.env->NewObjectArray(nButton, strcls, nullptr);
-	// 	for (unsigned int i = 0; i < nButton; ++i) {
-	// 		jstring jstrBtn = methodInfo.env->NewStringUTF(btnText[i]);
-	// 		methodInfo.env->SetObjectArrayElement(btns, i, jstrBtn);
-	// 		methodInfo.env->DeleteLocalRef(jstrBtn);
-	// 	}
-
-	// 	methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, jstrTitle, jstrText, btns);
-
-	// 	methodInfo.env->DeleteLocalRef(jstrTitle);
-	// 	methodInfo.env->DeleteLocalRef(jstrText);
-	// 	methodInfo.env->DeleteLocalRef(btns);
-	// 	methodInfo.env->DeleteLocalRef(methodInfo.classID);
-
-	// 	std::unique_lock<std::mutex> lk(MessageBoxLock);
-	// 	while (MsgBoxRet == -2) {
-	// 		MessageBoxCond.wait_for(lk, std::chrono::milliseconds(200));
-	// 		if (MsgBoxRet == -2) {
-	// 			TVPForceSwapBuffer(); // update opengl events
-	// 		}
-	// 	}
-	// 	return MsgBoxRet;
-	// }
-	return -1;
-}
-
-int TVPShowSimpleMessageBox(const ttstr & text, const ttstr & caption, const std::vector<ttstr> &vecButtons) {
-	tTJSNarrowStringHolder pszText(text.c_str());
-	tTJSNarrowStringHolder pszTitle(caption.c_str());
-	std::vector<const char *> btnText; btnText.reserve(vecButtons.size());
-	std::vector<std::string> btnTextHold; btnTextHold.reserve(vecButtons.size());
-	for (const ttstr &btn : vecButtons) {
-		btnTextHold.emplace_back(btn.AsStdString());
-		btnText.emplace_back(btnTextHold.back().c_str());
-	}
-	return TVPShowSimpleMessageBox(pszText, pszTitle, btnText.size(), &btnText[0]);
-}
+// void TVP_utime(const char *name, time_t modtime) {
+// 	timeval mt[2];
+// 	mt[0].tv_sec = modtime;
+// 	mt[0].tv_usec = 0;
+// 	mt[1].tv_sec = modtime;
+// 	mt[1].tv_usec = 0;
+// 	utimes(name, mt);
+// }
 
 // int TVPShowSimpleMessageBoxYesNo(const ttstr & text, const ttstr & caption) {
 // 	return 0;
@@ -997,45 +978,45 @@ int TVPShowSimpleMessageBox(const ttstr & text, const ttstr & caption, const std
 
 #include <string.h>
 
-bool TVPCreateFolders(const ttstr &folder)
-{
-	tTJSNarrowStringHolder path(folder.c_str());
+// bool TVPCreateFolders(const ttstr &folder)
+// {
+// 	tTJSNarrowStringHolder path(folder.c_str());
 
-    const size_t len = strlen(path);
-    char _path[PATH_MAX];
-    char *p; 
+//     const size_t len = strlen(path);
+//     char _path[PATH_MAX];
+//     char *p; 
 
-    errno = 0;
+//     errno = 0;
 
-    /* Copy string so its mutable */
-    if (len > sizeof(_path)-1) {
-        errno = ENAMETOOLONG;
-        return false; 
-    }   
-    strcpy(_path, path);
+//     /* Copy string so its mutable */
+//     if (len > sizeof(_path)-1) {
+//         errno = ENAMETOOLONG;
+//         return false; 
+//     }   
+//     strcpy(_path, path);
 
-    /* Iterate the string */
-    for (p = _path + 1; *p; p++) {
-        if (*p == '/') {
-            /* Temporarily truncate */
-            *p = '\0';
+//     /* Iterate the string */
+//     for (p = _path + 1; *p; p++) {
+//         if (*p == '/') {
+//             /* Temporarily truncate */
+//             *p = '\0';
 
-            if (mkdir(_path, S_IRWXU) != 0) {
-                if (errno != EEXIST)
-                    return false; 
-            }
+//             if (mkdir(_path, S_IRWXU) != 0) {
+//                 if (errno != EEXIST)
+//                     return false; 
+//             }
 
-            *p = '/';
-        }
-    }   
+//             *p = '/';
+//         }
+//     }   
 
-    if (mkdir(_path, S_IRWXU) != 0) {
-        if (errno != EEXIST)
-            return false; 
-    }   
+//     if (mkdir(_path, S_IRWXU) != 0) {
+//         if (errno != EEXIST)
+//             return false; 
+//     }   
 
-	return true;
-}
+// 	return true;
+// }
 
 iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w) {
 //Start the rendering here
@@ -1050,13 +1031,6 @@ iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w) {
 // void TVPRemoveWindowLayer(iWindowLayer *lay) {
 // 	// static_cast<TVPWindowLayer*>(lay)->removeFromParent();
 // }
-
-
-#include <wchar.h>
-
-#include <string> 
-#include <locale> 
-#include <codecvt> 
 
 
 void TVPConsoleLog(const ttstr &l, bool important) {
@@ -1111,6 +1085,60 @@ bool TVPGetScreenSize(tjs_int idx, tjs_int &w, tjs_int &h) {
 	// h = w * (size.height / size.width);
 	return true;
 }
+
+
+int TVPShowSimpleMessageBox(const char *pszText, const char *pszTitle, unsigned int nButton, const char **btnText) {
+	// JniMethodInfo methodInfo;
+	// if (JniHelper::getStaticMethodInfo(methodInfo, "org/tvp/kirikiri2/KR2Activity", "ShowMessageBox", "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V"))
+	// {
+	// 	jstring jstrTitle = methodInfo.env->NewStringUTF(pszTitle);
+	// 	jstring jstrText = methodInfo.env->NewStringUTF(pszText);
+	// 	jclass strcls = methodInfo.env->FindClass("java/lang/String");
+	// 	jobjectArray btns = methodInfo.env->NewObjectArray(nButton, strcls, nullptr);
+	// 	for (unsigned int i = 0; i < nButton; ++i) {
+	// 		jstring jstrBtn = methodInfo.env->NewStringUTF(btnText[i]);
+	// 		methodInfo.env->SetObjectArrayElement(btns, i, jstrBtn);
+	// 		methodInfo.env->DeleteLocalRef(jstrBtn);
+	// 	}
+
+	// 	methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, jstrTitle, jstrText, btns);
+
+	// 	methodInfo.env->DeleteLocalRef(jstrTitle);
+	// 	methodInfo.env->DeleteLocalRef(jstrText);
+	// 	methodInfo.env->DeleteLocalRef(btns);
+	// 	methodInfo.env->DeleteLocalRef(methodInfo.classID);
+
+	// 	std::unique_lock<std::mutex> lk(MessageBoxLock);
+	// 	while (MsgBoxRet == -2) {
+	// 		MessageBoxCond.wait_for(lk, std::chrono::milliseconds(200));
+	// 		if (MsgBoxRet == -2) {
+	// 			TVPForceSwapBuffer(); // update opengl events
+	// 		}
+	// 	}
+	// 	return MsgBoxRet;
+	// }
+	TVPConsoleLog(pszText);
+	return -1;
+}
+
+int TVPShowSimpleMessageBox(const ttstr & text, const ttstr & caption, const std::vector<ttstr> &vecButtons) {
+	// tTJSNarrowStringHolder pszText(text.c_str());
+	// tTJSNarrowStringHolder pszTitle(caption.c_str());
+	// std::vector<const char *> btnText; btnText.reserve(vecButtons.size());
+	// std::vector<std::string> btnTextHold; btnTextHold.reserve(vecButtons.size());
+	// for (const ttstr &btn : vecButtons) {
+	// 	tjs_string wbtn(btn.AsStdString());
+	// 	std::string nbtn;
+	// 	if (TVPUtf16ToUtf8(nbtn, wbtn)) {
+	// 		btnTextHold.emplace_back(nbtn);
+	// 	}
+	// 	btnText.emplace_back(btnTextHold.back().c_str());
+	// }
+	// return TVPShowSimpleMessageBox(pszText, pszTitle, btnText.size(), &btnText[0]);
+	TVPConsoleLog(text, true);
+	return -1;
+}
+
 
 // ttstr TVPGetDataPath() {
 // 	// std::string path = cocos2d::FileUtils::getInstance()->getWritablePath();

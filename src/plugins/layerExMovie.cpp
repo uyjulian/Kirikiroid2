@@ -166,7 +166,7 @@ layerExMovie::openMovie(const tjs_char* filename, bool alpha)
 		std::lock_guard<std::mutex> lk(mtxEvent);
 		PostEvents.push_back(msg);
 	});
-	pOverlay->BuildGraph(TVPCreateIStream(in), filename, ext.c_str(), in->GetSize());
+	// pOverlay->BuildGraph(TVPCreateIStream(in), filename, ext.c_str(), in->GetSize());
 	VideoOverlay = pOverlay;
 	VideoOverlay->GetVideoSize(&movieWidth, &movieHeight);
 	if (Bitmap[0]) delete Bitmap[0];

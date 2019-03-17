@@ -21,18 +21,10 @@
 #include "tjsArray.h"
 #include "tjsDebug.h"
 #include "tjsOctPack.h"
-#include "tjsGlobalStringMap.h"
-#include <set>
-#include <mutex>
 
 #ifdef ENABLE_DEBUGGER
 #include "debugger.h"
-static bool isDebuggerPresent() {
-	return true;
-}
-#define IsDebuggerPresent isDebuggerPresent
 #endif // ENABLE_DEBUGGER
-#include <thread>
 
 namespace TJS
 {
@@ -548,8 +540,43 @@ public:
 #define TJS_VA_ONE_ALLOC_MAX 1024
 #define TJS_COMPACT_FREQ 10000
 static tjs_int TJSCompactVariantArrayMagic = 0;
-static std::mutex TJSVariantArrayStackMutex;
-static std::set<tTJSVariantArrayStack*> TJSVariantArrayStacks;
+
+class tTJSVariantArrayStack
+{
+//	tTJSCriticalSection CS;
+
+	struct tVariantArray
+	{
+		tTJSVariant *Array;
+		tjs_int Using;
+		tjs_int Allocated;
+	};
+
+	tVariantArray * Arrays; // array of array
+	tjs_int NumArraysAllocated;
+	tjs_int NumArraysUsing;
+	tVariantArray * Current;
+	tjs_int CompactVariantArrayMagic;
+	tjs_int OperationDisabledCount;
+
+	void IncreaseVariantArray(tjs_int num);
+
+	void DecreaseVariantArray(void);
+
+	void InternalCompact(void);
+
+
+public:
+	tTJSVariantArrayStack();
+	~tTJSVariantArrayStack();
+
+	tTJSVariant * Allocate(tjs_int num);
+
+	void Deallocate(tjs_int num, tTJSVariant *ptr);
+
+	void Compact() { InternalCompact(); }
+
+} *TJSVariantArrayStack = NULL;
 //---------------------------------------------------------------------------
 tTJSVariantArrayStack::tTJSVariantArrayStack()
 {
@@ -558,8 +585,6 @@ tTJSVariantArrayStack::tTJSVariantArrayStack()
 	Current = NULL;
 	OperationDisabledCount = 0;
 	CompactVariantArrayMagic = TJSCompactVariantArrayMagic;
-	std::lock_guard<std::mutex> lk(TJSVariantArrayStackMutex);
-	TJSVariantArrayStacks.insert(this);
 }
 //---------------------------------------------------------------------------
 tTJSVariantArrayStack::~tTJSVariantArrayStack()
@@ -571,8 +596,6 @@ tTJSVariantArrayStack::~tTJSVariantArrayStack()
 		delete [] Arrays[i].Array;
 	}
 	TJS_free(Arrays), Arrays = NULL;
-	std::lock_guard<std::mutex> lk(TJSVariantArrayStackMutex);
-	TJSVariantArrayStacks.erase(this);
 }
 //---------------------------------------------------------------------------
 void tTJSVariantArrayStack::IncreaseVariantArray(tjs_int num)
@@ -708,14 +731,29 @@ inline void tTJSVariantArrayStack::Deallocate(tjs_int num, tTJSVariant *ptr)
 	}
 }
 //---------------------------------------------------------------------------
-//static tjs_int TJSVariantArrayStackRefCount = 0;
+static tjs_int TJSVariantArrayStackRefCount = 0;
 //---------------------------------------------------------------------------
-void tTJSInterCodeContext::TJSVariantArrayStackAddRef()
+void TJSVariantArrayStackAddRef()
 {
+	if(TJSVariantArrayStackRefCount == 0)
+	{
+		TJSVariantArrayStack = new tTJSVariantArrayStack;
+	}
+	TJSVariantArrayStackRefCount++;
 }
 //---------------------------------------------------------------------------
-void tTJSInterCodeContext::TJSVariantArrayStackRelease()
+void TJSVariantArrayStackRelease()
 {
+	if(TJSVariantArrayStackRefCount == 1)
+	{
+		delete TJSVariantArrayStack;
+		TJSVariantArrayStack = NULL;
+		TJSVariantArrayStackRefCount = 0;
+	}
+	else
+	{
+		TJSVariantArrayStackRefCount--;
+	}
 }
 //---------------------------------------------------------------------------
 void TJSVariantArrayStackCompact()
@@ -725,11 +763,7 @@ void TJSVariantArrayStackCompact()
 //---------------------------------------------------------------------------
 void TJSVariantArrayStackCompactNow()
 {
-#if 0 // due to multi-thread
-	for (tTJSVariantArrayStack* stk : TJSVariantArrayStacks) {
-		stk->Compact();
-	}
-#endif
+	if(TJSVariantArrayStack) TJSVariantArrayStack->Compact();
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -865,7 +899,7 @@ void tTJSInterCodeContext::ExecuteAsFunction(iTJSDispatch2 *objthis,
 		catch(...)
 		{
 #ifdef ENABLE_DEBUGGER
-			// Œ³‚É–ß‚·
+			// å…ƒã«æˆ»ã™
 			DebuggerScopeKey = oldkey;
 			DebuggerRegisterArea = oldra;
 #endif	// ENABLE_DEBUGGER
@@ -879,7 +913,7 @@ void tTJSInterCodeContext::ExecuteAsFunction(iTJSDispatch2 *objthis,
 		}
 
 #ifdef ENABLE_DEBUGGER
-		// Œ³‚É–ß‚·
+		// å…ƒã«æˆ»ã™
 		DebuggerScopeKey = oldkey;
 		DebuggerRegisterArea = oldra;
 #endif	// ENABLE_DEBUGGER
@@ -917,7 +951,7 @@ void tTJSInterCodeContext::DisplayExceptionGeneratedCode(tjs_int codepos,
 
 	tjs->OutputToConsole(info.c_str());
 	tjs->OutputToConsole(TJS_W("-- Disassembled VM code --"));
-	DisassembleSrcLine(codepos);
+	DisassenbleSrcLine(codepos);
 
 	tjs->OutputToConsole(TJS_W("-- Register dump --"));
 
@@ -1288,6 +1322,11 @@ tjs_int tTJSInterCodeContext::ExecuteCode(tTJSVariant *ra_org, tjs_int startip,
 				code += 3;
 				break;
 
+			case VM_CHKIN:
+				InMember( TJS_GET_VM_REG( ra, code[1] ), TJS_GET_VM_REG( ra, code[2] ) );
+				code += 3;
+				break;
+
 			case VM_CALL:
 			case VM_NEW:
 				code += CallFunction(ra, code, args, numargs);
@@ -1482,14 +1521,12 @@ tjs_int tTJSInterCodeContext::ExecuteCode(tTJSVariant *ra_org, tjs_int startip,
 		DisplayExceptionGeneratedCode((tjs_int)(codesave - CodeArea), ra_org);
 		TJS_eTJSScriptError(e.what(), this, (tjs_int)(codesave-CodeArea));
 	}
-#if 0
-	catch(const wchar_t *text)
+	catch(const tjs_char *text)
 	{
 		DEBUGGER_EXCEPTION_HOOK;
 		DisplayExceptionGeneratedCode((tjs_int)(codesave - CodeArea), ra_org);
 		TJS_eTJSScriptError(text, this, (tjs_int)(codesave-CodeArea));
 	}
-#endif
 	catch(const char *text)
 	{
 		DEBUGGER_EXCEPTION_HOOK;
@@ -2101,8 +2138,7 @@ void tTJSInterCodeContext::TypeOfMemberDirect(tTJSVariant *ra,
 	}
 	else if(hr == TJS_E_MEMBERNOTFOUND)
 	{
-		static tTJSString undefined_name(TJSMapGlobalStringMap(TJS_W("undefined")));
-		TJS_GET_VM_REG(ra, code[1]) = undefined_name;
+		TJS_GET_VM_REG(ra, code[1]) = TJS_W("undefined");
 	}
 	else if(TJS_FAILED(hr))
 		TJSThrowFrom_tjs_error(hr, TJS_GET_VM_REG(DataArea, code[3]).GetString());
@@ -2489,7 +2525,7 @@ void tTJSInterCodeContext::AddClassInstanceInfo(tTJSVariant *ra,
 	}
 }
 //---------------------------------------------------------------------------
-static const tjs_char *StrFuncs[] =
+static const tjs_char * const StrFuncs[] =
 { 
 	TJS_W("charAt"), 
 	TJS_W("indexOf"), 
@@ -2503,7 +2539,9 @@ static const tjs_char *StrFuncs[] =
 	TJS_W("split"),
 	TJS_W("trim"),
 	TJS_W("reverse"),
-	TJS_W("repeat") 
+	TJS_W("repeat"),
+	TJS_W("startsWith"),
+	TJS_W("endsWith")
 };
 
 enum tTJSStringMethodNameIndex
@@ -2520,7 +2558,9 @@ enum tTJSStringMethodNameIndex
 	TJSStrMethod_split,
 	TJSStrMethod_trim,
 	TJSStrMethod_reverse,
-	TJSStrMethod_repeat
+	TJSStrMethod_repeat,
+	TJSStrMethod_startsWith,
+	TJSStrMethod_endsWith
 };
 
 #define TJS_STRFUNC_MAX (sizeof(StrFuncs) / sizeof(StrFuncs[0]))
@@ -2832,6 +2872,40 @@ void tTJSInterCodeContext::ProcessStringFunction(const tjs_char *member,
 
 		return;
 	}
+	else if(TJS_STR_METHOD_IS(startsWith))
+	{
+		if(numargs != 1) TJSThrowFrom_tjs_error( TJS_E_BADPARAMCOUNT );
+		if(!result) return;
+		*result = target.StartsWith( args[0]->AsStringNoAddRef() ) ? 1 : 0;
+		return;
+	}
+	else if(TJS_STR_METHOD_IS(endsWith))
+	{
+		if( numargs != 1 ) TJSThrowFrom_tjs_error( TJS_E_BADPARAMCOUNT );
+		if( !result ) return;
+		tTJSVariantString* str = args[0]->AsStringNoAddRef();
+		const tjs_char* d = *str;
+		tjs_int len = str->GetLength();
+		if( len > s_len )
+		{
+			*result = 0;
+		}
+		else
+		{
+			bool ret = true;
+			s += s_len - len;
+			while( *s != TJS_W( '\0' ) )
+			{
+				if( *s != *d )
+				{
+					ret = false;
+				}
+				s++, d++;
+			}
+			*result = ret ? 1 : 0;
+		}
+		return;
+	}
 
 #undef TJS_STR_METHOD_IS
 
@@ -2843,7 +2917,7 @@ void tTJSInterCodeContext::ProcessOctetFunction(const tjs_char *member, const tT
 {
 	if(!member) TJSThrowFrom_tjs_error(TJS_E_MEMBERNOTFOUND, TJS_W(""));
 	switch( member[0] ) {
-	case L'u':
+	case TJS_W('u'):
 		if( !TJS_strcmp( TJS_W("unpack"), member) ) {
 			tjs_error err = TJSOctetUnpack( target, args, numargs, result );
 			if( err != TJS_S_OK ) {
@@ -2853,7 +2927,7 @@ void tTJSInterCodeContext::ProcessOctetFunction(const tjs_char *member, const tT
 		}
 		break;
 #if 0
-	case L'p':
+	case TJS_W('p'):
 		if( !TJS_strcmp( TJS_W("pack"), member) ) {
 			if(numargs < 2) TJSThrowFrom_tjs_error(TJS_E_BADPARAMCOUNT);
 			ttstr templ = *args[0];
@@ -2868,12 +2942,12 @@ void tTJSInterCodeContext::ProcessOctetFunction(const tjs_char *member, const tT
 void tTJSInterCodeContext::TypeOf(tTJSVariant &val)
 {
 	// processes TJS2's typeof operator.
-	static tTJSString void_name(TJSMapGlobalStringMap(TJS_W("void")));
-	static tTJSString Object_name(TJSMapGlobalStringMap(TJS_W("Object")));
-	static tTJSString String_name(TJSMapGlobalStringMap(TJS_W("String")));
-	static tTJSString Integer_name(TJSMapGlobalStringMap(TJS_W("Integer")));
-	static tTJSString Real_name(TJSMapGlobalStringMap(TJS_W("Real")));
-	static tTJSString Octet_name(TJSMapGlobalStringMap(TJS_W("Octet")));
+	static tTJSString void_name(TJS_W("void"));
+	static tTJSString Object_name(TJS_W("Object"));
+	static tTJSString String_name(TJS_W("String"));
+	static tTJSString Integer_name(TJS_W("Integer"));
+	static tTJSString Real_name(TJS_W("Real"));
+	static tTJSString Octet_name(TJS_W("Octet"));
 
 	switch(val.Type())
 	{
@@ -2975,6 +3049,36 @@ void tTJSInterCodeContext::InstanceOf(const tTJSVariant &name, tTJSVariant &targ
 	targ = false;
 }
 //---------------------------------------------------------------------------
+void tTJSInterCodeContext::InMember( tTJSVariant &name, tTJSVariant &obj ) {
+	// checks contains member.
+	tTJSVariantString *str = name.AsString();
+	if( str )
+	{
+		tjs_error hr;
+		try
+		{
+			tTJSVariant tmp;
+			hr = obj.AsObjectClosureNoAddRef().PropGet( TJS_MEMBERMUSTEXIST, *str, nullptr, &tmp, obj.AsObjectThisNoAddRef() );
+		}
+		catch(...)
+		{
+			str->Release();
+			throw;
+		}
+		str->Release();
+		if( hr == TJS_E_MEMBERNOTFOUND )
+		{
+			name = false;
+			return;
+		}
+		else if( TJS_FAILED( hr ) ) TJSThrowFrom_tjs_error( hr );
+
+		name = ( hr == TJS_S_OK );
+		return;
+	}
+	name = false;
+}
+//---------------------------------------------------------------------------
 void tTJSInterCodeContext::RegisterObjectMember(iTJSDispatch2 * dest)
 {
 	// register this object member to 'dest' (destination object).
@@ -3016,7 +3120,7 @@ void tTJSInterCodeContext::RegisterObjectMember(iTJSDispatch2 * dest)
 	callback.Dest = dest;
 
 	// enumerate members
-    tTJSVariantClosure clo(&callback, (iTJSDispatch2*)NULL);
+	tTJSVariantClosure clo(&callback, (iTJSDispatch2*)NULL);
 	EnumMembers(TJS_IGNOREPROP, &clo, this);
 }
 //---------------------------------------------------------------------------
@@ -3068,9 +3172,6 @@ tjs_error TJS_INTF_METHOD  tTJSInterCodeContext::FuncCall(
 
 		case ctProperty:
 			return TJS_E_INVALIDTYPE;
-
-		case ctSuperClassGetter:
-			break;
 		}
 
 		return TJS_S_OK;

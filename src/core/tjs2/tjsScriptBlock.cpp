@@ -22,7 +22,7 @@ int yyparse(void*);
 //---------------------------------------------------------------------------
 // tTJSScriptBlock
 //---------------------------------------------------------------------------
-tTJSScriptBlock::tTJSScriptBlock(tTJS * owner)
+tTJSScriptBlock::tTJSScriptBlock(tTJS * owner) : ConstParse(false)
 {
 	RefCount = 1;
 	Owner = owner;
@@ -42,8 +42,14 @@ tTJSScriptBlock::tTJSScriptBlock(tTJS * owner)
 	Owner->AddScriptBlock(this);
 }
 //---------------------------------------------------------------------------
+tTJSScriptBlock::tTJSScriptBlock( bool constparse ) : ConstParse(true), Owner(NULL),
+	RefCount(1), Script(NULL), Name(NULL), InterCodeContext(NULL), TopLevelContext(NULL),
+	LexicalAnalyzer(NULL), UsingPreProcessor(false), LineOffset(0)
+{
+}
+//---------------------------------------------------------------------------
 // for Bytecode
-tTJSScriptBlock::tTJSScriptBlock( tTJS* owner,  const tjs_char* name, tjs_int lineoffset ) {
+tTJSScriptBlock::tTJSScriptBlock( tTJS* owner,  const tjs_char* name, tjs_int lineoffset ) : ConstParse(false) {
 	RefCount = 1;
 	Owner = owner;
 	Owner->AddRef();
@@ -74,14 +80,14 @@ tTJSScriptBlock::~tTJSScriptBlock()
 		ContextStack.pop();
 	}
 
-	Owner->RemoveScriptBlock(this);
+	if( Owner ) Owner->RemoveScriptBlock(this);
 
 	if(LexicalAnalyzer) delete LexicalAnalyzer;
 
 	if(Script) delete [] Script;
 	if(Name) delete [] Name;
 
-	Owner->Release();
+	if( Owner ) Owner->Release();
 }
 //---------------------------------------------------------------------------
 void tTJSScriptBlock::AddRef(void)
@@ -199,7 +205,7 @@ ttstr tTJSScriptBlock::GetLineDescriptionString(tjs_int pos) const
 void tTJSScriptBlock::ConsoleOutput(const tjs_char *msg, void *data)
 {
 	tTJSScriptBlock *blk = (tTJSScriptBlock*)data;
-	blk->Owner->OutputToConsole(msg);
+	if( blk->Owner ) blk->Owner->OutputToConsole(msg);
 }
 //---------------------------------------------------------------------------
 #ifdef TJS_DEBUG_PROFILE_TIME
@@ -324,8 +330,18 @@ void tTJSScriptBlock::SetText(tTJSVariant *result, const tjs_char *text,
 		}
 #endif
 
-		// execute global level script
-		ExecuteTopLevelScript(result, context);
+		if( ConstParse == false )
+		{
+			// execute global level script
+			ExecuteTopLevelScript(result, context);
+		}
+		else
+		{
+			if( TopLevelContext->CopyConstData( result ) == false )
+			{
+				TJSThrowFrom_tjs_error(TJS_E_INVALIDPARAM);
+			}
+		}
 	}
 	catch(...)
 	{
@@ -626,7 +642,7 @@ void tTJSScriptBlock::Compile( const tjs_char *text, bool isexpression, bool isr
 #define TJS_OFFSET_VM_REG_ADDR( x ) ( (x) = TJS_FROM_VM_REG_ADDR(x) )
 #define TJS_OFFSET_VM_CODE_ADDR( x ) ( (x) = TJS_FROM_VM_CODE_ADDR(x) )
 /**
- * �o�C�g�R�[�h���̃A�h���X�͔z��̃C���f�b�N�X���w���̂ŁA����ɍ��킹�ĕϊ�
+ * バイトコード中のアドレスは配列のインデックスを指すので、それに合わせて変換
  */
 void tTJSScriptBlock::TranslateCodeAddress( tjs_int32* code, const tjs_int32 codeSize )
 {
@@ -655,6 +671,7 @@ void tTJSScriptBlock::TranslateCodeAddress( tjs_int32* code, const tjs_int32 cod
 		OP2_DISASM(VM_CLT);
 		OP2_DISASM(VM_CGT);
 		OP2_DISASM(VM_CHKINS);
+		OP2_DISASM(VM_CHKIN);
 #undef OP2_DISASM
 
 #define OP2_DISASM(c) \

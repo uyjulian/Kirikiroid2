@@ -48,7 +48,7 @@ public:
 		return *this;
 	}
 
-	// 以下、Win32 のみのメソッド
+	// 莉･荳九仝in32 縺ｮ縺ｿ縺ｮ繝｡繧ｽ繝�繝�
 	TVPBITMAPINFO* GetBITMAPINFO() { return BitmapInfo; }
 	const TVPBITMAPINFO* GetBITMAPINFO() const { return BitmapInfo; }
 };

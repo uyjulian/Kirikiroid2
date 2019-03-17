@@ -18,32 +18,32 @@ library TVPSndSysLib
   {
     [
     id(0x00000001), 
-    helpstring("ƒƒfƒBƒA‚Ìí—Ş•¶š—ñ‚Ìæ“¾")
+    helpstring("ãƒ¡ãƒ‡ã‚£ã‚¢ã®ç¨®é¡æ–‡å­—åˆ—ã®å–å¾—")
     ]
     HRESULT _stdcall GetMediaType([in] LPWSTR shortname, [in] LPWSTR descbuf, [in] unsigned long descbuflen );
     [
     id(0x00000002), 
-    helpstring("‹È’·‚³‚Ìæ“¾")
+    helpstring("æ›²é•·ã•ã®å–å¾—")
     ]
     HRESULT _stdcall GetLength([out, retval] unsigned long * length );
     [
     id(0x00000003), 
-    helpstring("ƒƒfƒBƒAƒ^ƒCƒgƒ‹‚Ìæ“¾")
+    helpstring("ãƒ¡ãƒ‡ã‚£ã‚¢ã‚¿ã‚¤ãƒˆãƒ«ã®å–å¾—")
     ]
     HRESULT _stdcall GetTitle([in] LPWSTR buf, [in] unsigned long buflen );
     [
     id(0x00000004), 
-    helpstring("ƒƒfƒBƒA’˜ìŒ î•ñ‚Ìæ“¾")
+    helpstring("ãƒ¡ãƒ‡ã‚£ã‚¢è‘—ä½œæ¨©æƒ…å ±ã®å–å¾—")
     ]
     HRESULT _stdcall GetCopyright([in] LPWSTR buf, [in] unsigned long buflen );
     [
     id(0x00000005), 
-    helpstring("ƒƒfƒBƒAƒRƒƒ“ƒg‚Ìæ“¾")
+    helpstring("ãƒ¡ãƒ‡ã‚£ã‚¢ã‚³ãƒ¡ãƒ³ãƒˆã®å–å¾—")
     ]
     HRESULT _stdcall GetComment([in] LPWSTR buf, [in] unsigned long buflen );
     [
     id(0x00000006), 
-    helpstring("ƒƒfƒBƒAƒA[ƒeƒBƒXƒg‚Ìæ“¾")
+    helpstring("ãƒ¡ãƒ‡ã‚£ã‚¢ã‚¢ãƒ¼ãƒ†ã‚£ã‚¹ãƒˆã®å–å¾—")
     ]
     HRESULT _stdcall GetArtist([in] LPWSTR buf, [in] unsigned long buflen );
   };
@@ -56,27 +56,27 @@ library TVPSndSysLib
   typedef struct tagTSSWaveFormat
   {
     [
-    helpstring("ƒTƒ“ƒvƒŠƒ“ƒOü”g”")
+    helpstring("ã‚µãƒ³ãƒ—ãƒªãƒ³ã‚°å‘¨æ³¢æ•°")
     ]
     unsigned long dwSamplesPerSec;
     [
-    helpstring("ƒ`ƒƒƒlƒ‹”")
+    helpstring("ãƒãƒ£ãƒãƒ«æ•°")
     ]
     unsigned long dwChannels;
     [
-    helpstring("ƒrƒbƒg”")
+    helpstring("ãƒ“ãƒƒãƒˆæ•°")
     ]
     unsigned long dwBitsPerSample;
     [
-    helpstring("ƒV[ƒN‰Â”\‚©")
+    helpstring("ã‚·ãƒ¼ã‚¯å¯èƒ½ã‹")
     ]
     unsigned long dwSeekable;
     [
-    helpstring("‘SƒTƒ“ƒvƒ‹”")
+    helpstring("å…¨ã‚µãƒ³ãƒ—ãƒ«æ•°")
     ]
     unsigned __int64 ui64TotalSamples;
     [
-    helpstring("‘SŠÔ")
+    helpstring("å…¨æ™‚é–“")
     ]
     unsigned long dwTotalTime;
     long dwReserved1;
@@ -92,17 +92,17 @@ library TVPSndSysLib
   {
     [
     id(0x00000001), 
-    helpstring("ƒXƒgƒŒ[ƒW‚Ì“Ç‚İ‚İ—pIStream‚Ìæ“¾")
+    helpstring("ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸ã®èª­ã¿è¾¼ã¿ç”¨IStreamã®å–å¾—")
     ]
     HRESULT _stdcall GetStreamForRead([in] LPWSTR url, [out, retval]  IUnknown ** stream );
     [
     id(0x00000002), 
-    helpstring("ƒXƒgƒŒ[ƒW‚Ì‘‚«‚İ—pIStream‚Ìæ“¾")
+    helpstring("ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸ã®æ›¸ãè¾¼ã¿ç”¨IStreamã®å–å¾—")
     ]
     HRESULT _stdcall GetStreamForWrite([in] LPWSTR url, [out, retval]  IUnknown ** stream );
     [
     id(0x00000003), 
-    helpstring("ƒXƒgƒŒ[ƒW‚ÌXV—pIStream‚Ìæ“¾")
+    helpstring("ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸ã®æ›´æ–°ç”¨IStreamã®å–å¾—")
     ]
     HRESULT _stdcall GetStreamForUpdate([in] LPWSTR url, [out, retval]  IUnknown ** stream );
   };
@@ -116,32 +116,32 @@ library TVPSndSysLib
   {
     [
     id(0x00000001), 
-    helpstring("ƒ‚ƒWƒ…[ƒ‹‚Ì’˜ìŒ î•ñ‚Ìæ“¾")
+    helpstring("ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®è‘—ä½œæ¨©æƒ…å ±ã®å–å¾—")
     ]
     HRESULT _stdcall GetModuleCopyright([in] LPWSTR buffer, [in] unsigned long buflen );
     [
     id(0x00000002), 
-    helpstring("ƒ‚ƒWƒ…[ƒ‹‚Ì’Ç‰Áî•ñ‚Ìæ“¾")
+    helpstring("ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«ã®è¿½åŠ æƒ…å ±ã®å–å¾—")
     ]
     HRESULT _stdcall GetModuleDescription([in] LPWSTR buffer, [in] unsigned long buflen );
     [
     id(0x00000003), 
-    helpstring("‘Î‰ƒtƒ@ƒCƒ‹Šg’£q‚Ìæ“¾")
+    helpstring("å¯¾å¿œãƒ•ã‚¡ã‚¤ãƒ«æ‹¡å¼µå­ã®å–å¾—")
     ]
     HRESULT _stdcall GetSupportExts([in] unsigned long index, [in] LPWSTR mediashortname, [in] LPWSTR buf, [in] unsigned long buflen );
     [
     id(0x00000004), 
-    helpstring("w’èƒƒfƒBƒA‚Ìî•ñ‚ğæ“¾")
+    helpstring("æŒ‡å®šãƒ¡ãƒ‡ã‚£ã‚¢ã®æƒ…å ±ã‚’å–å¾—")
     ]
     HRESULT _stdcall GetMediaInfo([in] LPWSTR url, [out, retval] ITSSMediaBaseInfo ** info );
     [
     id(0x00000005), 
-    helpstring("w’èƒƒfƒBƒA‚ğ‚±‚Ìƒvƒ‰ƒOƒCƒ“‚Åˆµ‚¦‚é‚©ŒŸ¸")
+    helpstring("æŒ‡å®šãƒ¡ãƒ‡ã‚£ã‚¢ã‚’ã“ã®ãƒ—ãƒ©ã‚°ã‚¤ãƒ³ã§æ‰±ãˆã‚‹ã‹æ¤œæŸ»")
     ]
     HRESULT _stdcall GetMediaSupport([in] LPWSTR url );
     [
     id(0x00000006), 
-    helpstring("ƒƒfƒBƒAÄ¶—pƒIƒuƒWƒFƒNƒg‚Ìæ“¾")
+    helpstring("ãƒ¡ãƒ‡ã‚£ã‚¢å†ç”Ÿç”¨ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®å–å¾—")
     ]
     HRESULT _stdcall GetMediaInstance([in] LPWSTR url, [out, retval]  IUnknown ** instance );
   };
@@ -155,17 +155,17 @@ library TVPSndSysLib
   {
     [
     id(0x00000001), 
-    helpstring("Ä¶ƒtƒH[ƒ}ƒbƒg‚Ìæ“¾")
+    helpstring("å†ç”Ÿãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã®å–å¾—")
     ]
     HRESULT _stdcall GetFormat([in] TSSWaveFormat * format );
     [
     id(0x00000002), 
-    helpstring("Œ»İˆÊ’u‚©‚çƒfƒR[ƒh")
+    helpstring("ç¾åœ¨ä½ç½®ã‹ã‚‰ãƒ‡ã‚³ãƒ¼ãƒ‰")
     ]
     HRESULT _stdcall Render([in] void * buf, [in] unsigned long bufsamplelen, [out] unsigned long * rendered, [out, retval] unsigned long * status );
     [
     id(0x00000003), 
-    helpstring("w’èˆÊ’u‚Ö‚ÌƒfƒR[ƒhˆÊ’u‚ÌˆÚ“®")
+    helpstring("æŒ‡å®šä½ç½®ã¸ã®ãƒ‡ã‚³ãƒ¼ãƒ‰ä½ç½®ã®ç§»å‹•")
     ]
     HRESULT _stdcall SetPosition([in] unsigned __int64 samplepos );
   };

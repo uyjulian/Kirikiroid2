@@ -10,7 +10,11 @@
 //---------------------------------------------------------------------------
 #include "tjsCommHead.h"
 
+#if 1
 #include <zlib.h>
+#else
+#include <zlib/zlib.h>
+#endif
 #include "TextStream.h"
 #include "MsgIntf.h"
 #include "DebugIntf.h"
@@ -106,45 +110,10 @@ extern size_t TextStream_mbstowcs(tjs_char *pwcs, const tjs_nchar *s, size_t n) 
 	return ret;
 }
 
-static ttstr enc_utf8 = TJS_W("utf8"), enc_utf8_2 = TJS_W("utf-8"), enc_utf16 = TJS_W("utf16"),
-	enc_utf16_2 = TJS_W("utf-16"), enc_gbk = TJS_W("gbk"), enc_jis = TJS_W("sjis"),
-	enc_jis_2 = TJS_W("shiftjis"), enc_jis_3 = TJS_W("shift_jis"), enc_jis_4 = TJS_W("shift-jis");
-bool TVPStringDecode(const void *p, int len, ttstr& result, ttstr encoding /*= "utf8"*/) {
-	if (encoding == enc_utf8 || encoding == enc_utf8_2) {
-		int n = (int)TJS_mbstowcs(NULL, (char*)p, len);
-		if (n == -1) return false;
-		TJS_mbstowcs(result.AllocBuffer(n), (char*)p, len);
-	} else if (encoding == enc_utf16 || encoding == enc_utf16_2) {
-		memcpy(result.AllocBuffer(len / 2), p, len);
-		result.FixLen();
-	} else if (encoding == enc_jis || encoding == enc_jis_2 || encoding == enc_jis_3 || encoding == enc_jis_4) {
-		int n = _TextStream_mbstowcs(sjis_mbtowc, NULL, (char*)p, len);
-		if (n == -1) return false;
-		_TextStream_mbstowcs(sjis_mbtowc, result.AllocBuffer(n), (char*)p, len);
-	} else if (encoding == enc_gbk) {
-		int n = _TextStream_mbstowcs(gbk_mbtowc, NULL, (char*)p, len);
-		if (n == -1) return false;
-		_TextStream_mbstowcs(gbk_mbtowc, result.AllocBuffer(n), (char*)p, len);
-	} else {
-		return false;
-	}
-	return true;
-}
-
-bool TVPStringEncode(const ttstr &src, std::string &result, ttstr encoding /*= "utf8"*/)
-{
-	if (encoding == enc_utf8 || encoding == enc_utf8_2) {
-		result = src.AsNarrowStdString();
-	} else if (encoding == enc_utf16 || encoding == enc_utf16_2) {
-		result.resize(src.length() * 2);
-		memcpy((char*)result.c_str(), src.c_str(), src.length() * 2);
-// 	} else if (encoding == enc_jis || encoding == enc_jis_2 || encoding == enc_jis_3 || encoding == enc_jis_4) {
-// 	} else if (encoding == enc_gbk) { // unsupported yet
-	} else {
-		return false;
-	}
-	return true;
-}
+/*
+	Text stream is used by TJS's Array.save, Dictionary.saveStruct etc.
+	to input/output text files.
+*/
 
 #ifdef TVP_TEXT_READ_ANSI_MBCS
 static ttstr DefaultReadEncoding = TJS_W("Shift_JIS");
@@ -168,7 +137,7 @@ class tTVPTextReadStream : public iTJSTextReadStream
 	tjs_int CryptMode;
 
 public:
-	tTVPTextReadStream(const ttstr  & name, const ttstr & modestr)
+	tTVPTextReadStream(const ttstr  & name, const ttstr & modestr, const ttstr &encoding)
 	{
 		// following syntax of modestr is currently supported.
 		// oN: read from binary offset N (in bytes)
@@ -209,22 +178,22 @@ public:
 		// check first of the file - whether the file is unicode
 		try
 		{
-			tjs_uint8 mark[3] = {0,0};
-			Stream->Read(mark, 3);
+			tjs_uint8 mark[2] = {0,0};
+			Stream->Read(mark, 2);
 			if(mark[0] == 0xff && mark[1] == 0xfe)
 			{
 				// unicode
-				Stream->SetPosition(ofs + 2);
 				DirectLoad = true;
 			}
 			else if(mark[0] == 0xfe && mark[1] == 0xfe)
 			{
 				// ciphered text or compressed
-				tjs_uint8 mode = mark[2];
-				if(mode != 0 && mode != 1 && mode != 2)
+				tjs_uint8 mode[1];
+				Stream->Read(mode, 1);
+				if(mode[0] != 0 && mode[0] != 1 && mode[0] != 2)
 					TVPThrowExceptionMessage(TVPUnsupportedCipherMode, name);
 					// currently only mode0 and mode1, and compressed (mode2) are supported
-				CryptMode = mode;
+				CryptMode = mode[0];
 				DirectLoad = CryptMode != 2;
 
 				Stream->Read(mark, 2); // original bom code comes here (is not compressed)
@@ -270,9 +239,11 @@ public:
 			else
 			{
 				// check UTF-8 BOM
-				if(mark[0] == 0xef && mark[1] == 0xbb && mark[2] == 0xbf) {
+				tjs_uint8 mark2[1] = {0};
+				Stream->Read(mark2, 1);
+				if(mark[0] == 0xef && mark[1] == 0xbb && mark2[0] == 0xbf) {
 					// UTF-8 BOM
-					tjs_uint size = (tjs_uint)(Stream->GetSize() - 3) - ofs;
+					tjs_uint size = (tjs_uint)(Stream->GetSize()-3);
 					tjs_uint8 *nbuf = new tjs_uint8[size + 1];
 					try
 					{
@@ -302,10 +273,7 @@ public:
 						Stream->ReadBuffer(nbuf, size);
 						nbuf[size] = 0; // terminater
 						BufferLen = TextStream_mbstowcs(NULL, (tjs_nchar*)nbuf, 0);
-						if (BufferLen == (size_t)-1) {
-							ttstr msg(TVPGetMessageByLocale("err_narrow_to_wide"));
-							TVPThrowExceptionMessage(msg.c_str());
-						}
+						if (BufferLen == (size_t)-1) TVPThrowExceptionMessage(TJSNarrowToWideConversionError);
 						Buffer = new tjs_char [ BufferLen +1];
 						TextStream_mbstowcs(Buffer, (tjs_nchar*)nbuf, BufferLen);
 					}
@@ -456,9 +424,6 @@ public:
 //---------------------------------------------------------------------------
 class tTVPTextWriteStream : public iTJSTextWriteStream
 {
-	// TODO: 32bit wchar_t support
-
-
         static const tjs_uint COMPRESSION_BUFFER_SIZE = 1024 * 1024;
 
 	tTJSBinaryStream * Stream;
@@ -577,7 +542,7 @@ public:
 		}
 	}
 
-	~tTVPTextWriteStream()
+	~tTVPTextWriteStream() noexcept(false)
 	{
 		if(CryptMode == 2)
 		{
@@ -756,13 +721,13 @@ public:
 iTJSTextReadStream * TVPCreateTextStreamForRead(const ttstr & name,
 	const ttstr & modestr)
 {
-	return new tTVPTextReadStream(name, modestr);
+	return new tTVPTextReadStream(name, modestr,DefaultReadEncoding);
 }
 //---------------------------------------------------------------------------
 iTJSTextReadStream * TVPCreateTextStreamForReadByEncoding(const ttstr & name,
-	const ttstr & modestr)
+	const ttstr & modestr, const ttstr & encoding)
 {
-	return new tTVPTextReadStream(name, modestr);
+	return new tTVPTextReadStream(name, modestr,encoding);
 }
 //---------------------------------------------------------------------------
 iTJSTextWriteStream * TVPCreateTextStreamForWrite(const ttstr & name,
@@ -771,19 +736,9 @@ iTJSTextWriteStream * TVPCreateTextStreamForWrite(const ttstr & name,
 	return new tTVPTextWriteStream(name, modestr);
 }
 //---------------------------------------------------------------------------
-void TVPSetDefaultReadEncoding(const ttstr& encoding)
+void TVPSetDefaultReadEncoding( const ttstr& encoding )
 {
 	DefaultReadEncoding = encoding;
-	ttstr codestr = encoding;  codestr.ToLowerCase();
-	if (codestr == enc_gbk) {
-		mbtowc_for_text_stream = gbk_mbtowc;
-	} else if (codestr == enc_utf8 || codestr == enc_utf8_2) {
-		mbtowc_for_text_stream = utf8_mbtowc;
-	} else if (codestr == enc_jis || codestr == enc_jis_2 || codestr == enc_jis_3 || codestr == enc_jis_4) {
-		mbtowc_for_text_stream = sjis_mbtowc;
-	} else {
-		TVPThrowExceptionMessage(TVPUnsupportedEncoding, encoding);
-	}
 }
 //---------------------------------------------------------------------------
 const tjs_char* TVPGetDefaultReadEncoding()

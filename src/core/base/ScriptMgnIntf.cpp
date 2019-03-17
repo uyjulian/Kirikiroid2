@@ -474,6 +474,15 @@ void TVPInitScriptEngine()
 	// add kirikiriz
 	//TVPScriptEngine->SetPPValue( TJS_W("kirikiriz"), 1 );
 
+	// system definition
+#ifdef WIN32
+	TVPScriptEngine->SetPPValue( TJS_W("windows"), 1 );
+#endif
+
+#ifdef ANDROID
+	TVPScriptEngine->SetPPValue( TJS_W("android"), 1 );
+#endif
+
 	// set TJSGetRandomBits128
 	TJSGetRandomBits128 = TVPGetRandomBits128;
 
@@ -489,8 +498,8 @@ void TVPInitScriptEngine()
 	TJSCreateTextStreamForWrite = TVPCreateTextStreamForWrite;
 	
 	// set binary stream functions
-	TJSCreateBinaryStreamForRead = TVPCreateBinaryStreamForRead;
-	TJSCreateBinaryStreamForWrite = TVPCreateBinaryStreamForWrite;
+	TJSCreateBinaryStreamForRead = TVPCreateBinaryStreamInterfaceForRead;
+	TJSCreateBinaryStreamForWrite = TVPCreateBinaryStreamInterfaceForWrite;
 
 	// register some TVP classes/objects/functions/propeties
 	iTJSDispatch2 *dsp;
@@ -1192,10 +1201,10 @@ void TVPShowScriptException(eTJS &e)
 
 	if(!TVPSystemUninitCalled)
 	{
-		ttstr errstr = (ttstr(TVPScriptExceptionRaised) + TJS_W("\n") + e.GetMessage());
+		// ttstr errstr = (ttstr(TVPScriptExceptionRaised) + TJS_W("\n") + e.GetMessage());
 		TVPAddLog(ttstr(TVPScriptExceptionRaised) + TJS_W("\n") + e.GetMessage());
-		TVPShowSimpleMessageBox(errstr, TVPGetErrorDialogTitle());
-		//Application->MessageDlg( errstr.AsStdString(), std::wstring(), mtError, mbOK );
+		// TVPShowSimpleMessageBox(errstr, TVPGetErrorDialogTitle());
+		//Application->MessageDlg( errstr.AsStdString(), tjs_string(), mtError, mbOK );
 		TVPTerminateSync(1);
 	}
 }
@@ -1207,11 +1216,11 @@ void TVPShowScriptException(eTJSScriptError &e)
 
 	if(!TVPSystemUninitCalled)
 	{
-		ttstr errstr = (ttstr(TVPScriptExceptionRaised) + TJS_W("\n") + e.GetMessage());
+		// ttstr errstr = (ttstr(TVPScriptExceptionRaised) + TJS_W("\n") + e.GetMessage());
 		TVPAddLog(ttstr(TVPScriptExceptionRaised) + TJS_W("\n") + e.GetMessage());
 		if(e.GetTrace().GetLen() != 0)
 			TVPAddLog(ttstr(TJS_W("trace : ")) + e.GetTrace());
-		TVPShowSimpleMessageBox(errstr, TVPGetErrorDialogTitle());
+		// TVPShowSimpleMessageBox(errstr, TVPGetErrorDialogTitle());
 	//	Application->MessageDlg( errstr.AsStdString(), Application->GetTitle(), mtStop, mbOK );
 
 #ifdef TVP_ENABLE_EXECUTE_AT_EXCEPTION
@@ -1226,19 +1235,19 @@ void TVPShowScriptException(eTJSScriptError &e)
 					path = newpath;
 				}
 				TVPGetLocalName( path );
-				std::wstring scriptPath( path.AsStdString() );
+				tjs_string scriptPath( path.AsStdString() );
 				tjs_int lineno = 1+e.GetBlockNoAddRef()->SrcPosToLine(e.GetPosition() )- e.GetBlockNoAddRef()->GetLineOffset();
 
 #if defined(WIN32) && defined(_DEBUG) && !defined(ENABLE_DEBUGGER)
-// ƒfƒoƒbƒKÀs‚³‚ê‚Ä‚¢‚éAVisual Studio ‚ÅsƒWƒƒƒ“ƒv‚·‚é‚Ìw’è‚ğƒfƒoƒbƒOo—Í‚Éo‚µ‚ÄAbreak ‚Å’â~‚·‚é
+// ãƒ‡ãƒãƒƒã‚¬å®Ÿè¡Œã•ã‚Œã¦ã„ã‚‹æ™‚ã€Visual Studio ã§è¡Œã‚¸ãƒ£ãƒ³ãƒ—ã™ã‚‹æ™‚ã®æŒ‡å®šã‚’ãƒ‡ãƒãƒƒã‚°å‡ºåŠ›ã«å‡ºã—ã¦ã€break ã§åœæ­¢ã™ã‚‹
 				if( ::IsDebuggerPresent() ) {
-					std::wstring debuglile( std::wstring(L"2>")+path.AsStdString()+L"("+std::to_wstring(lineno)+L"): error :" + errstr.AsStdString() );
+					tjs_string debuglile( tjs_string(L"2>")+path.AsStdString()+L"("+to_tjs_string(lineno)+L"): error :" + errstr.AsStdString() );
 					::OutputDebugString( debuglile.c_str() );
-					// ‚±‚±‚Å break‚Å’â~‚µ‚½A’¼‘O‚Ìo—Ís‚ğƒ_ƒuƒ‹ƒNƒŠƒbƒN‚·‚ê‚ÎA—áŠO‰ÓŠ‚ÌƒXƒNƒŠƒvƒg‚ğVisual Studio‚ÅŠJ‚¯‚é
+					// ã“ã“ã§ breakã§åœæ­¢ã—ãŸæ™‚ã€ç›´å‰ã®å‡ºåŠ›è¡Œã‚’ãƒ€ãƒ–ãƒ«ã‚¯ãƒªãƒƒã‚¯ã™ã‚Œã°ã€ä¾‹å¤–ç®‡æ‰€ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’Visual Studioã§é–‹ã‘ã‚‹
 					::DebugBreak();
 				}
 #endif
-				scriptPath = std::wstring(L"\"") + scriptPath + std::wstring(L"\"");
+				scriptPath = tjs_string(L"\"") + scriptPath + tjs_string(L"\"");
 				tTJSVariant val;
 				if( TVPGetCommandLine(TJS_W("-exceptionexe"), &val) )
 				{
@@ -1248,9 +1257,9 @@ void TVPShowScriptException(eTJSScriptError &e)
 					{
 						ttstr arg(val);
 						if( !exepath.IsEmpty() && !arg.IsEmpty() ) {
-							std::wstring str( arg.AsStdString() );
-							str = ApplicationSpecialPath::ReplaceStringAll( str, std::wstring(L"%filepath%"), scriptPath );
-							str = ApplicationSpecialPath::ReplaceStringAll( str, std::wstring(L"%line%"), std::to_wstring(lineno) );
+							tjs_string str( arg.AsStdString() );
+							str = ApplicationSpecialPath::ReplaceStringAll( str, tjs_string(TJS_W("%filepath%")), scriptPath );
+							str = ApplicationSpecialPath::ReplaceStringAll( str, tjs_string(TJS_W("%line%")), to_tjs_string(lineno) );
 							//exepath = exepath + ttstr(str);
 							//_wsystem( exepath.c_str() );
 							arg = ttstr(str);

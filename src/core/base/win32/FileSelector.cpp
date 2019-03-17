@@ -309,6 +309,7 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 
 	return 0!=result;
 #endif
+#if 0
 
     std::string filename;
 	std::string result;
@@ -401,7 +402,7 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 			&val, params);
         return true;
 	}
-
+#endif
 	return false;
 }
 //---------------------------------------------------------------------------

@@ -148,7 +148,7 @@ static void SendDumps(std::string dumpdir, std::vector<std::string> allDumps, st
 			// CRCÓ‹Ëã
 			unsigned long crcFile = 0;
 			crcFile = crc32(crcFile, (const Bytef *)&buf[0], buf.size());
-			// ¥Õ¥¡¥¤¥ë¤Î×·¼Ó
+			// \Õ\¡\¤\ë¤Î×·¼Ó
 			// UTF8¤Ç¸ñ¼{¤¹¤ë
 			zipFile zf = zipOpen2_64((const void*)filename.c_str(), 0, NULL, GetZlibIOFunc());
 			if (zf == NULL) {

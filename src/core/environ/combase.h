@@ -1,6 +1,6 @@
 #pragma once
 #include "typedefine.h"
-#include "win32type.h"
+// #include "win32type.h"
 #include <stdint.h>
 
 #ifndef S_OK

@@ -1319,7 +1319,8 @@ static bool __stdcall TVP_Stub_b246b17b62d273bdc04e9d9e827f5c74(const ttstr & fo
 }
 static IStream * __stdcall TVP_Stub_9974ebc6296f925cff55d8bcb2d52ce9(const ttstr & name , tjs_uint32 flags)
 {
-	return TVPCreateIStream(name, flags);
+	// return TVPCreateIStream(name, flags);
+	return NULL;
 }
 static tTJSBinaryStream * __stdcall TVP_Stub_0e0c9d9107d8c56b8bc4d4198ae9208a(IStream * refstream)
 {

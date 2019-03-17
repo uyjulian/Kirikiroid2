@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 #include "tjsArray.h"
 #include "tjsDictionary.h"
 #include "tjsUtils.h"
@@ -24,6 +25,7 @@
 #include "tjsRegExp.h"
 #endif
 
+#include <ctype.h>
 // TODO: Check the deque's exception handling on deleting
 
 
@@ -36,7 +38,6 @@ namespace TJS
 {
 //---------------------------------------------------------------------------
 static tjs_int32 ClassID_Array;
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // Utility Function(s)
 //---------------------------------------------------------------------------
@@ -362,7 +363,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/loadStruct)
 
 	ni->Items.clear();
 
-	tTJSBinaryStream* stream = TJSCreateBinaryStreamForRead(name, mode);
+	iTJSBinaryStream* stream = TJSCreateBinaryStreamForRead(name, mode);
 	if( !stream ) return TJS_E_INVALIDPARAM;
 
 	bool isbin = false;
@@ -450,7 +451,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/* func. name */saveStruct)
 	if(numparams >= 2 && param[1]->Type() != tvtVoid) mode = *param[1];
 
 	if( TJS_strchr(mode.c_str(), TJS_W('b')) != NULL ) {
-		tTJSBinaryStream* stream = TJSCreateBinaryStreamForWrite(name, mode);
+		iTJSBinaryStream* stream = TJSCreateBinaryStreamForWrite(name, mode);
 		try {
 			stream->Write( tTJSBinarySerializer::HEADER, tTJSBinarySerializer::HEADER_LENGTH );
 			std::vector<iTJSDispatch2 *> stack;
@@ -945,7 +946,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/* func.name */find)
 		if(i == ni->Items.end())
 			*result = -1;
 		else
-			result->operator=((tjs_int)(i - ni->Items.begin()));
+			*result = (tTVInteger)(i - ni->Items.begin());
 	}
 
 	return TJS_S_OK;
@@ -962,6 +963,96 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/* func.name */pack)
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_METHOD_DECL(/* func.name */pack)
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/* func.name */forEach ) {
+	TJS_GET_NATIVE_INSTANCE(/* var. name */ni, /* var. type */tTJSArrayNI );
+
+	if( numparams < 1 ) return TJS_E_BADPARAMCOUNT;
+	
+	if( ni->Items.empty() ) return TJS_S_OK;
+
+	if( param[0]->Type() == tvtString ) {
+		tTJSVariantString* str = param[0]->AsStringNoAddRef();
+		tjs_int paramCount = numparams - 1;
+		std::unique_ptr<tTJSVariant*[]> paramList;
+		if( paramCount > 0 ) {
+			paramList.reset( new tTJSVariant*[paramCount] );
+			for( tjs_int i = 1; i < numparams; i++ ) {
+				paramList[i - 1] = param[i];
+			}
+		}
+		for( auto i = ni->Items.begin(); i != ni->Items.end(); i++ ) {
+			tjs_error hr = i->AsObjectClosureNoAddRef().FuncCall( 0, *str, str->GetHint(), nullptr, paramCount, paramList.get(), i->AsObjectThisNoAddRef() );
+			if( TJS_FAILED( hr ) ) {
+				TJSThrowFrom_tjs_error( hr, *str );
+				return TJS_E_FAIL;
+			}
+		}
+		return TJS_S_OK;
+	} else if( param[0]->Type() == tvtObject ) {
+		tTJSVariantClosure &funcClosure = param[0]->AsObjectClosureNoAddRef();
+		iTJSDispatch2 *func = funcClosure.Object;
+		iTJSDispatch2 *functhis = funcClosure.ObjThis;
+		if( !functhis ) {
+			functhis = objthis;
+		}
+		tTJSVariant key, value;
+		tjs_int paramCount = numparams + 1;
+		std::unique_ptr<tTJSVariant*[]> paramList( new tTJSVariant*[paramCount] );
+		paramList[0] = &value;
+		paramList[1] = &key;
+		for( tjs_int i = 1; i < numparams; i++ ) {
+			paramList[i+1] = param[i];
+		}
+		tTJSVariant breakResult;
+		tjs_int count = ni->Items.size();
+		for( tjs_int i = 0; i < count; i++ ) {
+			key = i;
+			value = ni->Items[i];
+			tjs_error hr = func->FuncCall( 0, nullptr, nullptr, &breakResult, paramCount, paramList.get(), functhis );
+			if( TJS_FAILED( hr ) ) {
+				return hr;
+			}
+			if( breakResult.Type() != tvtVoid ) {
+				break;
+			}
+		}
+		if( result ) {
+			*result = breakResult;
+		}
+		return TJS_S_OK;
+	}
+
+	return TJS_E_INVALIDPARAM;
+}
+TJS_END_NATIVE_METHOD_DECL(/* func.name */forEach )
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/* func.name */includes ) {
+	// insert item at specified position
+
+	TJS_GET_NATIVE_INSTANCE(/* var. name */ni, /* var. type */tTJSArrayNI );
+
+	if( numparams < 1 ) return TJS_E_BADPARAMCOUNT;
+	if( result ) {
+		tTJSVariant & val = *param[0];
+		tjs_int start = 0;
+		if( numparams >= 2 ) start = *param[1];
+		if( start < 0 ) start += (tjs_int)ni->Items.size();
+		if( start < 0 ) start = 0;
+		if( start >= (tjs_int)ni->Items.size() ) { *result = (tjs_int)0; return TJS_S_OK; }
+
+		tTJSArrayNI::tArrayItemIterator i;
+		for( i = ni->Items.begin() + start; i != ni->Items.end(); i++ ) {
+			if( val.DiscernCompare( *i ) ) break;
+		}
+		if( i == ni->Items.end() )
+			*result = (tjs_int)0;
+		else
+			*result = (tjs_int)1;
+	}
+	return TJS_S_OK;
+}
+TJS_END_NATIVE_METHOD_DECL(/* func.name */includes )
 //----------------------------------------------------------------------
 
 
@@ -1066,7 +1157,8 @@ void tTJSArrayNI::Assign(iTJSDispatch2 * dsp)
 		Items.clear();
 		tDictionaryEnumCallback callback;
 		callback.Items = &Items;
-        tTJSVariantClosure clo(&callback, NULL);
+
+		tTJSVariantClosure clo(&callback, NULL);
 		dsp->EnumMembers(TJS_IGNOREPROP, &clo, dsp);
 
 	}
@@ -1104,7 +1196,7 @@ void tTJSArrayNI::SaveStructuredData(std::vector<iTJSDispatch2 *> &stack,
 #ifdef TJS_TEXT_OUT_CRLF
 	stream.Write(TJS_W("(const) [\r\n"));
 #else
-	stream>Write(TJS_W("(const) [\n"));
+	stream.Write(TJS_W("(const) [\n"));
 #endif
 
 	ttstr indentstr2 = indentstr + TJS_W(" ");
@@ -1195,7 +1287,7 @@ void tTJSArrayNI::SaveStructuredDataForObject(iTJSDispatch2 *dsp,
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSArrayNI::SaveStructuredBinary(std::vector<iTJSDispatch2 *> &stack, tTJSBinaryStream &stream )
+void tTJSArrayNI::SaveStructuredBinary(std::vector<iTJSDispatch2 *> &stack, iTJSBinaryStream &stream )
 {
 	tjs_uint count = (tjs_uint)Items.size();
 	tTJSBinarySerializer::PutStartArray( &stream, count );
@@ -1214,7 +1306,7 @@ void tTJSArrayNI::SaveStructuredBinary(std::vector<iTJSDispatch2 *> &stack, tTJS
 }
 //---------------------------------------------------------------------------
 void tTJSArrayNI::SaveStructuredBinaryForObject(iTJSDispatch2 *dsp,
-		std::vector<iTJSDispatch2 *> &stack, tTJSBinaryStream &stream )
+		std::vector<iTJSDispatch2 *> &stack, iTJSBinaryStream &stream )
 {
 	// check object recursion
 	std::vector<iTJSDispatch2 *>::iterator i;

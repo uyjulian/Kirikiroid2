@@ -111,8 +111,7 @@ tTJS::tTJS()
 	PPValues = NULL;
 
 	// ensure variant array stack for function stack
-//	TJSVariantArrayStackAddRef();
-	VariantArrayStack = new tTJSVariantArrayStack;
+	TJSVariantArrayStackAddRef();
 
 	// ensure hash table for reserved words
 	TJSReservedWordsHashAddRef();
@@ -212,8 +211,7 @@ tTJS::~tTJS()
 void tTJS::Cleanup()
 {
 	TJSVariantArrayStackCompactNow();
-//	TJSVariantArrayStackRelease();
-	delete VariantArrayStack; VariantArrayStack = nullptr;
+	TJSVariantArrayStackRelease();
 
 	if(Global) Global->Release(), Global = NULL;
 
@@ -606,6 +604,31 @@ void tTJS::CompileScript( const tjs_char *script, class tTJSBinaryStream* output
 	blk->Release();
 }
 //---------------------------------------------------------------------------
+bool tTJS::LoadTextDictionaryArray( class iTJSTextReadStream* stream, tTJSVariant *result, const tjs_char *name )
+{
+	ttstr buffer;
+	try {
+		stream->Read(buffer, 0);
+	} catch(...) {
+		stream->Destruct();
+		throw;
+	}
+	stream->Destruct();
+	
+	tTJSScriptBlock *blk = new tTJSScriptBlock(true);
+	if( name ) {
+		blk->SetName( name, 0 );
+	}
+	try {
+		blk->SetText(result, buffer.c_str(), NULL, true);
+	} catch(...) {
+		blk->Release();
+		throw;
+	}
+	blk->Release();
+	return true;
+}
+//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 // TextStream Creation
@@ -616,10 +639,10 @@ iTJSTextReadStream * TJSDefCreateTextStreamForRead(const tTJSString &name,
 iTJSTextWriteStream * TJSDefCreateTextStreamForWrite(const tTJSString &name,
 	const tTJSString &mode)
 { return NULL; }
-tTJSBinaryStream * TJSDefCreateBinaryStreamForRead(const tTJSString &name,
+iTJSBinaryStream * TJSDefCreateBinaryStreamForRead(const tTJSString &name,
 	const tTJSString &mode)
 { return NULL; }
-tTJSBinaryStream * TJSDefCreateBinaryStreamForWrite(const tTJSString &name,
+iTJSBinaryStream * TJSDefCreateBinaryStreamForWrite(const tTJSString &name,
 	const tTJSString &mode)
 { return NULL; }
 //---------------------------------------------------------------------------
@@ -629,10 +652,10 @@ iTJSTextReadStream * (*TJSCreateTextStreamForRead)(const tTJSString &name,
 iTJSTextWriteStream * (*TJSCreateTextStreamForWrite)(const tTJSString &name,
 	const tTJSString &mode) =
 	TJSDefCreateTextStreamForWrite;
-tTJSBinaryStream * (*TJSCreateBinaryStreamForRead)(const tTJSString &name,
+iTJSBinaryStream * (*TJSCreateBinaryStreamForRead)(const tTJSString &name,
 	const tTJSString &mode) =
 	TJSDefCreateBinaryStreamForRead;
-tTJSBinaryStream * (*TJSCreateBinaryStreamForWrite)(const tTJSString &name,
+iTJSBinaryStream * (*TJSCreateBinaryStreamForWrite)(const tTJSString &name,
 	const tTJSString &mode) =
 	TJSDefCreateBinaryStreamForWrite;
 //---------------------------------------------------------------------------
@@ -658,12 +681,12 @@ tjs_uint64 TJS_INTF_METHOD tTJSBinaryStream::GetSize()
 	return size;
 }
 //---------------------------------------------------------------------------
-tjs_uint64 tTJSBinaryStream::GetPosition()
+tjs_uint64 TJS_INTF_METHOD tTJSBinaryStream::GetPosition()
 {
 	return Seek(0, SEEK_CUR);
 }
 //---------------------------------------------------------------------------
-void tTJSBinaryStream::SetPosition(tjs_uint64 pos)
+void TJS_INTF_METHOD tTJSBinaryStream::SetPosition(tjs_uint64 pos)
 {
 	if(pos != Seek(pos, TJS_BS_SEEK_SET))
 		TJS_eTJSError(TJSSeekError);
@@ -672,7 +695,7 @@ void tTJSBinaryStream::SetPosition(tjs_uint64 pos)
 void tTJSBinaryStream::ReadBuffer(void *buffer, tjs_uint read_size)
 {
 	if(Read(buffer, read_size) != read_size)
-		TJS_eTJSError(TVPGetMessageByLocale("err_read_error"));
+		TJS_eTJSError(TJSReadError);
 }
 //---------------------------------------------------------------------------
 void tTJSBinaryStream::WriteBuffer(const void *buffer, tjs_uint write_size)

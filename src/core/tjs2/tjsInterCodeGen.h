@@ -73,6 +73,7 @@ enum tTJSVMCodes{
 	VM_GPDS, VM_SPDS, VM_GPIS, VM_SPIS,  VM_SETP, VM_GETP,
 	VM_DELD, VM_DELI, VM_SRV, VM_RET, VM_ENTRY, VM_EXTRY, VM_THROW,
 	VM_CHGTHIS, VM_GLOBAL, VM_ADDCI, VM_REGMEMBER, VM_DEBUGGER,
+	VM_CHKIN,
 
 	__VM_LAST /* = last mark ; this is not a real operation code */} ;
 
@@ -490,7 +491,8 @@ public:
 	tTJSExprNode * MakeNP2(tjs_int opecode, tTJSExprNode * node1, tTJSExprNode * node2);
 	tTJSExprNode * MakeNP3(tjs_int opecode, tTJSExprNode * node1, tTJSExprNode * node2,
 		tTJSExprNode * node3);
-
+	
+	bool CopyConstData( tTJSVariant* result );
 	//---------------------------------------------------------- disassembler
 	// implemented in tjsDisassemble.cpp
 
@@ -504,7 +506,7 @@ public:
 	void Disassemble(void (*output_func)(const tjs_char *msg, void* data), void *data,
 		tjs_int start = 0, tjs_int end = 0);
 	void Disassemble(tjs_int start = 0, tjs_int end = 0);
-	void DisassembleSrcLine(tjs_int codepos);
+	void DisassenbleSrcLine(tjs_int codepos);
 
 
 	//--------------------------------------------------------- execute stuff
@@ -567,6 +569,7 @@ private:
 	static void CharacterCodeOf(tTJSVariant &val);
 	static void CharacterCodeFrom(tTJSVariant &val);
 	static void InstanceOf(const tTJSVariant &name, tTJSVariant &targ);
+	static void InMember( tTJSVariant &name, tTJSVariant &obj );
 
 	void RegisterObjectMember(iTJSDispatch2 * dest);
 
@@ -647,9 +650,6 @@ public:
 		PropGetter = getter;
 		if( getter ) getter->AddRef();
 		SuperClassGetter = superclass;
-#ifdef ENABLE_DEBUGGER
-		if (Parent) Parent->AddRef();
-#endif	// ENABLE_DEBUGGER
 	}
 	
 	tTJSInterCodeContext( tTJSScriptBlock *block, const tjs_char *name, tTJSContextType type,
@@ -658,12 +658,6 @@ public:
 		tSourcePos* srcPos, tjs_int srcPosSize, std::vector<tjs_int>& superpointer );
 
 	std::vector<tjs_uint8>* ExportByteCode( bool outputdebug, tTJSScriptBlock *block, class tjsConstArrayData& constarray );
-
-protected:
-	void TJSVariantArrayStackAddRef();
-	void TJSVariantArrayStackRelease();
-
-	class tTJSVariantArrayStack *TJSVariantArrayStack = nullptr;
 };
 //---------------------------------------------------------------------------
 }

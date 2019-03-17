@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <memory>
+#include <set>
 #include "StorageIntf.h"
 #include "tjsUtils.h"
 #include "MsgIntf.h"
@@ -20,16 +21,36 @@
 #include "DebugIntf.h"
 #include "tjsArray.h"
 #include "SysInitIntf.h"
-#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
-#endif
 #include "TickCount.h"
-
-
+#include "StringUtil.h"
+#include "FilePathUtil.h"
+#include "tjsDictionary.h"
 
 #define TVP_DEFAULT_ARCHIVE_CACHE_NUM 64
 #define TVP_DEFAULT_AUTOPATH_CACHE_NUM 256
 
+
+//---------------------------------------------------------------------------
+// オプション
+//---------------------------------------------------------------------------
+static bool TVPIsInitStorageOptions = false;
+static bool TVPIgnoreFileProperty = false;
+//---------------------------------------------------------------------------
+static void TVPInitStorageOptions() {
+	if( TVPIsInitStorageOptions ) return;
+
+	tTJSVariant val;
+	if( TVPGetCommandLine( TJS_W( "-ignorefileprop" ), &val ) ) {
+		ttstr str( val );
+		if( str == TJS_W( "yes" ) )
+			TVPIgnoreFileProperty = true;
+		else
+			TVPIgnoreFileProperty = false;
+	}
+	TVPIsInitStorageOptions = true;
+}
+//---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
@@ -48,7 +69,7 @@ tjs_char  TVPArchiveDelimiter = '>';
 //---------------------------------------------------------------------------
 // statics
 //---------------------------------------------------------------------------
-static tTJSStaticCriticalSection TVPCreateStreamCS;
+static tTJSCriticalSection TVPCreateStreamCS;
 //---------------------------------------------------------------------------
 
 
@@ -303,8 +324,8 @@ ttstr tTVPStorageMediaManager::NormalizeStorageName(const ttstr &name,
 	while(*pa)
 	{
 		if(!(
-			(*pa >= TJS_W('A') && *pa <= TJS_W('Z')) ||
-			(*pa >= TJS_W('a') && *pa <= TJS_W('z')) )) break;
+			*pa >= TJS_W('A') && *pa <= TJS_W('Z') ||
+			*pa >= TJS_W('a') && *pa <= TJS_W('z') )) break;
 		pa ++;
 	}
 
@@ -526,9 +547,7 @@ ttstr tTVPStorageMediaManager::GetLocallyAccessibleName(const ttstr &name)
 	return dname;
 }
 //---------------------------------------------------------------------------
-void TVPGetListAt(const ttstr &name, iTVPStorageLister * lister) {
-	TVPStorageMediaManager.GetListAt(name, lister);
-}
+
 
 //---------------------------------------------------------------------------
 void TVPRegisterStorageMedia(iTVPStorageMedia *media)
@@ -777,7 +796,7 @@ public:
 		}
 
 		// not exist in the cache
-		tTVPArchive *arc = TVPOpenArchive(name, true);
+		tTVPArchive *arc = TVPOpenArchive(name);
 		tHolder holder(arc);
 		ArchiveCache.AddWithHash(name, hash, holder);
 		return arc;
@@ -972,10 +991,57 @@ extern ttstr TVPChopStorageExt(const ttstr & name)
 //---------------------------------------------------------------------------
 // Auto search path support
 //---------------------------------------------------------------------------
+struct tTVPFileInfo
+{
+	static const tjs_int EXIST_PROP = 0x01;
+	static const tjs_int EMPTY_FILE = 0x02;
+
+	ttstr FilePath;
+	iTJSDispatch2* Property = nullptr;
+	tjs_int Flag = 0;
+
+	tTVPFileInfo( const ttstr& path, tjs_int exist )
+		: FilePath( path ), Flag( exist ) {
+	}
+	tTVPFileInfo( const ttstr& path, iTJSDispatch2* prop = nullptr )
+	: FilePath(path), Property(prop)
+	{
+		if( Property ) Property->AddRef();
+	}
+	tTVPFileInfo( const tTVPFileInfo& info )
+	: FilePath(info.FilePath), Property(info.Property), Flag(info.Flag )
+	{
+		if( Property ) Property->AddRef();
+	}
+	~tTVPFileInfo()
+	{
+		if( Property ) Property->Release();
+	}
+	tTVPFileInfo &operator=(const tTVPFileInfo &rhs)
+	{
+		if (this != &rhs) {
+			if( Property ) Property->Release();
+			FilePath = rhs.FilePath;
+			Property = rhs.Property;
+			Flag = rhs.Flag;
+			if( Property )
+			{
+				Property->AddRef();
+			}
+		}
+		return *this;
+	}
+	bool ExistProp() const {
+		return (Flag & EXIST_PROP) != 0; 
+	}
+	bool ExistFile() const {
+		return ( Flag & EMPTY_FILE ) == 0;
+	}
+};
 #define TVP_AUTO_PATH_HASH_SIZE 1024
 std::vector<ttstr> TVPAutoPathList;
 tTJSHashCache<ttstr, ttstr> TVPAutoPathCache(TVP_DEFAULT_AUTOPATH_CACHE_NUM);
-tTJSHashTable<ttstr, ttstr, tTJSHashFunc<ttstr>, TVP_AUTO_PATH_HASH_SIZE>
+tTJSHashTable<ttstr, tTVPFileInfo, tTJSHashFunc<ttstr>, TVP_AUTO_PATH_HASH_SIZE>
 	TVPAutoPathTable;
 bool AutoPathTableInit = false;
 //---------------------------------------------------------------------------
@@ -1041,6 +1107,8 @@ static tjs_uint TVPRebuildAutoPathTable()
 	// rebuild auto path table
 	if(AutoPathTableInit) return 0;
 
+	TVPInitStorageOptions();
+
 	tTJSCriticalSectionHolder cs_holder(TVPCreateStreamCS);
 
 	TVPAutoPathTable.Clear();
@@ -1087,7 +1155,8 @@ static tjs_uint TVPRebuildAutoPathTable()
 							if(!TJS_strchr(name.c_str() + in_arc_name_len, TJS_W('/')))
 							{
 								ttstr sname = TVPExtractStorageName(name);
-								TVPAutoPathTable.Add(sname, path);
+								// TODO アーカイブの時もプロパティ情報追加
+								TVPAutoPathTable.Add(sname, tTVPFileInfo(path) );
 								count ++;
 							}
 						}
@@ -1112,19 +1181,43 @@ static tjs_uint TVPRebuildAutoPathTable()
 			// normal folder
 			class tLister : public iTVPStorageLister
 			{
+				const ttstr EXT;
 			public:
-				std::vector<ttstr> list;
+				tLister() : EXT(TJS_W(".prop")) {}
+				std::set<ttstr>		list;
+				std::vector<ttstr>	prop;
 				void TJS_INTF_METHOD Add(const ttstr &file)
 				{
-					list.push_back(file);
+					ttstr ext = TVPExtractStorageExt( file );
+					if( ext == EXT )
+					{
+						prop.push_back( file );
+					}
+					list.insert( file );
 				}
 			} lister;
-
 			TVPStorageMediaManager.GetListAt(path, &lister);
-			for(std::vector<ttstr>::iterator i = lister.list.begin();
-				i != lister.list.end(); i++)
+
+			if( !TVPIgnoreFileProperty )
 			{
-				TVPAutoPathTable.Add(*i, path);
+				// プロパティがあるファイルを追加する
+				for( auto i = lister.prop.begin(); i != lister.prop.end(); i++ ) {
+					// プロパティがある場合はとりあえず登録だけしておき、プロパティ取得時に実際に読み込みを行う
+					ttstr fname = TVPChopStorageExt( *i );
+					auto file = lister.list.find( fname );
+					if( file != lister.list.end() ) {
+						// ファイルがある場合
+						lister.list.erase( *file );
+						TVPAutoPathTable.Add( *file, tTVPFileInfo( path, tTVPFileInfo::EXIST_PROP ) );
+					} else {
+						TVPAutoPathTable.Add( fname, tTVPFileInfo( path, tTVPFileInfo::EXIST_PROP | tTVPFileInfo::EMPTY_FILE ) );
+					}
+				}
+			}
+			// プロパティのないファイルを追加する
+			for( auto i = lister.list.begin(); i != lister.list.end(); i++)
+			{
+				TVPAutoPathTable.Add(*i, tTVPFileInfo(path) );
 				count ++;
 			}
 		}
@@ -1159,13 +1252,11 @@ ttstr TVPGetPlacedPath(const ttstr & name)
 	// search path and return the path which the "name" is placed.
 	// returned name is normalized. returns empty string if the storage is not
 	// found.
-#if 0 // needn't
 	if(!TVPClearAutoPathCacheCallbackInit)
 	{
 		TVPAddCompactEventHook(&TVPClearAutoPathCacheCallback);
 		TVPClearAutoPathCacheCallbackInit = true;
 	}
-#endif
 
 	ttstr * incache = TVPAutoPathCache.FindAndTouch(name);
 	if(incache) return *incache; // found in cache
@@ -1188,21 +1279,49 @@ ttstr TVPGetPlacedPath(const ttstr & name)
 	ttstr storagename = TVPExtractStorageName(normalized);
 
 	TVPRebuildAutoPathTable(); // ensure auto path table
-	ttstr *result = TVPAutoPathTable.Find(storagename);
-	if(result)
+	tTVPFileInfo *result = TVPAutoPathTable.Find(storagename);
+	if(result && (result->Flag & tTVPFileInfo::EMPTY_FILE) == 0 )
 	{
 		// found in table
-		ttstr found = *result + storagename;
+		ttstr found = result->FilePath + storagename;
 		TVPAutoPathCache.Add(name, found);
 		return found;
 	}
 
 	// not found
-	// TVPAutoPathCache.Add(name, ttstr()); // do not cache now
+	TVPAutoPathCache.Add(name, ttstr());
 	return ttstr();
 }
 //---------------------------------------------------------------------------
 
+
+
+
+//---------------------------------------------------------------------------
+/**
+ * TVPGetPlacedPath
+ * @param name file name
+ * @param extlist extension list(delimiter |) ex. ".bmp|.png|.jpg"
+ * @return normalized path.
+ */
+ttstr TVPGetPlacedPath(const ttstr & name, const ttstr& extlist )
+{
+	tjs_string exts = extlist.AsStdString();
+	std::vector<tjs_string> ext;
+	split( exts, tjs_string( TJS_W( "|" ) ), ext );
+	ttstr filename = TVPChopStorageExt( name );
+	for( auto i = ext.begin(); i != ext.end(); i++ ) {
+		if( !((*i).empty()) ) {
+			ttstr fullname = filename + ttstr( *i );
+			ttstr ret = TVPGetPlacedPath( fullname );
+			if( !ret.IsEmpty() ) {
+				return ret;
+			}
+		}
+	}
+	return ttstr();
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -1231,7 +1350,27 @@ bool TVPIsExistentStorage(const ttstr &name)
 
 
 
-
+//---------------------------------------------------------------------------
+// TVPGetFilePropertyNoAddRef
+//---------------------------------------------------------------------------
+iTJSDispatch2* TVPGetFilePropertyNoAddRef( const ttstr& name )
+{
+	TVPRebuildAutoPathTable(); // ensure auto path table
+	tTVPFileInfo *result = TVPAutoPathTable.Find( name );
+	if( result && ( result->Flag & tTVPFileInfo::EXIST_PROP) ) {
+		// found in table
+		if( !result->Property ) {
+			ttstr path = result->FilePath + name + ".prop";
+			tTJSVariant dic;
+			ttstr mode;
+			if( TJSReadDictionaryObject( dic, path, mode ) == TJS_S_OK ) {
+				result->Property = dic.AsObject();
+			}
+		}
+		return result->Property;
+	}
+	return nullptr;
+}
 
 
 //---------------------------------------------------------------------------
@@ -1249,10 +1388,7 @@ static tTJSBinaryStream * _TVPCreateStream(const ttstr & _name, tjs_uint32 flags
 	else
 		name = TVPGetPlacedPath(_name); // file must exist
 
-	if (name.IsEmpty()) {
-		if (access >= 1) TVPRemoveFromStorageCache(_name);
-		TVPThrowExceptionMessage(TVPCannotOpenStorage, _name);
-	}
+	if(name.IsEmpty()) TVPThrowExceptionMessage(TVPCannotOpenStorage, _name);
 
 	// does name contain > ?
 	const tjs_char * sharp_pos = TJS_strchr(name.c_str(), TVPArchiveDelimiter);
@@ -1276,10 +1412,10 @@ static tTJSBinaryStream * _TVPCreateStream(const ttstr & _name, tjs_uint32 flags
 		catch(...)
 		{
 			arc->Release();
-			if(access >= 1) TVPRemoveFromStorageCache(_name);
+			if(access >= 1) TVPClearStorageCaches();
 			throw;
 		}
-		if(access >= 1) TVPRemoveFromStorageCache(_name);
+		if(access >= 1) TVPClearStorageCaches();
 		arc->Release();
 		return stream;
 	}
@@ -1291,10 +1427,10 @@ static tTJSBinaryStream * _TVPCreateStream(const ttstr & _name, tjs_uint32 flags
 	}
 	catch(...)
 	{
-		if(access >= 1) TVPRemoveFromStorageCache(_name);
+		if(access >= 1) TVPClearStorageCaches();
 		throw;
 	}
-	if (access >= 1) TVPRemoveFromStorageCache(_name);
+	if(access >= 1) TVPClearStorageCaches();
 	return stream;
 }
 
@@ -1353,9 +1489,7 @@ void TVPClearStorageCaches()
 }
 //---------------------------------------------------------------------------
 
-void TVPRemoveFromStorageCache(const ttstr &name) {
-	TVPAutoPathCache.Delete(name);
-}
+
 
 
 //---------------------------------------------------------------------------
@@ -1419,9 +1553,18 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/getPlacedPath)
 	if(numparams < 1) return TJS_E_BADPARAMCOUNT;
 
 	ttstr path = *param[0];
-
 	if(result)
-		*result = TVPGetPlacedPath(path);
+	{
+		if( numparams >= 2 )
+		{
+			ttstr ext = *param[1];
+			*result = TVPGetPlacedPath( path, ext );
+		}
+		else
+		{
+			*result = TVPGetPlacedPath( path );
+		}
+	}
 
 	return TJS_S_OK;
 }
@@ -1498,6 +1641,18 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/clearArchiveCache)
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/clearArchiveCache)
+//----------------------------------------------------------------------
+TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/getFileProperty) {
+	if( numparams < 1 ) return TJS_E_BADPARAMCOUNT;
+
+	ttstr path = *param[0];
+	if( result ) {
+		iTJSDispatch2* dic = TVPGetFilePropertyNoAddRef( path );
+		*result = tTJSVariant( dic, dic );
+	}
+	return TJS_S_OK;
+}
+TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/getFileProperty )
 //----------------------------------------------------------------------
 	TJS_END_NATIVE_MEMBERS
 }

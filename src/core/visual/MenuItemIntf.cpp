@@ -79,11 +79,11 @@ void TJS_INTF_METHOD tTJSNI_BaseMenuItem::Invalidate()
 	TVPCancelInputEvents(this);
 
 	{ // locked
-		tTJSSpinLockHolder holder(Children.Lock);
-		tjs_int count = Children.size();
+		tObjectListSafeLockHolder<tTJSNI_BaseMenuItem> holder(Children);
+		tjs_int count = Children.GetSafeLockedObjectCount();
 		for(tjs_int i = 0; i < count; i++)
 		{
-			tTJSNI_BaseMenuItem *item = Children.at(i);
+			tTJSNI_BaseMenuItem *item = Children.GetSafeLockedObjectAt(i);
 			if(!item) continue;
 
 			if(item->Owner)
@@ -92,7 +92,6 @@ void TJS_INTF_METHOD tTJSNI_BaseMenuItem::Invalidate()
 				item->Owner->Release();
 			}
 		}
-		Children.clear();
 	} // locked
 
 //	Owner = NULL;
@@ -178,12 +177,12 @@ iTJSDispatch2 * tTJSNI_BaseMenuItem::GetChildrenArrayNoAddRef()
 			// clear array
 
 		{ // locked
-			tTJSSpinLockHolder holder(Children.Lock);
-			tjs_int count = Children.size();
+			tObjectListSafeLockHolder<tTJSNI_BaseMenuItem> holder(Children);
+			tjs_int count = Children.GetSafeLockedObjectCount();
 			tjs_int itemcount = 0;
 			for(tjs_int i = 0; i < count; i++)
 			{
-				tTJSNI_BaseMenuItem *item = Children.at(i);
+				tTJSNI_BaseMenuItem *item = Children.GetSafeLockedObjectAt(i);
 				if(!item) continue;
 
 				iTJSDispatch2 * dsp = item->Owner;

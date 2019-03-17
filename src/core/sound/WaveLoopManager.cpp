@@ -662,7 +662,7 @@ void tTVPWaveLoopManager::GetLabelAt(tjs_int64 from, tjs_int64 to,
 	for(; s < (int)Labels.size(); s++)
 	{
 		if(Labels[s].Position >= from && Labels[s].Position < to)
-			labels.emplace_back(Labels[s]);
+			labels.push_back(Labels[s]);
 		else
 			break;
 	}
@@ -839,8 +839,6 @@ bool tTVPWaveLoopManager::EvalLabelExpression(const tTVPLabelStringType &label)
 		FlagsModifiedByLabelExpression = true;
 		Flags[lvalue] --;
 		break;
-	default:
-		break;
 	}
 
 	if(Flags[lvalue] < 0) Flags[lvalue] = 0;
@@ -1013,10 +1011,10 @@ bool tTVPWaveLoopManager::GetString(char *s, tTVPLabelStringType &v)
 		us[size] = TJS_W('\0');
 
 #ifdef TVP_IN_LOOP_TUNER
-		// convert us (an array of wchar_t) to AnsiString
+		// convert us (an array of tjs_char) to AnsiString
 		v = AnsiString(us);
 #else
-		// convert us (an array of wchar_t) to ttstr
+		// convert us (an array of tjs_char) to ttstr
 		v = ttstr(us);
 #endif
 
@@ -1225,7 +1223,7 @@ bool tTVPWaveLoopManager::ReadInformation(char * p)
 		if(!GetInt64(p_start  + 10, start )) return false;
 		link.From = start + length;
 		link.To = start;
-		Links.emplace_back(link);
+		Links.push_back(link);
 	}
 	else
 	{
@@ -1258,7 +1256,7 @@ bool tTVPWaveLoopManager::ReadInformation(char * p)
 				if(!*p) return false;
 				tTVPWaveLoopLink link;
 				if(!ReadLinkInformation(p, link)) return false;
-				Links.emplace_back(link);
+				Links.push_back(link);
 			}
 			else if(!strncasecmp(p, "Label", 5) && !isalpha(p[5]))
 			{
@@ -1267,7 +1265,7 @@ bool tTVPWaveLoopManager::ReadInformation(char * p)
 				if(!*p) return false;
 				tTVPWaveLabel label;
 				if(!ReadLabelInformation(p, label)) return false;
-				Labels.emplace_back(label);
+				Labels.push_back(label);
 			}
 			else
 			{
@@ -1281,12 +1279,6 @@ bool tTVPWaveLoopManager::ReadInformation(char * p)
 	}
 
 	return true; // done
-}
-
-bool tTVPWaveLoopManager::DesiredFormat(const tTVPWaveFormat & format) {
-	if (!Decoder->DesiredFormat(format)) return false;
-	SetDecoder(Decoder);
-	return true;
 }
 //---------------------------------------------------------------------------
 #ifdef TVP_IN_LOOP_TUNER

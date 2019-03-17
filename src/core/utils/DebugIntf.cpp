@@ -24,6 +24,7 @@
 
 #include "Application.h"
 #include "SystemControl.h"
+#include "NativeFile.h"
 //---------------------------------------------------------------------------
 // global variables
 //---------------------------------------------------------------------------
@@ -46,7 +47,7 @@ bool TVPLoggingToFile = false;
 static tjs_uint TVPLogToFileRollBack = 100;
 static ttstr *TVPImportantLogs = NULL;
 static ttstr TVPLogLocation;
-ttstr TVPNativeLogLocation;
+tjs_char TVPNativeLogLocation[MAX_PATH];
 //---------------------------------------------------------------------------
 
 
@@ -235,55 +236,65 @@ static void TVPRemoveLoggingHandler(tTJSVariantClosure clo)
 //---------------------------------------------------------------------------
 class tTVPLogStreamHolder
 {
-	FILE * Stream;
+	NativeFile Stream;
 	bool Alive;
 	bool OpenFailed;
 
 public:
-	tTVPLogStreamHolder() { Stream = NULL; Alive = true; OpenFailed = false; }
-	~tTVPLogStreamHolder() { if(Stream) fclose(Stream); Alive = false; }
+	tTVPLogStreamHolder() { Alive = true; OpenFailed = false; }
+	~tTVPLogStreamHolder() { Stream.Close(); Alive = false; }
 
 private:
-	void Open(const tjs_nchar *mode);
+	void Open(const tjs_char *mode);
 
 public:
 	void Clear(); // clear log stream
 	void Log(const ttstr & text); // log given text
 
-	void Reopen() { if(Stream) fclose(Stream); Stream = NULL; Alive = false; OpenFailed = false; } // reopen log stream
+	void Reopen() { Stream.Close(); Alive = false; OpenFailed = false; } // reopen log stream
 
 } static TVPLogStreamHolder;
 //---------------------------------------------------------------------------
-void tTVPLogStreamHolder::Open(const tjs_nchar *mode)
+static const tjs_char *WDAY[] = {
+		TJS_W("Sunday"), TJS_W("Monday"), TJS_W("Tuesday"), TJS_W("Wednesday"),
+		TJS_W("Thursday"), TJS_W("Friday"), TJS_W("Saturday")
+};
+//---------------------------------------------------------------------------
+static const tjs_char *MDAY[] = {
+		TJS_W("January"), TJS_W("February"), TJS_W("March"), TJS_W("April"), TJS_W("May"), TJS_W("June"),
+		TJS_W("July"), TJS_W("August"), TJS_W("September"), TJS_W("October"), TJS_W("November"),
+		TJS_W("December")
+};
+//---------------------------------------------------------------------------
+void tTVPLogStreamHolder::Open(const tjs_char *mode)
 {
 	if(OpenFailed) return; // no more try
 
 	try
 	{
-		ttstr filename;
+		tjs_char filename[MAX_PATH];
 		if(TVPLogLocation.GetLen() == 0)
 		{
-			Stream = NULL;
+			Stream.Close();
 			OpenFailed = true;
 		}
 		else
 		{
 			// no log location specified
-			filename = TVPNativeLogLocation + TJS_W("/krkr.console.log");
+			TJS_strcpy(filename, TVPNativeLogLocation);
+			TJS_strcat(filename, TJS_W("\\krkr.console.log"));
 			TVPEnsureDataPathDirectory();
-			std::string _filename = filename.AsNarrowStdString();
-			Stream = fopen(_filename.c_str(), mode);
-			if(!Stream) OpenFailed = true;
+			Stream.Open( filename, mode );
+			if(!Stream.IsOpen()) OpenFailed = true;
 		}
 
-		if(Stream)
+		if(Stream.IsOpen())
 		{
-			fseek(Stream, 0, SEEK_END);
-			if(ftell(Stream) == 0)
+			Stream.Seek(0, SEEK_END);
+			if(Stream.Tell() == 0)
 			{
 				// write BOM
-				// TODO: 32-bit unicode support
-				fwrite(TJS_N("\xff\xfe"), 1, 2, Stream); // indicate unicode text
+				Stream.Write( TJS_N("\xff\xfe"), 2 ); // indicate unicode text
 			}
 
 #ifdef TJS_TEXT_OUT_CRLF
@@ -295,13 +306,12 @@ void tTVPLogStreamHolder::Open(const tjs_nchar *mode)
 
 
 			static tjs_char timebuf[80];
-
-			tm *struct_tm;
-			time_t timer;
-			timer = time(&timer);
-
-			struct_tm = localtime(&timer);
-			TJS_strftime(timebuf, 79, TJS_W("%#c"), struct_tm);
+			{
+				time_t timer;
+				timer = time(&timer);
+				tm* t = localtime(&timer);
+				TJS_snprintf( timebuf, 79, TJS_W("%s, %s %02d, %04d %02d:%02d:%02d"), WDAY[t->tm_wday], MDAY[t->tm_mon], t->tm_mday, t->tm_year+1900, t->tm_hour, t->tm_min, t->tm_sec );
+			}
 
 			Log(ttstr(TJS_W("Logging to ")) + ttstr(filename) + TJS_W(" started on ") + timebuf);
 
@@ -316,42 +326,42 @@ void tTVPLogStreamHolder::Open(const tjs_nchar *mode)
 void tTVPLogStreamHolder::Clear()
 {
 	// clear log text
-	if(Stream) fclose(Stream);
+	Stream.Close();
 
-	Open(TJS_N("wb"));
+	Open(TJS_W("wb"));
 }
 //---------------------------------------------------------------------------
 void tTVPLogStreamHolder::Log(const ttstr & text)
 {
-	if(!Stream) Open(TJS_N("ab"));
+	if(!Stream.IsOpen()) Open(TJS_W("ab"));
 
 	try
 	{
-		if(Stream)
+		if(Stream.IsOpen())
 		{
 			size_t len = text.GetLen() * sizeof(tjs_char);
-			if(len != fwrite(text.c_str(), 1, len, Stream))
+			if( len != Stream.Write( text.c_str(), len) )
 			{
 				// cannot write
-				fclose(Stream);
+				Stream.Close();
 				OpenFailed = true;
 				return;
 			}
-	#ifdef TJS_TEXT_OUT_CRLF
-			fwrite(TJS_W("\r\n"), 1, 2 * sizeof(tjs_char), Stream);
-	#else
-			fwrite(TJS_W("\n"), 1, 1 * sizeof(tjs_char), Stream);
-	#endif
+#ifdef TJS_TEXT_OUT_CRLF
+			Stream.Write(TJS_W("\r\n"), 2 * sizeof(tjs_char) );
+#else
+			Stream.Write(TJS_W("\n"), 1 * sizeof(tjs_char) );
+#endif
 
 			// flush
-			fflush(Stream);
+			Stream.Flush();
 		}
 	}
 	catch(...)
 	{
 		try
 		{
-			if(Stream) fclose(Stream);
+			Stream.Close();
 		}
 		catch(...)
 		{
@@ -373,65 +383,68 @@ void tTVPLogStreamHolder::Log(const ttstr & text)
 //---------------------------------------------------------------------------
 void TVPAddLog(const ttstr &line, bool appendtoimportant)
 {
-// 	// add a line to the log.
-// 	// exceeded lines over TVPLogMaxLines are eliminated.
-// 	// this function is not thread-safe ...
+#if 0
+	// add a line to the log.
+	// exceeded lines over TVPLogMaxLines are eliminated.
+	// this function is not thread-safe ...
 
-// 	TVPEnsureLogObjects();
-// 	if(!TVPLogDeque) return; // log system is shuttingdown
-// 	if(!TVPImportantLogs) return; // log system is shuttingdown
+	TVPEnsureLogObjects();
+	if(!TVPLogDeque) return; // log system is shuttingdown
+	if(!TVPImportantLogs) return; // log system is shuttingdown
 
-// 	static time_t prevlogtime = 0;
-// 	static ttstr prevtimebuf;
-// 	static tjs_char timebuf[40];
+	static time_t prevlogtime = 0;
+	static ttstr prevtimebuf;
+	static tjs_char timebuf[40];
 
-// 	tm *struct_tm;
-// 	time_t timer;
-// 	timer = time(&timer);
+	tm *struct_tm;
+	time_t timer;
+	timer = time(&timer);
 
-// 	if(prevlogtime != timer)
-// 	{
-// 		struct_tm = localtime(&timer);
-// 		TJS_strftime(timebuf, 39, TJS_W("%H:%M:%S"), struct_tm);
-// 		prevlogtime = timer;
-// 		prevtimebuf = timebuf;
-// 	}
+	if(prevlogtime != timer)
+	{
+		struct_tm = localtime(&timer);
+		TJS_snprintf( timebuf, 39, TJS_W("%02d:%02d:%02d"), struct_tm->tm_hour, struct_tm->tm_min, struct_tm->tm_sec );
+		prevlogtime = timer;
+		prevtimebuf = timebuf;
+	}
 
-// 	TVPLogDeque->push_back(tTVPLogItem(line, prevtimebuf));
+	TVPLogDeque->push_back(tTVPLogItem(line, prevtimebuf));
 
-// 	if(appendtoimportant)
-// 	{
-// #ifdef TJS_TEXT_OUT_CRLF
-// 		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\r\n");
-// #else
-// 		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\n");
-// #endif
-// 	}
-// 	while(TVPLogDeque->size() >= TVPLogMaxLines+100)
-// 	{
-// 		std::deque<tTVPLogItem>::iterator i = TVPLogDeque->begin();
-// 		TVPLogDeque->erase(i, i+100);
-// 	}
+	if(appendtoimportant)
+	{
+#ifdef TJS_TEXT_OUT_CRLF
+		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\r\n");
+#else
+		*TVPImportantLogs += ttstr(timebuf) + TJS_W(" ! ") + line + TJS_W("\n");
+#endif
+	}
+	while(TVPLogDeque->size() >= TVPLogMaxLines+100)
+	{
+		std::deque<tTVPLogItem>::iterator i = TVPLogDeque->begin();
+		TVPLogDeque->erase(i, i+100);
+	}
 
-// 	tjs_int timebuflen = (tjs_int)TJS_strlen(timebuf);
-// 	ttstr buf((tTJSStringBufferLength)(timebuflen + 1 + line.GetLen()));
-// 	tjs_char * p = buf.Independ();
-// 	TJS_strcpy(p, timebuf);
-// 	p += timebuflen;
-// 	*p = TJS_W(' ');
-// 	p++;
-// 	TJS_strcpy(p, line.c_str());
-// 	if(TVPOnLog) TVPOnLog(buf);
-// #ifdef ENABLE_DEBUGGER
-// 	if( TJSEnableDebugMode ) TJSDebuggerLog(buf,appendtoimportant);
-// 	//OutputDebugStringW( buf.c_str() );
-// 	//OutputDebugStringW( L"\n" );
-// #endif	// ENABLE_DEBUGGER
+	tjs_int timebuflen = (tjs_int)TJS_strlen(timebuf);
+	ttstr buf((tTJSStringBufferLength)(timebuflen + 1 + line.GetLen()));
+	tjs_char * p = buf.Independ();
+	TJS_strcpy(p, timebuf);
+	p += timebuflen;
+	*p = TJS_W(' ');
+	p++;
+	TJS_strcpy(p, line.c_str());
+	if(TVPOnLog) TVPOnLog(buf);
+#ifdef ENABLE_DEBUGGER
+	if( TJSEnableDebugMode ) TJSDebuggerLog(buf,appendtoimportant);
+	//OutputDebugStringW( buf.c_str() );
+	//OutputDebugStringW( TJS_W("\n") );
+#endif	// ENABLE_DEBUGGER
 
-// 	Application->PrintConsole( buf, appendtoimportant );
+#ifdef TVP_LOG_TO_COMMANDLINE_CONSOLE
+	Application->PrintConsole( buf.c_str(), buf.length(), appendtoimportant );
+#endif
 
-// 	if(TVPLoggingToFile) TVPLogStreamHolder.Log(buf);
-
+	if(TVPLoggingToFile) TVPLogStreamHolder.Log(buf);
+#endif
 	Application->PrintConsole( line.c_str(), appendtoimportant );
 	Application->PrintConsole( "\n", appendtoimportant );
 }
@@ -570,14 +583,14 @@ void TVPSetLogLocation(const ttstr &loc)
 	ttstr native = TVPGetLocallyAccessibleName(TVPLogLocation);
 	if(native.IsEmpty())
 	{
-		TVPNativeLogLocation.Clear();
+		TVPNativeLogLocation[0] = 0;
 		TVPLogLocation.Clear();
 	}
 	else
 	{
-		TVPNativeLogLocation = native;
-		if (TVPNativeLogLocation[TVPNativeLogLocation.length() - 1] != TJS_W('/'))
-			TVPNativeLogLocation += TJS_W("/");
+		TJS_strcpy(TVPNativeLogLocation, native.AsStdString().c_str());
+		if(TVPNativeLogLocation[TJS_strlen(TVPNativeLogLocation)-1] != TJS_W('\\'))
+			TJS_strcat(TVPNativeLogLocation, TJS_W("\\"));
 	}
 
 	TVPLogStreamHolder.Reopen();
@@ -814,6 +827,17 @@ TJS_END_NATIVE_STATIC_PROP_DECL(clearLogFileOnError)
 #endif
 } // end of tTJSNC_Debug::tTJSNC_Debug
 //---------------------------------------------------------------------------
+tTJSNativeInstance *tTJSNC_Debug::CreateNativeInstance()
+{
+	return NULL;
+}
+//---------------------------------------------------------------------------
+tTJSNativeClass * TVPCreateNativeClass_Debug()
+{
+	tTJSNativeClass *cls = new tTJSNC_Debug();
+	return cls;
+}
+//---------------------------------------------------------------------------
 
 
 
@@ -841,7 +865,7 @@ class tTVPTJS2ConsoleOutputGateway : public iTJSConsoleOutput
 // TJS2 Dump Output Gateway
 //---------------------------------------------------------------------------
 static ttstr TVPDumpOutFileName;
-static FILE *TVPDumpOutFile = NULL; // use traditional output routine
+static NativeFile TVPDumpOutFile; // use traditional output routine
 //---------------------------------------------------------------------------
 class tTVPTJS2DumpOutputGateway : public iTJSConsoleOutput
 {
@@ -849,13 +873,13 @@ class tTVPTJS2DumpOutputGateway : public iTJSConsoleOutput
 
 	void Print(const tjs_char *msg)
 	{
-		if(TVPDumpOutFile)
+		if(TVPDumpOutFile.IsOpen())
 		{
-			fwrite(msg, 1, TJS_strlen(msg)*sizeof(tjs_char), TVPDumpOutFile);
+			TVPDumpOutFile.Write( msg, TJS_strlen(msg)*sizeof(tjs_char) );
 #ifdef TJS_TEXT_OUT_CRLF
-			fwrite(TJS_W("\r\n"), 1, 2 * sizeof(tjs_char), TVPDumpOutFile);
+			TVPDumpOutFile.Write( TJS_W("\r\n"), 2 * sizeof(tjs_char) );
 #else
-			fwrite(TJS_W("\n"), 1, 1 * sizeof(tjs_char), TVPDumpOutFile);
+			TVPDumpOutFile.Write( TJS_W("\n"), 1 * sizeof(tjs_char) );
 #endif
 		}
 	}
@@ -864,13 +888,19 @@ class tTVPTJS2DumpOutputGateway : public iTJSConsoleOutput
 void TVPTJS2StartDump()
 {
 #if 0
-	ttstr filename = ExePath() + TJS_W(".dump.txt");
+	tjs_char filename[MAX_PATH];
+#ifndef ANDROID
+	TJS_strcpy(filename, ExePath().c_str());
+#else
+	TJS_strcpy(filename, Application->GetInternalDataPath().c_str());
+#endif
+	TJS_strcat(filename, TJS_W(".dump.txt"));
 	TVPDumpOutFileName = filename;
-	TVPDumpOutFile = _wfopen(filename.c_str(), TJS_W("wb+"));
-	if(TVPDumpOutFile)
+	TVPDumpOutFile.Open(filename, TJS_W("wb+"));
+	if(TVPDumpOutFile.IsOpen())
 	{
 		// TODO: 32-bit unicode support
-		fwrite(TJS_N("\xff\xfe"), 1, 2, TVPDumpOutFile); // indicate unicode text
+		TVPDumpOutFile.Write( TJS_N("\xff\xfe"), 2 ); // indicate unicode text
 	}
 #endif
 }
@@ -878,9 +908,9 @@ void TVPTJS2StartDump()
 void TVPTJS2EndDump()
 {
 #if 0
-	if (TVPDumpOutFile)
+	if(TVPDumpOutFile.IsOpen())
 	{
-		fclose(TVPDumpOutFile), TVPDumpOutFile = NULL;
+		TVPDumpOutFile.Close();
 		TVPAddLog(ttstr(TJS_W("Dumped to ")) + TVPDumpOutFileName);
 	}
 #endif

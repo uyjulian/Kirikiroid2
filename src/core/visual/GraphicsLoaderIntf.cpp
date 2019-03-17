@@ -2124,6 +2124,7 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
     return ret;
 }
 //---------------------------------------------------------------------------
+#if 0
 #ifdef _MSC_VER
 extern "C"
 __declspec(dllimport) int __stdcall WideCharToMultiByte(
@@ -2142,7 +2143,7 @@ public:
 	struct tImgInfo {
 		ttstr filename;
 		tTVPGraphicHandlerType *handler;
-		tRefHolder<tTJSBinaryStream> Stream;
+		tTJSRefHolder<tTJSBinaryStream> Stream;
 		tImgInfo() : handler(nullptr) {}
 	};
 
@@ -2324,6 +2325,7 @@ private:
         return ret;
     }
 };
+#endif
 
 class tBitmapForAsyncTouch : public tTJSNI_Bitmap {
 	typedef tTJSNI_Bitmap inherit;

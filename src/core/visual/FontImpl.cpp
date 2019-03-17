@@ -1,3 +1,4 @@
+#include <string>
 #include "FontImpl.h"
 #include <ft2build.h>
 #include FT_TRUETYPE_IDS_H
@@ -25,8 +26,14 @@
 tTJSHashTable<ttstr, TVPFontNamePathInfo, tTVPttstrHash>
     TVPFontNames;
 static ttstr TVPDefaultFontName;
-const ttstr &TVPGetDefaultFontName() {
-	return TVPDefaultFontName;
+const tjs_char *TVPGetDefaultFontName() {
+	return ttstr(TVPDefaultFontName).AsStdString().c_str();
+}
+void TVPGetAllFontList(std::vector<tjs_string>& list) {
+	auto itend = TVPFontNames.GetLast();
+	for (auto it = TVPFontNames.GetFirst(); it != itend; ++it) {
+		list.push_back(it.GetKey().AsStdString());
+	}
 }
 void TVPGetAllFontList(std::vector<ttstr>& list) {
 	auto itend = TVPFontNames.GetLast();
@@ -287,7 +294,8 @@ void TVPInitFontNames()
 	}
 
 	if (TVPDefaultFontName.IsEmpty()) {
-		TVPShowSimpleMessageBox(("Could not found any font.\nPlease ensure that at least \"default.ttf\" exists"), "Exception Occured");
+		TVPAddLog(ttstr(TJS_W("WARNING: Can't find font")));
+		// TVPShowSimpleMessageBox(("Could not found any font.\nPlease ensure that at least \"default.ttf\" exists"), "Exception Occured");
     }
 }
 //---------------------------------------------------------------------------

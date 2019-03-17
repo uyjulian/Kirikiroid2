@@ -60,7 +60,7 @@ void tTJSInterCodeContext::Disassemble(
 			tjs_int nl = line - curline;
 			while(curline <= line)
 			{
-				if(nl<3 || (nl >= 3 && line-curline <= 2))
+				if(nl<3 || nl >= 3 && line-curline <= 2)
 				{
 					tjs_int len;
 					const tjs_char *src = Block->GetLine(curline, &len);
@@ -145,6 +145,7 @@ void tTJSInterCodeContext::Disassemble(
 		OP2_DISASM(VM_CLT,		"clt");
 		OP2_DISASM(VM_CGT,		"cgt");
 		OP2_DISASM(VM_CHKINS,	"chkins");
+		OP2_DISASM(VM_CHKIN,	"chkin");
 #undef OP2_DISASM
 
 
@@ -631,7 +632,7 @@ void tTJSInterCodeContext::Disassemble(tjs_int start, tjs_int end)
 	Disassemble(tTJSScriptBlock::GetConsoleOutput(), Block, start, end);
 }
 //---------------------------------------------------------------------------
-void tTJSInterCodeContext::DisassembleSrcLine(tjs_int codepos)
+void tTJSInterCodeContext::DisassenbleSrcLine(tjs_int codepos)
 {
 	tjs_int start = FindSrcLineStartCodePos(codepos);
 	Disassemble(start, codepos + 1);

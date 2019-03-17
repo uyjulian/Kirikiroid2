@@ -17,7 +17,7 @@
 #include "tjspp.tab.hpp"
 #include "tjsError.h"
 
-
+#include <ctype.h>
 
 namespace TJS
 {

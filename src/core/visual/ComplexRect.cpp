@@ -1207,14 +1207,12 @@ void tTVPComplexRect::RectangleSub(tTVPRegionRect *r, const tTVPRect *rr)
 }
 //---------------------------------------------------------------------------
 
-namespace TJS {
-	void TVPConsoleLog(const tjs_char *l);
-}
-#define OutputDebugString TVPConsoleLog
+
 //---------------------------------------------------------------------------
 void tTVPComplexRect::DumpChain()
 {
-	ttstr str;
+#ifdef _WIN32
+	tjs_string str;
 	tIterator it = GetIterator();
 	while(it.Step()) {
 		tjs_char tmp[200];
@@ -1222,6 +1220,7 @@ void tTVPComplexRect::DumpChain()
 		str += tmp;
 	}
 	OutputDebugString(str.c_str());
+#endif
 }
 //---------------------------------------------------------------------------
 

@@ -107,13 +107,14 @@ bool TVPGetBreathing()
 //---------------------------------------------------------------------------
 void TVPSetSystemEventDisabledState(bool en)
 {
-	TVPSystemControl->SetEventEnabled( !en );
-	if(!en) TVPDeliverAllEvents();
+	// TVPSystemControl->SetEventEnabled( !en );
+	// if(!en) TVPDeliverAllEvents();
 }
 //---------------------------------------------------------------------------
 bool TVPGetSystemEventDisabledState()
 {
-	return !TVPSystemControl->GetEventEnabled();
+	// return !TVPSystemControl->GetEventEnabled();
+	return false;
 }
 //---------------------------------------------------------------------------
 
@@ -158,13 +159,12 @@ public:
 
 //---------------------------------------------------------------------------
 tTVPContinuousHandlerCallLimitThread::tTVPContinuousHandlerCallLimitThread()
-	 : tTVPThread(true), EventQueue(this,&tTVPContinuousHandlerCallLimitThread::WndProc)
+	 : EventQueue(this,&tTVPContinuousHandlerCallLimitThread::WndProc)
 {
 	NextEventTick = 0;
 	Interval = (1<<TVP_SUBMILLI_FRAC_BITS)*1000/60; // default 60Hz
 	Enabled = false;
 	EventQueue.Allocate();
-	Resume();
 }
 //---------------------------------------------------------------------------
 
@@ -173,7 +173,6 @@ tTVPContinuousHandlerCallLimitThread::tTVPContinuousHandlerCallLimitThread()
 tTVPContinuousHandlerCallLimitThread::~tTVPContinuousHandlerCallLimitThread()
 {
 	Terminate();
-	Resume();
 	Event.Set();
 	WaitFor();
 	EventQueue.Deallocate();

@@ -29,8 +29,8 @@ tTJSNI_Pad::Construct(tjs_int numparams, tTJSVariant **param,
 	Form = new TTVPPadForm(Application);
 	Form->SetExecButtonEnabled(false);
 
-	// �R���X�g���N�^���N�����ꂽ���X�N���v�g�G�f�B�^�ł͂Ȃ��A�Ɣ��f����OK�H
-// �ۗ��ɂ��܂��B
+	// コンストラクタが起動された→スクリプトエディタではない、と判断してOK？
+// 保留にします。
 //	SetUserCreationMode(true);
 
 	return S_OK;

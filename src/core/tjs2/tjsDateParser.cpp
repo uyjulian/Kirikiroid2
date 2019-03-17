@@ -17,6 +17,7 @@
 
 #include "tjsError.h"
 
+#include <ctype.h>
 
 namespace TJS
 {
@@ -31,6 +32,7 @@ int dplex(YYSTYPE *yylex, void *pm)
 }
 int dpparse (void *YYPARSE_PARAM);
 //---------------------------------------------------------------------------
+
 
 
 

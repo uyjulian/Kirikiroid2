@@ -7579,7 +7579,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/loadImages)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 1) return TJS_E_BADPARAMCOUNT;
 	ttstr name(*param[0]);
-	tjs_uint32 key = clNone; // TODO Intf�Ȃ̂ɌŗL�l��
+	tjs_uint32 key = clNone; // TODO Intfなのに固有値が
 	if(numparams >=2 && param[1]->Type() != tvtVoid)
 		key = (tjs_uint32)param[1]->AsInteger();
 	iTJSDispatch2 * metainfo = _this->LoadImages(name, key);
@@ -11275,7 +11275,7 @@ TJS_END_NATIVE_PROP_DECL(angle)
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_PROP_DECL(faceIsFileName)
 {
-	// Face�����t�@�C�����Ƃ��ĊJ���AFreeType�ł̂ݗL���B�������A���̃��C���[��IME��L�������ꍇ����͕s��
+	// Face名をファイル名として開く、FreeTypeでのみ有効。ただし、そのレイヤーでIMEを有効した場合動作は不定
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
 		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Font);

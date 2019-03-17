@@ -18,7 +18,6 @@
 #include "MsgIntf.h"
 #include "ScriptMgnIntf.h"
 #include "TickCount.h"
-#include "SystemImpl.h"
 
 
 
@@ -153,8 +152,7 @@ public:
 
 	void Deliver() const
 	{
-		if (static_cast<tTJSNI_Window*>(Window)->GetVisible())
-			Window->UpdateContent();
+		Window->UpdateContent();
 	}
 
     tTJSNI_BaseWindow * GetWindow() const { return Window; }
@@ -588,6 +586,7 @@ void TVPDeliverAllEvents()
 	}
 
 	TVPEventInterrupting = false;
+
 	try
 	{
 	   try
@@ -630,6 +629,7 @@ void TVPDeliverAllEvents()
 
 			TVPDeliverContinuousEvent();
 		}
+
 		try
 		{
 		   try
@@ -640,7 +640,6 @@ void TVPDeliverAllEvents()
 			TJS_CONVERT_TO_TJS_EXCEPTION
 		}
 		TVP_CATCH_AND_SHOW_SCRIPT_EXCEPTION(TJS_W("window update"));
-	} else {
 	}
 
 	if(TVPEventQueue.size() == 0)
@@ -696,7 +695,7 @@ void TVPPostWindowUpdate(tTJSNI_BaseWindow *window)
 	}
 
 	// put into queue.
-	TVPWinUpdateEventQueue.emplace_back(window);
+	TVPWinUpdateEventQueue.push_back(tTVPWinUpdateEvent(window));
 
 	// make sure that the event is to be delivered.
 	TVPInvokeEvents();
@@ -1085,7 +1084,7 @@ void TVPAddContinuousHandler(tTJSVariantClosure clo)
 	{
 		TVPBeginContinuousEvent();
 		clo.AddRef();
-		TVPContinuousHandlerVector.emplace_back(clo);
+		TVPContinuousHandlerVector.push_back(clo);
 	}
 }
 //---------------------------------------------------------------------------
@@ -1116,7 +1115,6 @@ void TVPRemoveContinuousHandler(tTJSVariantClosure clo)
 // or etc ...
 //---------------------------------------------------------------------------
 static std::vector<tTVPCompactEventCallbackIntf *> TVPCompactEventVector;
-bool TVPEnableGlobalHeapCompaction = false;
 //---------------------------------------------------------------------------
 void TVPAddCompactEventHook(tTVPCompactEventCallbackIntf *cb)
 {
@@ -1134,7 +1132,6 @@ void TVPRemoveCompactEventHook(tTVPCompactEventCallbackIntf *cb)
 	}
 }
 //---------------------------------------------------------------------------
-extern void TVPDoSaveSystemVariables();
 void TVPDeliverCompactEvent(tjs_int level)
 {
 	// must be called by each platforms's implementation
@@ -1173,20 +1170,6 @@ void TVPDeliverCompactEvent(tjs_int level)
 			}
 		}
 	}
-	TVPDoSaveSystemVariables();
-#if 0
-	if( level >= TVP_COMPACT_LEVEL_MAX && TVPEnableGlobalHeapCompaction )
-	{	// Do compact CRT and Global Heap
-		HANDLE hHeap = ::GetProcessHeap();
-		if( hHeap ) {
-			::HeapCompact( hHeap, 0 );
-		}
-		HANDLE hCrtHeap = (HANDLE)_get_heap_handle();
-		if( hCrtHeap && hCrtHeap != hHeap ) {
-			::HeapCompact( hCrtHeap, 0 );
-		}
-	}
-#endif
 }
 //---------------------------------------------------------------------------
 

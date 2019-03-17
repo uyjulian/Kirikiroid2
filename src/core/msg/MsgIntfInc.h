@@ -154,4 +154,6 @@ TVP_MSG_DEFINE(TVPInvalidHeaderVersion, "Invalid header version.")
 TVP_MSG_DEFINE(TVPTlgInsufficientMemory, "SaveTLG6: Insufficient memory")
 TVP_MSG_DEFINE(TVPTlgTooLargeBitLength, "SaveTLG6: Too large bit length (given image may be too large)")
 TVP_MSG_DEFINE(TVPCannotRetriveInterfaceFromDrawDevice, "Could not retrive interface from given draw device")
+TVP_MSG_DEFINE(TVPIllegalCharacterConversionUTF16toUTF8, "Illegal character conversion. UTF-16 to UTF-8.")
+TVP_MSG_DEFINE(TVPRequireLayerTreeOwnerInterfaceInterface, "require layerTreeOwnerInterface interface")
 #endif
