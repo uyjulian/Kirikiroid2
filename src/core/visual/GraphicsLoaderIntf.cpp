@@ -29,9 +29,9 @@
 #include "ScriptMgnIntf.h"
 #include "RenderManager.h"
 // #include "ConfigManager/LocaleConfigManager.h"
-#include <mutex>
-#include <thread>
-#include <condition_variable>
+// #include <mutex>
+// #include <thread>
+// #include <condition_variable>
 #include "Application.h"
 #include "BitmapIntf.h"
 #include "GraphicsLoadThread.h"

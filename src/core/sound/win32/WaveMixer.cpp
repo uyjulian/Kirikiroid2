@@ -120,12 +120,13 @@ public:
 		_volume_raw[2] = _volume_raw[0]; // for SIMD
 		_volume_raw[3] = _volume_raw[1];
 	}
-	std::mutex _buffer_mtx;
+	SDL_mutex *_buffer_mtx;
 	std::deque<std::vector<uint8_t> > _buffers;
 	tjs_uint _sendedFrontBuffer = 0;
 	tjs_uint _sendedSamples = 0, _inCachedSamples = 0;
 
 	tTVPSoundBuffer(int framesize, SDL_AudioCVT *cvt) : _frame_size(framesize), _cvt(cvt) {
+		_buffer_mtx = SDL_CreateMutex();
 		RecalcVolume();
 		if (cvt) {
 			_cvtbuf.resize(/*2352*/ 2400 * 2 * 4 * _cvt->len_mult); // IEEE f.32 stereo 48000kHz
@@ -145,11 +146,12 @@ public:
 		Reset();
 	}
 	virtual void Reset() override {
-		std::lock_guard<std::mutex> lk(_buffer_mtx);
+		SDL_LockMutex(_buffer_mtx);
 		_buffers.clear();
 		_inCachedSamples = 0;
 		_sendedFrontBuffer = 0;
 		_sendedSamples = 0;
+		SDL_UnlockMutex(_buffer_mtx);
 	}
 	virtual bool IsPlaying() override {
 		return _playing;
@@ -184,14 +186,16 @@ public:
 				SDL_ConvertAudio(_cvt);
 				buffer.insert(buffer.end(), _cvt->buf, _cvt->buf + _cvt->len_cvt);
 			}
-			std::lock_guard<std::mutex> lk(_buffer_mtx);
+			SDL_LockMutex(_buffer_mtx);
 			_inCachedSamples += buffer.size() / _frame_size;
 			_buffers.emplace_back();
 			_buffers.back().swap(buffer);
+			SDL_UnlockMutex(_buffer_mtx);
 		} else {
-			std::lock_guard<std::mutex> lk(_buffer_mtx);
+			SDL_LockMutex(_buffer_mtx);
 			_buffers.emplace_back((uint8_t*)_inbuf, ((uint8_t*)_inbuf) + inlen);
 			_inCachedSamples += inlen / _frame_size;
+			SDL_UnlockMutex(_buffer_mtx);
 		}
 	}
 	virtual bool IsBufferValid() override {
@@ -214,12 +218,13 @@ public:
 class iTVPAudioRenderer {
 protected:
 	SDL_AudioSpec _spec;
-	std::mutex _streams_mtx;
+	SDL_mutex *_streams_mtx;
 	std::unordered_set<tTVPSoundBuffer*> _streams;
 	int _frame_size = 0;
 
 public:
 	iTVPAudioRenderer() {
+		_streams_mtx = SDL_CreateMutex();
 		memset(&_spec, 0, sizeof(_spec));
 		_spec.freq = 48000;
 		_spec.format = AUDIO_S16;
@@ -231,6 +236,9 @@ public:
 		_spec.userdata = this;
 		_spec.size = 4;
 		_frame_size = 4;
+	}
+	virtual ~iTVPAudioRenderer() {
+		SDL_DestroyMutex(_streams_mtx);
 	}
 	void InitMixer() {
 		if (SDL_Init(SDL_INIT_AUDIO) < 0) { // for format converter
@@ -282,22 +290,25 @@ public:
 		}
 
 		tTVPSoundBuffer* s = new tTVPSoundBuffer(fmt.BytesPerSample * fmt.Channels, cvt);
-		std::lock_guard<std::mutex> lk(_streams_mtx);
+		SDL_LockMutex(_streams_mtx);
 		_streams.emplace(s);
+		SDL_UnlockMutex(_streams_mtx);
 		return s;
 	}
 
 	void ReleaseStream(tTVPSoundBuffer* s) {
-		std::lock_guard<std::mutex> lk(_streams_mtx);
+		SDL_LockMutex(_streams_mtx);
 		_streams.erase(s);
+		SDL_UnlockMutex(_streams_mtx);
 	}
 
 	void FillBuffer(Uint8 *buf, int len) {
 		// memset(buf, 0, len);
-		std::lock_guard<std::mutex> lk(_streams_mtx);
+		SDL_LockMutex(_streams_mtx);
 		for (tTVPSoundBuffer* s : _streams) {
 			s->FillBuffer(buf, len);
 		}
+		SDL_UnlockMutex(_streams_mtx);
 	}
 
 	int MixAudio(uint8_t *dst, uint8_t *src, int len, int16_t *vol) {
@@ -317,6 +328,7 @@ tTVPSoundBuffer::~tTVPSoundBuffer()
 {
 	Stop();
 	TVPAudioRenderer->ReleaseStream(this);
+	SDL_DestroyMutex(_buffer_mtx);
 	if (_cvt) delete _cvt;
 }
 
@@ -341,7 +353,7 @@ float tTVPSoundBuffer::GetLatencySeconds()
 void tTVPSoundBuffer::FillBuffer(uint8_t *out, int len)
 {
 	if (!_playing) return;
-	std::lock_guard<std::mutex> lk(_buffer_mtx);
+	SDL_LockMutex(_buffer_mtx);
 	while (len > 0 && !_buffers.empty()) {
 		std::vector<uint8_t> &buf = _buffers.front();
 		if (buf.size() > _sendedFrontBuffer) {
@@ -358,6 +370,7 @@ void tTVPSoundBuffer::FillBuffer(uint8_t *out, int len)
 			_buffers.pop_front();
 		}
 	}
+	SDL_UnlockMutex(_buffer_mtx);
 }
 
 class tTVPAudioRendererSDL : public iTVPAudioRenderer {

@@ -6,9 +6,9 @@
 #include "tjsString.h"
 #include <vector>
 #include <functional>
-#include <mutex>
 #include <tuple>
 #include <map>
+#include <SDL.h>
 
 ttstr ExePath();
 
@@ -189,7 +189,7 @@ public:
 	void RegisterActiveEvent(void *host, const std::function<void(void*, eTVPActiveEvent)>& func/*empty = unregister*/);
 
 private:
-	std::mutex m_msgQueueLock;
+	SDL_mutex *m_msgQueueLock;
 
 	std::vector<std::tuple<void*, int, tMsg> > m_lstUserMsg;
 	std::map<void*, std::function<void(void*, eTVPActiveEvent)> > m_activeEvents;

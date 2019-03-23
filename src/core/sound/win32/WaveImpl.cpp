@@ -1490,8 +1490,8 @@ tTJSCriticalSection TVPWaveSoundBufferVectorCS;
 class tTVPWaveSoundBufferThread : public tTVPThread
 {
 	tTVPThreadEvent Event;
-	std::mutex SuspendMutex;
-	bool SuspendThread;
+	// std::mutex SuspendMutex;
+	// bool SuspendThread;
 
 	bool PendingLabelEventExists;
 	bool WndProcToBeCalled;
@@ -1506,16 +1506,16 @@ public:
 private:
 	void UtilWndProc( NativeEvent& ev );
 
-	void SetSuspend()
-	{
-		std::lock_guard<std::mutex> lock( SuspendMutex );
-		SuspendThread = true;
-	}
-	void ResetSuspend()
-	{
-		std::lock_guard<std::mutex> lock( SuspendMutex );
-		SuspendThread = false;
-	}
+	// void SetSuspend()
+	// {
+	// 	std::lock_guard<std::mutex> lock( SuspendMutex );
+	// 	SuspendThread = true;
+	// }
+	// void ResetSuspend()
+	// {
+	// 	std::lock_guard<std::mutex> lock( SuspendMutex );
+	// 	SuspendThread = false;
+	// }
 
 public:
 	void ReschedulePendingLabelEvent(tjs_int tick);
@@ -1539,7 +1539,8 @@ void TVPUnlockSoundMixer() {
 //---------------------------------------------------------------------------
 tTVPWaveSoundBufferThread::tTVPWaveSoundBufferThread()
 	: EventQueue(this,&tTVPWaveSoundBufferThread::UtilWndProc),
-	SuspendThread( false ), PendingLabelEventExists( false ),
+	// SuspendThread( false ), 
+	PendingLabelEventExists( false ),
 	NextLabelEventTick( 0 ), LastFilledTick( 0 ), WndProcToBeCalled( false )
 {
 	EventQueue.Allocate();
@@ -1551,7 +1552,7 @@ tTVPWaveSoundBufferThread::~tTVPWaveSoundBufferThread()
 {
 	SetPriority(ttpNormal);
 	Terminate();
-	ResetSuspend();
+	// ResetSuspend();
 	Event.Set();
 	WaitFor();
 	EventQueue.Deallocate();

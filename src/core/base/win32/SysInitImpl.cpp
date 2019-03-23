@@ -48,7 +48,7 @@
 #undef IID
 #endif
 #define uint32_t unsigned int
-#include <thread>
+// #include <thread>
 #undef uint32_t
 #include "Platform.h"
 // #include "ConfigManager/IndividualConfigManager.h"
@@ -889,8 +889,8 @@ static void TVPInitRandomGenerator()
 #endif
 	tjs_uint32 tick = TVPGetRoughTickCount32();
 	TVPPushEnvironNoise(&tick, sizeof(tick));
-	std::thread::id tid = std::this_thread::get_id();
-	TVPPushEnvironNoise(&tid, sizeof(tid));
+	// std::thread::id tid = std::this_thread::get_id();
+	// TVPPushEnvironNoise(&tid, sizeof(tid));
 	time_t curtime = time(NULL);
 	TVPPushEnvironNoise(&curtime, sizeof(curtime));
 }

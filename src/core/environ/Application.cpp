@@ -27,7 +27,7 @@
 #include "GraphicsLoadThread.h"
 #include "Platform.h"
 #include "EventIntf.h"
-#include <thread>
+// #include <thread>
 // #include "ConfigManager/LocaleConfigManager.h"
 #include "StorageIntf.h"
 // extern "C" {
@@ -553,6 +553,7 @@ extern void TVPLoadPluigins(void);
 bool tTVPApplication::StartApplication(ttstr path) {
 //	_set_se_translator(se_translator_function);
 
+
 	ArgC = 0;
 	ArgV = nullptr;
 #if 0
@@ -563,6 +564,7 @@ bool tTVPApplication::StartApplication(ttstr path) {
 	}
 #endif
 	TVPTerminateCode = 0;
+	m_msgQueueLock = SDL_CreateMutex();
 	// LocaleConfigManager *mgr = LocaleConfigManager::GetInstance();
 	// _retry = "Retry";
 	// _cancel = "Cancel";
@@ -826,9 +828,9 @@ void tTVPApplication::Run() {
 void tTVPApplication::ProcessMessages()
 {
 	std::vector<std::tuple<void*, int, tMsg> > lstUserMsg;
-	{
-		std::lock_guard<std::mutex> cs(m_msgQueueLock);
+	if (SDL_LockMutex(m_msgQueueLock) == 0) {
 		m_lstUserMsg.swap(lstUserMsg);
+		SDL_UnlockMutex(m_msgQueueLock);
 	}
 	for (std::tuple<void*, int, tMsg>& it : lstUserMsg) {
 		std::get<2>(it)();
@@ -1006,14 +1008,18 @@ void tTVPApplication::CheckDigitizer() {
 
 void tTVPApplication::PostUserMessage(const std::function<void()> &func, void* host, int msg)
 {
-	std::lock_guard<std::mutex> cs(m_msgQueueLock);
-	m_lstUserMsg.emplace_back(host, msg, func);
+	if (SDL_LockMutex(m_msgQueueLock) == 0) {
+		m_lstUserMsg.emplace_back(host, msg, func);
+		SDL_UnlockMutex(m_msgQueueLock);
+	}
 }
 
 void tTVPApplication::FilterUserMessage(const std::function<void(std::vector<std::tuple<void*, int, tMsg> > &)> &func)
 {
-	std::lock_guard<std::mutex> cs(m_msgQueueLock);
-	func(m_lstUserMsg);
+	if (SDL_LockMutex(m_msgQueueLock) == 0) {
+		func(m_lstUserMsg);
+		SDL_UnlockMutex(m_msgQueueLock);
+	}
 }
 
 void tTVPApplication::OnActivate()

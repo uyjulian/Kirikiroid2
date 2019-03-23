@@ -1,7 +1,6 @@
 #pragma once
 #include "WaveIntf.h"
 #include <list>
-#include <mutex>
 
 #define TVPAL_BUFFER_COUNT 4
 
