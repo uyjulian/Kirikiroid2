@@ -23,7 +23,7 @@
 #include "DebugIntf.h"
 #include "tvpgl.h"
 #include "TickCount.h"
-#include "DetectCPU.h"
+// #include "DetectCPU.h"
 #include "UtilStreams.h"
 #include "tjsDictionary.h"
 #include "ScriptMgnIntf.h"
@@ -37,12 +37,6 @@
 #include "GraphicsLoadThread.h"
 #include <complex>
 #include <list>
-
-// void TVPLoadPVRv3(void* formatdata, void *callbackdata,
-// 	tTVPGraphicSizeCallback sizecallback, tTVPGraphicScanLineCallback scanlinecallback,
-// 	tTVPMetaInfoPushCallback metainfopushcallback, tTJSBinaryStream *src, tjs_int keyidx,
-// 	tTVPGraphicLoadMode mode);
-// void TVPLoadHeaderPVRv3(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic);
 
 static void TVPLoadGraphicRouter(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
@@ -73,11 +67,6 @@ static void TVPLoadGraphicRouter(void* formatdata, void *callbackdata, tTVPGraph
 			return CALL_LOAD_FUNC(TVPLoadJPEG);
 		}
 #endif
-#ifdef TVP_IMAGE_ENABLE_BPG
-		if (!memcmp(header, "BPG", 3)) {
-			return CALL_LOAD_FUNC(TVPLoadBPG);
-		}
-#endif
 #ifdef TVP_IMAGE_ENABLE_WEBP
 		if (!memcmp(header, "RIFF", 4) && !memcmp(header + 8, "WEBPVP8", 7)) {
 			return CALL_LOAD_FUNC(TVPLoadWEBP);
@@ -88,9 +77,6 @@ static void TVPLoadGraphicRouter(void* formatdata, void *callbackdata, tTVPGraph
 			return CALL_LOAD_FUNC(TVPLoadJXR);
 		}
 #endif
-		// if (!memcmp(header, "PVR\3", 4)) {
-		// 	return CALL_LOAD_FUNC(TVPLoadPVRv3);
-		// }
 #undef CALL_LOAD_FUNC
 	}
 	TVPThrowExceptionMessage(TVPImageLoadError, TJS_W("Invalid image"));
@@ -121,11 +107,6 @@ static void TVPLoadHeaderRouter(void* formatdata, tTJSBinaryStream *src, iTJSDis
 		if (!memcmp(header, "\xFF\xD8\xFF", 3) &&
 			header[3] >= 0xE0 && header[3] <= 0xEF) {
 			return CALL_LOAD_FUNC(TVPLoadHeaderJPG);
-		}
-#endif
-#ifdef TVP_IMAGE_ENABLE_BPG
-		if (!memcmp(header, "BPG", 3)) {
-			return CALL_LOAD_FUNC(TVPLoadHeaderBPG);
 		}
 #endif
 #ifdef TVP_IMAGE_ENABLE_WEBP
@@ -185,15 +166,9 @@ public:
 	tTVPGraphicType()
 	{
 		// register some native-supported formats
-		// Handlers.push_back(tTVPGraphicHandlerType(
-		// 	TJS_W(".pvr"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));
 #ifdef TVP_IMAGE_ENABLE_JXR
 		Handlers.push_back(tTVPGraphicHandlerType(
 			TJS_W(".jxr"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsJXR, TVPAcceptSaveAsJXR, NULL));
-#endif
-#ifdef TVP_IMAGE_ENABLE_BPG
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".bpg"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));
 #endif
 #ifdef TVP_IMAGE_ENABLE_WEBP
 		Handlers.push_back(tTVPGraphicHandlerType(
@@ -1926,21 +1901,6 @@ static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
 	return data.Dest;
 }
 //---------------------------------------------------------------------------
-iTVPTexture2D* TVPLoadPVRv3(tTJSBinaryStream *s, const std::function<void(const ttstr&, const tTJSVariant&)> &cb);
-// static iTVPTexture2D *TVPInternalLoadTexture(const ttstr &_name,
-// 	std::vector<tTVPGraphicMetaInfoPair> * * MetaInfo, ttstr *provincename) {
-// 	ttstr name(_name), maskname;
-// 	tTVPGraphicHandlerType * handler = TVPFindGraphicLoadHandler(name, &maskname, provincename);
-// 	if (!maskname.IsEmpty()) {
-// 		// mask merge is not supported
-// 		return nullptr;
-// 	}
-// 	tTVPStreamHolder holder(name);
-// 	return TVPLoadPVRv3(holder.Get(), [MetaInfo](const ttstr& k, const tTJSVariant& v) {
-// 		if (!*MetaInfo) *MetaInfo = new std::vector<tTVPGraphicMetaInfoPair>;
-// 		(*MetaInfo)->emplace_back(k, v);
-// 	});
-// }
 
 void TVPLoadGraphicProvince(tTVPBaseBitmap *dest, const ttstr &name, tjs_int keyidx,
     tjs_uint desw, tjs_uint desh)
@@ -2057,9 +2017,6 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 	{
 		tTVPBitmap *bmp = nullptr;
 		iTVPTexture2D *texture = nullptr;
-		// if (mode == glmNormal && keyidx == TVP_clNone && !desw && !desh) {
-		// 	texture = TVPInternalLoadTexture(nname, &mi, &pn);
-		// }
 		if (!texture) {
 			bmp = TVPInternalLoadBitmap(nname, keyidx, desw, desh, &mi, mode, &pn);
 		}

@@ -27,13 +27,13 @@
 #include "tjsLex.h"
 #include "LayerIntf.h"
 #include "Random.h"
-#include "DetectCPU.h"
+// #include "DetectCPU.h"
 #ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
 #endif
 #include "ScriptMgnIntf.h"
 //#include "VersionFormUnit.h"
-#include "EmergencyExit.h"
+// #include "EmergencyExit.h"
 
 //#include "tvpgl_ia32_intf.h"
 
@@ -1272,7 +1272,6 @@ static void TVPDumpOptions();
 //---------------------------------------------------------------------------
 extern bool TVPEnableGlobalHeapCompaction;
 extern void TVPGL_SSE2_Init();
-extern "C" void TVPGL_ASM_Init();
 extern bool TVPAutoSaveBookMark;
 static bool TVPHighTimerPeriod = false;
 static uint32_t TVPTimeBeginPeriodRes = 0;
@@ -1396,7 +1395,6 @@ void TVPAfterSystemInit()
 #endif
 	TVPGL_SSE2_Init();
 #endif
-	// TVPGL_ASM_Init();
 
 	// timer precision
 	uint32_t prectick = 1;

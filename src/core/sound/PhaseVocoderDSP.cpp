@@ -42,7 +42,7 @@
 #include "tjsUtils.h"
 
 //#include "tvpgl_ia32_intf.h"
-#include "DetectCPU.h"
+// #include "DetectCPU.h"
 
 extern void InterleaveOverlappingWindow(float * __restrict dest, const float * __restrict const * __restrict src,
 	float * __restrict win, int numch, size_t srcofs, size_t len);

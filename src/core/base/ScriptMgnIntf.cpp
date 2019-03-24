@@ -47,7 +47,7 @@
 #include "ImageFunction.h"
 #include "BitmapIntf.h"
 #include "tjsScriptBlock.h"
-#include "ApplicationSpecialPath.h"
+// #include "ApplicationSpecialPath.h"
 #include "SystemImpl.h"
 #include "BitmapLayerTreeOwner.h"
 #include "Extension.h"

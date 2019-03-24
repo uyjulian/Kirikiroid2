@@ -83,7 +83,7 @@ tjs_uint8 TVP_GUID_KSDATAFORMAT_SUBTYPE_IEEE_FLOAT[16] =
 //---------------------------------------------------------------------------
 
 
-#include "DetectCPU.h"
+// #include "DetectCPU.h"
 //#include "tvpgl_ia32_intf.h"
 
 //---------------------------------------------------------------------------

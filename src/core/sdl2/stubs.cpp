@@ -10,7 +10,7 @@
 #include "Random.h"
 #include "UtilStreams.h"
 #include "vkdefine.h"
-#include "ConfigManager/IndividualConfigManager.h"
+// #include "ConfigManager/IndividualConfigManager.h"
 #include "Platform.h"
 #include "Application.h"
 #include "ScriptMgnIntf.h"
@@ -20,7 +20,7 @@
 #include "RenderManager.h"
 #include "VideoOvlIntf.h"
 #include "Exception.h"
-#include "win32/SystemControl.h"
+// #include "win32/SystemControl.h"
 #include "win32/MenuItemImpl.h"
 #include <sys/time.h>
 #include <time.h>
@@ -552,9 +552,9 @@ public:
 	}
 	virtual void TickBeat() override {
 	}
-	virtual cocos2d::Node *GetPrimaryArea() override {
-		return NULL;
-	}
+	// virtual cocos2d::Node *GetPrimaryArea() override {
+	// 	return NULL;
+	// }
 	Sint32 mouseLastX = 0;
 	Sint32 mouseLastY = 0;
 	void sdlRecvEvent(SDL_Event event) {

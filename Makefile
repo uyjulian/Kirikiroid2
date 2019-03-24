@@ -1,22 +1,17 @@
 
 ##### OPTIONS #####
 TVP_IMAGE_ENABLE_WEBP ?= 1
-TVP_IMAGE_ENABLE_BPG ?=
 TVP_IMAGE_ENABLE_BMP ?= 1
 TVP_IMAGE_ENABLE_TLG ?= 1
 TVP_IMAGE_ENABLE_PNG ?= 1
-TVP_IMAGE_ENABLE_JPEG ?=
-TVP_IMAGE_ENABLE_JXR ?=
+TVP_IMAGE_ENABLE_JPEG ?= 1
+TVP_IMAGE_ENABLE_JXR ?= 1
 TVP_AUDIO_ENABLE_WAVE ?= 1
 TVP_AUDIO_ENABLE_OPUS ?= 1
 TVP_AUDIO_ENABLE_VORBIS ?= 1
 TVP_AUDIO_ENABLE_FFMPEG ?=
-TVP_ARCHIVE_ENABLE_ZIP ?=
-TVP_ARCHIVE_ENABLE_7Z ?=
-TVP_ARCHIVE_ENABLE_TAR ?=
 TVP_ARCHIVE_ENABLE_XP3 ?=
 TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION ?=
-TVP_RENDERER_ENABLE_OPENGL ?=
 CC = clang
 CXX = clang++
 AR = 
@@ -45,7 +40,6 @@ CFLAGS += -Isrc/core/tjs2
 CFLAGS += -Isrc/core/utils
 CFLAGS += -Isrc/core/utils/win32
 CFLAGS += -Isrc/core/visual
-CFLAGS += -Isrc/core/visual/ARM
 CFLAGS += -Isrc/core/visual/win32
 CFLAGS += -Isrc/plugins
 
@@ -74,13 +68,6 @@ ifdef TVP_IMAGE_ENABLE_WEBP
 	CFLAGS += -I/usr/local/opt/webp/include
 	LDFLAGS += -L/usr/local/opt/webp/lib
 	LDLIBS += -lwebp
-endif
-
-ifdef TVP_IMAGE_ENABLE_BPG
-	CFLAGS += -DTVP_IMAGE_ENABLE_BPG
-	CFLAGS += -I/usr/local/opt/libbpg/include
-	LDFLAGS += -I/usr/local/opt/libbpg/lib
-	LDLIBS += -lbpg
 endif
 
 ifdef TVP_IMAGE_ENABLE_BMP
@@ -144,34 +131,16 @@ ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
 	LDLIBS += -lxxhash -llz4
 endif
 
-ifdef TVP_RENDERER_ENABLE_OPENGL
-	CFLAGS += -DTVP_RENDERER_ENABLE_OPENGL -DGL_SILENCE_DEPRECATION
-	CFLAGS += -framework OpenGL
-	LDLIBS += -framework OpenGL
-endif
-
-ifdef TVP_ARCHIVE_ENABLE_ZIP
-	CFLAGS += -DTVP_ARCHIVE_ENABLE_ZIP
-endif
-
-ifdef TVP_ARCHIVE_ENABLE_7Z
-	CFLAGS += -DTVP_ARCHIVE_ENABLE_7Z
-endif
-
-ifdef TVP_ARCHIVE_ENABLE_TAR
-	CFLAGS += -DTVP_ARCHIVE_ENABLE_TAR
-endif
-
 ifdef TVP_ARCHIVE_ENABLE_XP3
 	CFLAGS += -DTVP_ARCHIVE_ENABLE_XP3
 endif
 
 %.o: %.c
-	echo -e "\tCC  $<"
+	@echo -e "\tCC  $<"
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 %.o: %.cpp
-	echo -e "\tCXX  $<"
+	@echo -e "\tCXX  $<"
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
 SOURCES := 
@@ -191,9 +160,6 @@ SOURCES += src/core/visual/LayerBitmapIntf.cpp
 SOURCES += src/core/visual/LayerIntf.cpp
 SOURCES += src/core/visual/LayerManager.cpp
 SOURCES += src/core/visual/LayerTreeOwnerImpl.cpp
-ifdef TVP_IMAGE_ENABLE_BPG
-SOURCES += src/core/visual/LoadBPG.cpp
-endif
 ifdef TVP_IMAGE_ENABLE_JPEG
 SOURCES += src/core/visual/LoadJPEG.cpp
 endif
@@ -203,7 +169,6 @@ endif
 ifdef TVP_IMAGE_ENABLE_PNG
 SOURCES += src/core/visual/LoadPNG.cpp
 endif
-# SOURCES += src/core/visual/LoadPVRv3.cpp
 ifdef TVP_IMAGE_ENABLE_TLG
 SOURCES += src/core/visual/LoadTLG.cpp
 endif
@@ -221,11 +186,7 @@ endif
 SOURCES += src/core/visual/TransIntf.cpp
 SOURCES += src/core/visual/VideoOvlIntf.cpp
 SOURCES += src/core/visual/WindowIntf.cpp
-# SOURCES += src/core/visual/argb.cpp
 SOURCES += src/core/visual/tvpgl.cpp
-ifdef TVP_ARCHIVE_ENABLE_7Z
-SOURCES += src/core/base/7zArchive.cpp
-endif
 SOURCES += src/core/base/BinaryStream.cpp
 SOURCES += src/core/base/CharacterSet.cpp
 SOURCES += src/core/base/EventIntf.cpp
@@ -234,16 +195,10 @@ SOURCES += src/core/base/ScriptMgnIntf.cpp
 SOURCES += src/core/base/StorageIntf.cpp
 SOURCES += src/core/base/SysInitIntf.cpp
 SOURCES += src/core/base/SystemIntf.cpp
-ifdef TVP_ARCHIVE_ENABLE_TAR
-SOURCES += src/core/base/TARArchive.cpp
-endif
 SOURCES += src/core/base/TextStream.cpp
 SOURCES += src/core/base/UtilStreams.cpp
 ifdef TVP_ARCHIVE_ENABLE_XP3
 SOURCES += src/core/base/XP3Archive.cpp
-endif
-ifdef TVP_ARCHIVE_ENABLE_ZIP
-SOURCES += src/core/base/ZIPArchive.cpp
 endif
 SOURCES += src/core/base/win32/EventImpl.cpp
 SOURCES += src/core/base/win32/FileSelector.cpp
@@ -255,71 +210,9 @@ SOURCES += src/core/base/android/GetLocalFileListAt.cpp
 SOURCES += src/core/base/win32/SysInitImpl.cpp
 SOURCES += src/core/base/win32/SystemImpl.cpp
 SOURCES += src/core/environ/Application.cpp
-# SOURCES += src/core/environ/DetectCPU.cpp
-# SOURCES += src/core/environ/DumpSend.cpp
-# SOURCES += src/core/environ/XP3ArchiveRepack.cpp
-# SOURCES += src/core/environ/cocos2d/AppDelegate.cpp
-# SOURCES += src/core/environ/cocos2d/CCKeyCodeConv.cpp
-# SOURCES += src/core/environ/cocos2d/CustomFileUtils.cpp
-# SOURCES += src/core/environ/cocos2d/MainScene.cpp
-# SOURCES += src/core/environ/cocos2d/YUVSprite.cpp
-# SOURCES += src/core/environ/android/AndroidUtils.cpp
 SOURCES += src/core/environ/android/SystemControl.cpp
-# SOURCES += src/core/environ/linux/Platform.cpp
-# SOURCES += src/core/environ/ui/BaseForm.cpp
-# SOURCES += src/core/environ/ui/ConsoleWindow.cpp
-# SOURCES += src/core/environ/ui/DebugViewLayerForm.cpp
-# SOURCES += src/core/environ/ui/FileSelectorForm.cpp
-# SOURCES += src/core/environ/ui/GameMainMenu.cpp
-# SOURCES += src/core/environ/ui/GlobalPreferenceForm.cpp
-# SOURCES += src/core/environ/ui/InGameMenuForm.cpp
-# SOURCES += src/core/environ/ui/IndividualPreferenceForm.cpp
-# SOURCES += src/core/environ/ui/MainFileSelectorForm.cpp
-# SOURCES += src/core/environ/ui/MessageBox.cpp
-# SOURCES += src/core/environ/ui/PreferenceForm.cpp
-# SOURCES += src/core/environ/ui/SeletListForm.cpp
-# SOURCES += src/core/environ/ui/SimpleMediaFilePlayer.cpp
-# SOURCES += src/core/environ/ui/TipsHelpForm.cpp
-# SOURCES += src/core/environ/ui/XP3RepackForm.cpp
-# SOURCES += src/core/environ/ui/extension/ActionExtension.cpp
-# SOURCES += src/core/environ/ui/extension/UIExtension.cpp
-# SOURCES += src/core/environ/win32/SystemControl.cpp
 SOURCES += src/core/extension/Extension.cpp
 SOURCES += src/core/movie/krmovie.cpp
-# SOURCES += src/core/movie/ffmpeg/AEChannelInfo.cpp
-# SOURCES += src/core/movie/ffmpeg/AEFactory.cpp
-# SOURCES += src/core/movie/ffmpeg/AEStreamInfo.cpp
-# SOURCES += src/core/movie/ffmpeg/AEUtil.cpp
-# SOURCES += src/core/movie/ffmpeg/AudioCodecFFmpeg.cpp
-# SOURCES += src/core/movie/ffmpeg/AudioCodecPassthrough.cpp
-# SOURCES += src/core/movie/ffmpeg/AudioDevice.cpp
-# SOURCES += src/core/movie/ffmpeg/BaseRenderer.cpp
-# SOURCES += src/core/movie/ffmpeg/BitstreamStats.cpp
-# SOURCES += src/core/movie/ffmpeg/Clock.cpp
-# SOURCES += src/core/movie/ffmpeg/CodecUtils.cpp
-# SOURCES += src/core/movie/ffmpeg/Demux.cpp
-# SOURCES += src/core/movie/ffmpeg/DemuxFFmpeg.cpp
-# SOURCES += src/core/movie/ffmpeg/DemuxPacket.cpp
-# SOURCES += src/core/movie/ffmpeg/FactoryCodec.cpp
-# SOURCES += src/core/movie/ffmpeg/InputStream.cpp
-# SOURCES += src/core/movie/ffmpeg/KRMovieLayer.cpp
-# SOURCES += src/core/movie/ffmpeg/KRMoviePlayer.cpp
-# SOURCES += src/core/movie/ffmpeg/Message.cpp
-# SOURCES += src/core/movie/ffmpeg/MessageQueue.cpp
-# SOURCES += src/core/movie/ffmpeg/ProcessInfo.cpp
-# SOURCES += src/core/movie/ffmpeg/RenderFlags.cpp
-# SOURCES += src/core/movie/ffmpeg/StreamInfo.cpp
-# SOURCES += src/core/movie/ffmpeg/TVPMediaDemux.cpp
-# SOURCES += src/core/movie/ffmpeg/Thread.cpp
-# SOURCES += src/core/movie/ffmpeg/TimeUtils.cpp
-# SOURCES += src/core/movie/ffmpeg/Timer.cpp
-# SOURCES += src/core/movie/ffmpeg/VideoCodec.cpp
-# SOURCES += src/core/movie/ffmpeg/VideoCodecFFmpeg.cpp
-# SOURCES += src/core/movie/ffmpeg/VideoPlayer.cpp
-# SOURCES += src/core/movie/ffmpeg/VideoPlayerAudio.cpp
-# SOURCES += src/core/movie/ffmpeg/VideoPlayerVideo.cpp
-# SOURCES += src/core/movie/ffmpeg/VideoReferenceClock.cpp
-# SOURCES += src/core/movie/ffmpeg/VideoRenderer.cpp
 ifdef TVP_AUDIO_ENABLE_FFMPEG
 SOURCES += src/core/movie/ffmpeg/krffmpeg.cpp
 endif
@@ -331,7 +224,6 @@ ifdef TVP_AUDIO_ENABLE_FFMPEG
 SOURCES += src/core/sound/FFWaveDecoder.cpp
 endif
 SOURCES += src/core/sound/MIDIIntf.cpp
-# SOURCES += src/core/sound/MathAlgorithms.cpp
 SOURCES += src/core/sound/PhaseVocoderDSP.cpp
 SOURCES += src/core/sound/PhaseVocoderFilter.cpp
 SOURCES += src/core/sound/SoundBufferBaseIntf.cpp
@@ -347,7 +239,7 @@ SOURCES += src/core/sound/win32/MIDIImpl.cpp
 SOURCES += src/core/sound/win32/SoundBufferBaseImpl.cpp
 SOURCES += src/core/sound/win32/WaveImpl.cpp
 SOURCES += src/core/sound/win32/WaveMixer.cpp
-SOURCES += src/core/sound/win32/tvpsnd.cpp
+# SOURCES += src/core/sound/win32/tvpsnd.cpp
 SOURCES += src/core/tjs2/tjs.cpp
 SOURCES += src/core/tjs2/tjs.tab.cpp
 SOURCES += src/core/tjs2/tjsArray.cpp
@@ -406,25 +298,10 @@ SOURCES += src/core/utils/uni_cp932.cpp
 SOURCES += src/core/utils/cp932_uni.cpp
 SOURCES += src/core/utils/encoding/gbk2unicode.c
 SOURCES += src/core/utils/encoding/jis2unicode.c
-# SOURCES += src/core/utils/minizip/unzip.c
-# SOURCES += src/core/utils/minizip/zip.c
-# SOURCES += src/core/utils/minizip/ioapi.cpp
 SOURCES += src/core/utils/win32/ClipboardImpl.cpp
-# SOURCES += src/core/utils/win32/DebugImpl.cpp
-# SOURCES += src/core/utils/win32/PadImpl.cpp
-# SOURCES += src/core/utils/win32/TVPTimer.cpp
-# SOURCES += src/core/utils/win32/ThreadImpl.cpp
-# SOURCES += src/core/utils/win32/TimerImpl.cpp
 SOURCES += src/core/visual/gl/ResampleImage.cpp
 SOURCES += src/core/visual/gl/WeightFunctor.cpp
 SOURCES += src/core/visual/gl/blend_function.cpp
-ifdef TVP_RENDERER_ENABLE_OPENGL
-SOURCES += src/core/visual/ogl/RenderManager_ogl.cpp
-endif
-# SOURCES += src/core/visual/ogl/astcrt.cpp
-# SOURCES += src/core/visual/ogl/etcpak.cpp
-# SOURCES += src/core/visual/ogl/imagepacker.cpp
-# SOURCES += src/core/visual/ogl/pvrtc.cpp
 SOURCES += src/core/visual/win32/BasicDrawDevice.cpp
 SOURCES += src/core/visual/win32/BitmapBitsAlloc.cpp
 SOURCES += src/core/visual/win32/BitmapInfomation.cpp
@@ -446,15 +323,11 @@ SOURCES += src/plugins/dirlist.cpp
 SOURCES += src/plugins/fftgraph.cpp
 SOURCES += src/plugins/getSample.cpp
 SOURCES += src/plugins/getabout.cpp
-# SOURCES += src/plugins/layerExMovie.cpp
 SOURCES += src/plugins/layerExPerspective.cpp
 SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
 SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
-ifdef TVP_ARCHIVE_ENABLE_XP3
-SOURCES += src/plugins/xp3filter.cpp
-endif
 SOURCES += src/plugins/ncbind/ncbind.cpp
 OBJECTS := $(SOURCES:.c=.o)
 OBJECTS := $(OBJECTS:.cpp=.o)

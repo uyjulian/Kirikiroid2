@@ -49,9 +49,10 @@ public:
 
 	bool ApplicationIdle();
 
+	void SystemWatchTimerTimer();
+
 private:
 	void DeliverEvents();
-	void SystemWatchTimerTimer();
 };
 extern tTVPSystemControl *TVPSystemControl;
 extern bool TVPSystemControlAlive;
