@@ -144,49 +144,6 @@ endif
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
 SOURCES := 
-SOURCES += src/core/sdl2/stubs.cpp
-SOURCES += src/core/visual/BitmapIntf.cpp
-SOURCES += src/core/visual/BitmapLayerTreeOwner.cpp
-SOURCES += src/core/visual/CharacterData.cpp
-SOURCES += src/core/visual/ComplexRect.cpp
-SOURCES += src/core/visual/FontImpl.cpp
-SOURCES += src/core/visual/FontSystem.cpp
-SOURCES += src/core/visual/FreeType.cpp
-SOURCES += src/core/visual/FreeTypeFontRasterizer.cpp
-SOURCES += src/core/visual/GraphicsLoadThread.cpp
-SOURCES += src/core/visual/GraphicsLoaderIntf.cpp
-SOURCES += src/core/visual/ImageFunction.cpp
-SOURCES += src/core/visual/LayerBitmapIntf.cpp
-SOURCES += src/core/visual/LayerIntf.cpp
-SOURCES += src/core/visual/LayerManager.cpp
-SOURCES += src/core/visual/LayerTreeOwnerImpl.cpp
-ifdef TVP_IMAGE_ENABLE_JPEG
-SOURCES += src/core/visual/LoadJPEG.cpp
-endif
-ifdef TVP_IMAGE_ENABLE_JXR
-SOURCES += src/core/visual/LoadJXR.cpp
-endif
-ifdef TVP_IMAGE_ENABLE_PNG
-SOURCES += src/core/visual/LoadPNG.cpp
-endif
-ifdef TVP_IMAGE_ENABLE_TLG
-SOURCES += src/core/visual/LoadTLG.cpp
-endif
-ifdef TVP_IMAGE_ENABLE_WEBP
-SOURCES += src/core/visual/LoadWEBP.cpp
-endif
-SOURCES += src/core/visual/MenuItemIntf.cpp
-SOURCES += src/core/visual/PrerenderedFont.cpp
-SOURCES += src/core/visual/RectItf.cpp
-SOURCES += src/core/visual/RenderManager.cpp
-ifdef TVP_IMAGE_ENABLE_TLG
-SOURCES += src/core/visual/SaveTLG5.cpp
-SOURCES += src/core/visual/SaveTLG6.cpp
-endif
-SOURCES += src/core/visual/TransIntf.cpp
-SOURCES += src/core/visual/VideoOvlIntf.cpp
-SOURCES += src/core/visual/WindowIntf.cpp
-SOURCES += src/core/visual/tvpgl.cpp
 SOURCES += src/core/base/BinaryStream.cpp
 SOURCES += src/core/base/CharacterSet.cpp
 SOURCES += src/core/base/EventIntf.cpp
@@ -197,39 +154,28 @@ SOURCES += src/core/base/SysInitIntf.cpp
 SOURCES += src/core/base/SystemIntf.cpp
 SOURCES += src/core/base/TextStream.cpp
 SOURCES += src/core/base/UtilStreams.cpp
-ifdef TVP_ARCHIVE_ENABLE_XP3
-SOURCES += src/core/base/XP3Archive.cpp
-endif
+SOURCES += src/core/base/android/GetLocalFileListAt.cpp
+SOURCES += src/core/base/android/StorageImpl.cpp
 SOURCES += src/core/base/win32/EventImpl.cpp
 SOURCES += src/core/base/win32/FileSelector.cpp
 SOURCES += src/core/base/win32/NativeEventQueue.cpp
 SOURCES += src/core/base/win32/PluginImpl.cpp
 SOURCES += src/core/base/win32/ScriptMgnImpl.cpp
-SOURCES += src/core/base/android/StorageImpl.cpp
-SOURCES += src/core/base/android/GetLocalFileListAt.cpp
 SOURCES += src/core/base/win32/SysInitImpl.cpp
 SOURCES += src/core/base/win32/SystemImpl.cpp
 SOURCES += src/core/environ/Application.cpp
 SOURCES += src/core/environ/android/SystemControl.cpp
 SOURCES += src/core/extension/Extension.cpp
 SOURCES += src/core/movie/krmovie.cpp
-ifdef TVP_AUDIO_ENABLE_FFMPEG
-SOURCES += src/core/movie/ffmpeg/krffmpeg.cpp
-endif
 SOURCES += src/core/msg/MsgIntf.cpp
 SOURCES += src/core/msg/win32/MsgImpl.cpp
 SOURCES += src/core/msg/win32/OptionsDesc.cpp
+SOURCES += src/core/sdl2/stubs.cpp
 SOURCES += src/core/sound/CDDAIntf.cpp
-ifdef TVP_AUDIO_ENABLE_FFMPEG
-SOURCES += src/core/sound/FFWaveDecoder.cpp
-endif
 SOURCES += src/core/sound/MIDIIntf.cpp
 SOURCES += src/core/sound/PhaseVocoderDSP.cpp
 SOURCES += src/core/sound/PhaseVocoderFilter.cpp
 SOURCES += src/core/sound/SoundBufferBaseIntf.cpp
-ifneq '$(TVP_AUDIO_ENABLE_OPUS)$(TVP_AUDIO_ENABLE_VORBIS)' ''
-SOURCES += src/core/sound/VorbisWaveDecoder.cpp
-endif
 SOURCES += src/core/sound/WaveFormatConverter.cpp
 SOURCES += src/core/sound/WaveIntf.cpp
 SOURCES += src/core/sound/WaveLoopManager.cpp
@@ -239,7 +185,6 @@ SOURCES += src/core/sound/win32/MIDIImpl.cpp
 SOURCES += src/core/sound/win32/SoundBufferBaseImpl.cpp
 SOURCES += src/core/sound/win32/WaveImpl.cpp
 SOURCES += src/core/sound/win32/WaveMixer.cpp
-# SOURCES += src/core/sound/win32/tvpsnd.cpp
 SOURCES += src/core/tjs2/tjs.cpp
 SOURCES += src/core/tjs2/tjs.tab.cpp
 SOURCES += src/core/tjs2/tjsArray.cpp
@@ -279,7 +224,6 @@ SOURCES += src/core/tjs2/tjsVariant.cpp
 SOURCES += src/core/tjs2/tjsVariantString.cpp
 SOURCES += src/core/tjs2/tjsdate.tab.cpp
 SOURCES += src/core/tjs2/tjspp.tab.cpp
-SOURCES += src/core/utils/md5.c
 SOURCES += src/core/utils/ClipboardIntf.cpp
 SOURCES += src/core/utils/DebugIntf.cpp
 SOURCES += src/core/utils/KAGParser.cpp
@@ -288,20 +232,44 @@ SOURCES += src/core/utils/MiscUtility.cpp
 SOURCES += src/core/utils/PadIntf.cpp
 SOURCES += src/core/utils/Random.cpp
 SOURCES += src/core/utils/RealFFT_Default.cpp
+SOURCES += src/core/utils/TVPTimer.cpp
 SOURCES += src/core/utils/ThreadIntf.cpp
 SOURCES += src/core/utils/TickCount.cpp
 SOURCES += src/core/utils/TimerIntf.cpp
 SOURCES += src/core/utils/TimerThread.cpp
-SOURCES += src/core/utils/TVPTimer.cpp
 SOURCES += src/core/utils/VelocityTracker.cpp
-SOURCES += src/core/utils/uni_cp932.cpp
 SOURCES += src/core/utils/cp932_uni.cpp
 SOURCES += src/core/utils/encoding/gbk2unicode.c
 SOURCES += src/core/utils/encoding/jis2unicode.c
+SOURCES += src/core/utils/md5.c
+SOURCES += src/core/utils/uni_cp932.cpp
 SOURCES += src/core/utils/win32/ClipboardImpl.cpp
+SOURCES += src/core/visual/BitmapIntf.cpp
+SOURCES += src/core/visual/BitmapLayerTreeOwner.cpp
+SOURCES += src/core/visual/CharacterData.cpp
+SOURCES += src/core/visual/ComplexRect.cpp
+SOURCES += src/core/visual/FontImpl.cpp
+SOURCES += src/core/visual/FontSystem.cpp
+SOURCES += src/core/visual/FreeType.cpp
+SOURCES += src/core/visual/FreeTypeFontRasterizer.cpp
+SOURCES += src/core/visual/GraphicsLoadThread.cpp
+SOURCES += src/core/visual/GraphicsLoaderIntf.cpp
+SOURCES += src/core/visual/ImageFunction.cpp
+SOURCES += src/core/visual/LayerBitmapIntf.cpp
+SOURCES += src/core/visual/LayerIntf.cpp
+SOURCES += src/core/visual/LayerManager.cpp
+SOURCES += src/core/visual/LayerTreeOwnerImpl.cpp
+SOURCES += src/core/visual/MenuItemIntf.cpp
+SOURCES += src/core/visual/PrerenderedFont.cpp
+SOURCES += src/core/visual/RectItf.cpp
+SOURCES += src/core/visual/RenderManager.cpp
+SOURCES += src/core/visual/TransIntf.cpp
+SOURCES += src/core/visual/VideoOvlIntf.cpp
+SOURCES += src/core/visual/WindowIntf.cpp
 SOURCES += src/core/visual/gl/ResampleImage.cpp
 SOURCES += src/core/visual/gl/WeightFunctor.cpp
 SOURCES += src/core/visual/gl/blend_function.cpp
+SOURCES += src/core/visual/tvpgl.cpp
 SOURCES += src/core/visual/win32/BasicDrawDevice.cpp
 SOURCES += src/core/visual/win32/BitmapBitsAlloc.cpp
 SOURCES += src/core/visual/win32/BitmapInfomation.cpp
@@ -324,11 +292,42 @@ SOURCES += src/plugins/fftgraph.cpp
 SOURCES += src/plugins/getSample.cpp
 SOURCES += src/plugins/getabout.cpp
 SOURCES += src/plugins/layerExPerspective.cpp
+SOURCES += src/plugins/ncbind/ncbind.cpp
 SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
 SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
-SOURCES += src/plugins/ncbind/ncbind.cpp
+ifdef TVP_IMAGE_ENABLE_JPEG
+SOURCES += src/core/visual/LoadJPEG.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_JXR
+SOURCES += src/core/visual/LoadJXR.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_PNG
+SOURCES += src/core/visual/LoadPNG.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_TLG
+SOURCES += src/core/visual/LoadTLG.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_WEBP
+SOURCES += src/core/visual/LoadWEBP.cpp
+endif
+ifdef TVP_IMAGE_ENABLE_TLG
+SOURCES += src/core/visual/SaveTLG5.cpp
+SOURCES += src/core/visual/SaveTLG6.cpp
+endif
+ifdef TVP_ARCHIVE_ENABLE_XP3
+SOURCES += src/core/base/XP3Archive.cpp
+endif
+ifdef TVP_AUDIO_ENABLE_FFMPEG
+SOURCES += src/core/movie/ffmpeg/krffmpeg.cpp
+endif
+ifdef TVP_AUDIO_ENABLE_FFMPEG
+SOURCES += src/core/sound/FFWaveDecoder.cpp
+endif
+ifneq '$(TVP_AUDIO_ENABLE_OPUS)$(TVP_AUDIO_ENABLE_VORBIS)' ''
+SOURCES += src/core/sound/VorbisWaveDecoder.cpp
+endif
 OBJECTS := $(SOURCES:.c=.o)
 OBJECTS := $(OBJECTS:.cpp=.o)
 OBJECTS := $(OBJECTS:.asm=.o)
