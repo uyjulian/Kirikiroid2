@@ -12,11 +12,13 @@ TVP_AUDIO_ENABLE_VORBIS ?= 1
 TVP_AUDIO_ENABLE_FFMPEG ?=
 TVP_ARCHIVE_ENABLE_XP3 ?=
 TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION ?=
+TVP_RENDERER_ENABLE_OPENCV ?=
 CC = clang
 CXX = clang++
 AR = 
 ASM = 
 CFLAGS += -Ofast -march=native
+CXXFLAGS += $(CFLAGS) -std=c++11
 # CFLAGS += -O0 -g
 # GIT_HASH = $(shell git rev-parse --short HEAD)
 GIT_HASH = nothing
@@ -47,9 +49,12 @@ CFLAGS += -I/usr/local/opt/zlib/include
 LDFLAGS += -L/usr/local/opt/zlib/lib
 LDLIBS += -lz
 
-CFLAGS += -I/usr/local/opt/opencv/include/opencv4
-LDFLAGS += -L/usr/local/opt/opencv/lib
-LDLIBS += -lopencv_core -lopencv_imgproc
+ifdef TVP_RENDERER_ENABLE_OPENCV
+	CFLAGS += -DTVP_RENDERER_ENABLE_OPENCV
+	CFLAGS += -I/usr/local/opt/opencv/include/opencv4
+	LDFLAGS += -L/usr/local/opt/opencv/lib
+	LDLIBS += -lopencv_core -lopencv_imgproc
+endif
 
 CFLAGS += -I/usr/local/opt/sdl2/include/SDL2
 LDFLAGS += -L/usr/local/opt/sdl2/lib
@@ -141,7 +146,7 @@ endif
 
 %.o: %.cpp
 	@echo -e "\tCXX  $<"
-	$(CXX) -c $(CFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 SOURCES := 
 SOURCES += src/core/base/BinaryStream.cpp

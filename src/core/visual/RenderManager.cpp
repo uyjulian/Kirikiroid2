@@ -10,6 +10,8 @@
 #include <algorithm>
 #include "ThreadIntf.h"
 #include "argb.h"
+#ifdef TVP_AUDIO_ENABLE_FFMPEG
+#define USE_SWSCALE
 extern "C" {
 #include <stdint.h>
 #ifndef UINT64_C
@@ -20,7 +22,10 @@ extern "C" {
 #endif
 #include "libswscale/swscale.h"
 };
+#endif
+#ifdef TVP_RENDERER_ENABLE_OPENCV
 #include "opencv2/opencv.hpp"
+#endif
 #include "Application.h"
 #include "Platform.h"
 // #include "ConfigManager/IndividualConfigManager.h"
@@ -43,7 +48,6 @@ extern "C" {
 #pragma comment(lib,"opencv_world300d.lib")
 #endif
 
-//#define USE_SWSCALE
 #define USE_CV_AFFINE
 
 //---------------------------------------------------------------------------
@@ -2163,12 +2167,13 @@ public:
 		iTVPTexture2D *src, const tTVPRect &rcsrc,
 		iTVPTexture2D *rule, const tTVPRect &rcrule)
 	{
-// 		tTVPRenderMethod_DirectCopy::DoRender(
-// 			tar, rctar,
-// 			dst, rcdst,
-// 			src, rcsrc,
-// 			rule, rcrule);
-
+#ifndef TVP_RENDERER_ENABLE_OPENCV
+		tTVPRenderMethod_DirectCopy::DoRender(
+			tar, rctar,
+			dst, rcdst,
+			src, rcsrc,
+			rule, rcrule);
+#else
 // 		tjs_uint64 area_size = (tjs_uint64)
 // 			(area.right - area.left + 1) * (area.bottom - area.top + 1);
 
@@ -2191,6 +2196,7 @@ public:
 // 			Func32::DoBoxBlurLoop(rctar, area, _tar->GetWidth(), _tar->GetHeight(), (tjs_uint32*)line, pitchBytes);
 // 		else
 // 			TVPThrowExceptionMessage(TVPBoxBlurAreaMustBeSmallerThan16Million);
+#endif
 	}
 };
 
@@ -2405,12 +2411,14 @@ iTVPRenderMethod* iTVPRenderManager::GetOrCompileRenderMethod(const char *name, 
 	return CompileRenderMethod(name, glsl_script, nTex, flags);
 }
 
+#ifdef TVP_RENDERER_ENABLE_OPENCV
 static int cvFlags[4] = {
 	cv::INTER_NEAREST, // stNearest
 	cv::INTER_AREA, // stFastLinear
 	cv::INTER_LINEAR, // stLinear
 	cv::INTER_CUBIC, // stCubic
 };
+#endif
 
 static double tTVPPointD_distQ(const tTVPPointD& p0, const tTVPPointD& p1) {
 	double dx = p0.x - p1.x, dy = p0.y - p1.y;
@@ -2739,9 +2747,11 @@ public:
 		switch (id) {
 		case eParameters::StretchType:
 			StretchType = (tTVPBBStretchType)Value;
+#ifdef TVP_RENDERER_ENABLE_OPENCV
 			if (StretchType > sizeof(cvFlags) / sizeof(cvFlags[0])) {
 				StretchType = (tTVPBBStretchType)(sizeof(cvFlags) / sizeof(cvFlags[0]) - 1);
 			}
+#endif
 			break;
 		default:
 			break;
@@ -2802,7 +2812,7 @@ public:
 			//assert(img_convert_ctx);
 			// TODO multithreaded
 			sws_scale(img_convert_ctx, &sdata, &spitch, 0, sh, &ddata, &dpitch);
-#else
+#elif defined(TVP_RENDERER_ENABLE_OPENCV)
 			cv::Size dsize(dw, dh);
 			cv::Mat src_img(sh, sw, CV_8UC4, (void*)sdata, spitch);
 			cv::Mat dst_img(dh, dw, CV_8UC4, (void*)ddata, dpitch);
@@ -2827,6 +2837,7 @@ public:
 		iTVPTexture2D *tar, iTVPTexture2D *reftar, const tTVPRect& rctar,
 		const tRenderTexRectArray &textures) {
 #ifdef _DEBUG
+#ifdef TVP_RENDERER_ENABLE_OPENCV
 		static bool check = false;
 		cv::Mat _src[3], _tar;
 		if (check) {
@@ -2839,6 +2850,7 @@ public:
 			_tar = cv::Mat(tar->GetHeight(), tar->GetWidth(), fmt, (void*)tar->GetPixelData(), tar->GetPitch());
 			_tar.type();
 		}
+#endif
 #endif
 
 		for (int i = 0; i < textures.size(); ++i) {
@@ -3141,6 +3153,7 @@ public:
 		const tTVPPointD *dstpt = pttar;
 		iTVPTexture2D *src = textures[0].first;
 		const tTVPPointD *srcpt = textures[0].second;
+#ifdef TVP_RENDERER_ENABLE_OPENCV
 		if (nTriangles == 2 && CheckQuad(pttar) && CheckTextureQuad(textures)) {
 			bool isSrcRect =
 				isDoubleEqual(srcpt[0].y, srcpt[1].y) &&
@@ -3293,7 +3306,10 @@ public:
 				tmp, rc,
 				nullptr, rc);
 			tmp->Release();
-		} else {
+
+		} else 
+#endif
+		{
 			//TVPThrowExceptionMessage(TJS_W("OperateTriangles: unsupported draw mode"));
 // 			iTVPTexture2D *tmp = new tTVPSoftwareTexture2D(nullptr, 0, rcclip.get_width(), rcclip.get_height(), TVPTextureFormat::RGBA);
 // 			memset(tmp->GetScanLineForWrite(0), 0, tmp->GetPitch() * rcclip.get_height());
@@ -4318,7 +4334,10 @@ public:
 					std::swap(dstrect.bottom, dstrect.top);
 				}
 				tTVPRect rcdest;
-				if (TVPIntersectRect(&rcdest, cr, dstrect)) {
+#ifdef TVP_RENDERER_ENABLE_OPENCV
+				if (TVPIntersectRect(&rcdest, cr, dstrect)) 
+#endif
+				{
 					tjs_int dw = dstrect.get_width(), dh = dstrect.get_height();
 					tjs_int rw = refrect.get_width(), rh = refrect.get_height();
 
@@ -4338,6 +4357,7 @@ public:
 					processed = true;
 				}
 			} while (false);
+#ifdef TVP_RENDERER_ENABLE_OPENCV
 			if (!processed) {
 				const uint8_t *sdata;
 				int spitch = src->GetPitch();
@@ -4371,6 +4391,7 @@ public:
 					nullptr, rc);
 				tmp->Release();
 			}
+#endif
 
 			dstpt += 4;
 			srcpt += 4;

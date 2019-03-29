@@ -374,7 +374,7 @@ public:
 	virtual void ResetTouchVelocity(tjs_int id) = 0;
 	virtual bool GetMouseVelocity(float& x, float& y, float& speed) const = 0;
 	virtual void TickBeat() = 0;
-	virtual cocos2d::Node *GetPrimaryArea() = 0;
+	// virtual cocos2d::Node *GetPrimaryArea() = 0;
 
 	void SetZoomNumer(tjs_int n) { SetZoom(n, ZoomDenom); }
 	tjs_int GetZoomNumer() const { return ZoomNumer; }
