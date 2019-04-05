@@ -12,6 +12,7 @@
 #define ThreadIntfH
 #include "tjsNative.h"
 
+#include <functional>
 #include <SDL.h>
 
 //---------------------------------------------------------------------------

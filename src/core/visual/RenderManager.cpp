@@ -8,6 +8,7 @@
 #include "tvpgl.h"
 #include <assert.h>
 #include <algorithm>
+#include <functional>
 #include "ThreadIntf.h"
 #include "argb.h"
 #ifdef TVP_RENDERER_ENABLE_FFMPEG

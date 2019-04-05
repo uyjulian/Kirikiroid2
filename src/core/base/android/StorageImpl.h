@@ -13,6 +13,7 @@
 //---------------------------------------------------------------------------
 #include "StorageIntf.h"
 #include "UtilStreams.h"
+#include <functional>
 #include <stdio.h>
 
 
