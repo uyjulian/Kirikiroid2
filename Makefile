@@ -11,8 +11,10 @@ TVP_AUDIO_ENABLE_OPUS ?= 1
 TVP_AUDIO_ENABLE_VORBIS ?= 1
 TVP_AUDIO_ENABLE_FFMPEG ?=
 TVP_ARCHIVE_ENABLE_XP3 ?=
+TVP_TJS_ENABLE_ONIG ?= 1
 TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION ?=
-TVP_RENDERER_ENABLE_OPENCV ?=
+TVP_RENDERER_ENABLE_OPENCV ?= 1
+TVP_RENDERER_ENABLE_FFMPEG ?=
 CC = clang
 CXX = clang++
 AR = 
@@ -60,9 +62,14 @@ CFLAGS += -I/usr/local/opt/sdl2/include/SDL2
 LDFLAGS += -L/usr/local/opt/sdl2/lib
 LDLIBS += -lSDL2
 
-CFLAGS += -I/usr/local/opt/oniguruma/include
-LDFLAGS += -L/usr/local/opt/oniguruma/lib
-LDLIBS += -lonig
+ifdef TVP_TJS_ENABLE_ONIG
+	CFLAGS += -I/usr/local/opt/oniguruma/include
+	LDFLAGS += -L/usr/local/opt/oniguruma/lib
+	LDLIBS += -lonig
+endif
+ifndef TVP_TJS_ENABLE_ONIG
+	CFLAGS += -DTJS_NO_REGEXP
+endif
 
 CFLAGS += -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2
 LDFLAGS += -L/usr/local/opt/freetype/lib
@@ -122,11 +129,16 @@ ifdef TVP_AUDIO_ENABLE_VORBIS
 	LDLIBS += -lvorbis -lvorbisfile
 endif
 
-ifdef TVP_AUDIO_ENABLE_FFMPEG
-	CFLAGS += -DTVP_AUDIO_ENABLE_FFMPEG
+ifneq '$(TVP_AUDIO_ENABLE_FFMPEG)$(TVP_RENDERER_ENABLE_FFMPEG)' ''
 	CFLAGS += -I/usr/local/opt/ffmpeg/include
 	LDFLAGS += -L/usr/local/opt/ffmpeg/lib
 	LDLIBS += -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale
+endif
+ifdef TVP_AUDIO_ENABLE_FFMPEG
+	CFLAGS += -DTVP_AUDIO_ENABLE_FFMPEG
+endif
+ifdef TVP_RENDERER_ENABLE_FFMPEG
+	CFLAGS += -DTVP_RENDERER_ENABLE_FFMPEG
 endif
 
 ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
@@ -219,7 +231,9 @@ SOURCES += src/core/tjs2/tjsObject.cpp
 SOURCES += src/core/tjs2/tjsObjectExtendable.cpp
 SOURCES += src/core/tjs2/tjsOctPack.cpp
 SOURCES += src/core/tjs2/tjsRandomGenerator.cpp
+ifdef TVP_TJS_ENABLE_ONIG
 SOURCES += src/core/tjs2/tjsRegExp.cpp
+endif
 SOURCES += src/core/tjs2/tjsScriptBlock.cpp
 SOURCES += src/core/tjs2/tjsScriptCache.cpp
 SOURCES += src/core/tjs2/tjsSnprintf.cpp

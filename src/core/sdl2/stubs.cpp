@@ -603,12 +603,6 @@ public:
 		if (window && hasDrawn) {
 			if (TJSNativeInstance->CanDeliverEvents()) {
 				switch (event.type) { 
-					case SDL_MOUSEMOTION: {
-						mouseLastX = event.motion.x;
-						mouseLastY = event.motion.y;
-						TVPPostInputEvent(new tTVPOnMouseMoveInputEvent(TJSNativeInstance, event.motion.x, event.motion.y, 0));
-						break;
-					}
 					case SDL_MOUSEBUTTONDOWN: {
 						tTVPMouseButton btn;
 						bool hasbtn = false;

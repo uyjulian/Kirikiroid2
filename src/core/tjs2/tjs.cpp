@@ -222,7 +222,9 @@ void tTJS::Cleanup()
 
 	TJSReleaseGlobalStringMap();
 
+#ifndef TJS_NO_REGEXP
 	TJSReleaseRegex();
+#endif
 
 	if(TJSEnableDebugMode)
 	{

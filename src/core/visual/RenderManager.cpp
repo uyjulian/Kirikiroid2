@@ -10,8 +10,7 @@
 #include <algorithm>
 #include "ThreadIntf.h"
 #include "argb.h"
-#ifdef TVP_AUDIO_ENABLE_FFMPEG
-#define USE_SWSCALE
+#ifdef TVP_RENDERER_ENABLE_FFMPEG
 extern "C" {
 #include <stdint.h>
 #ifndef UINT64_C
@@ -2798,7 +2797,7 @@ public:
 // #ifdef _DEBUG
 // 			printf("resize (%d, %d) -> (%d, %d)\n", sw, sh, dw, dh);
 // #endif
-#ifdef USE_SWSCALE
+#if defined(TVP_RENDERER_ENABLE_FFMPEG)
 			static int swsFlags[4] = {
 				SWS_POINT, // stNearest
 				SWS_FAST_BILINEAR, // stFastLinear
