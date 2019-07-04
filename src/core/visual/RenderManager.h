@@ -91,10 +91,6 @@ struct TVPTextureFormat {
 	};
 };
 
-namespace cocos2d {
-	class Texture2D;
-};
-
 class iTVPTexture2D
 {
 protected:
@@ -129,7 +125,6 @@ public:
 	virtual bool IsStatic() = 0; // aka. is readonly
 	virtual bool IsOpaque() = 0;
 	//virtual void RefreshBitmap() = 0;
-	// virtual cocos2d::Texture2D* GetAdapterTexture(cocos2d::Texture2D* origTex) = 0;
 	virtual bool GetScale(float &x, float &y) { x = 1.f; y = 1.f; return true; }
 
 	static void RecycleProcess();

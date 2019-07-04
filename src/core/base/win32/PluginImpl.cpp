@@ -26,29 +26,31 @@
 #include "tjsArray.h"
 #include "tjsDictionary.h"
 #include "DebugIntf.h"
+#if 0
 #include "FuncStubs.h"
+#endif
 #include "tjs.h"
 
+#if 0
 #ifdef TVP_SUPPORT_OLD_WAVEUNPACKER
 	#include "oldwaveunpacker.h"
 #endif
 
 #pragma pack(push, 8)
 	///  tvpsnd.h needs packing size of 8
-	//#include "tvpsnd.h"
+	#include "tvpsnd.h"
 #pragma pack(pop)
 
 #ifdef TVP_SUPPORT_KPI
 	#include "kmp_pi.h"
+#endif
 #endif
 
 #include "FilePathUtil.h"
 #include "Application.h"
 #include "SysInitImpl.h"
 #include <set>
-#ifdef _MSC_VER
-#define strcasecmp _stricmp
-#endif
+
 
 #if 0
 //---------------------------------------------------------------------------
@@ -141,6 +143,8 @@ void TVPThrowPluginUnboundFunctionError(const tjs_char *funcname)
 }
 //---------------------------------------------------------------------------
 #endif
+
+
 
 
 #if 0
@@ -346,8 +350,8 @@ tTVPPlugin::tTVPPlugin(const ttstr & name, ITSSStorageProvider *storageprovider)
 			unsigned long index = 0;
 			while(true)
 			{
-				wchar_t mediashortname[33];
-				wchar_t buf[256];
+				tjs_char mediashortname[33];
+				tjs_char buf[256];
 				HRESULT hr = TSSModule->GetSupportExts(index,
 					mediashortname, buf, 255);
 				if(hr == S_OK)
@@ -486,6 +490,7 @@ void TVPLoadPlugin(const ttstr & name)
 bool TVPUnloadPlugin(const ttstr & name)
 {
 	// unload plugin
+
 #if 0
 	tTVPPluginVectorType::iterator i;
 	for(i = TVPPluginVector.Vector.begin();
@@ -510,6 +515,7 @@ bool TVPUnloadPlugin(const ttstr & name)
 
 
 
+#if 0
 //---------------------------------------------------------------------------
 // plug-in autoload support
 //---------------------------------------------------------------------------
@@ -522,19 +528,6 @@ struct tTVPFoundPlugin
 static tjs_int TVPAutoLoadPluginCount = 0;
 static void TVPSearchPluginsAt(std::vector<tTVPFoundPlugin> &list, tjs_string folder)
 {
-#if 0
-	TVPListDir(folder, [&](const std::string &filename, int mask){
-		if (mask & S_IFREG) {
-			if (!strcasecmp(filename.c_str() + filename.length() - 4, ".tpm")) {
-				tTVPFoundPlugin fp;
-				fp.Path = folder;
-				fp.Name = filename;
-				list.emplace_back(fp);
-			}
-		}
-	});
-#endif
-#if 0
 	WIN32_FIND_DATA ffd;
 	HANDLE handle = ::FindFirstFile((folder + TJS_W("*.tpm")).c_str(), &ffd);
 	if(handle != INVALID_HANDLE_VALUE)
@@ -553,13 +546,14 @@ static void TVPSearchPluginsAt(std::vector<tTVPFoundPlugin> &list, tjs_string fo
 		} while(cont);
 		FindClose(handle);
 	}
-#endif
 }
+#endif
 
 void TVPLoadInternalPlugins();
 void TVPLoadPluigins(void)
 {
 	TVPLoadInternalPlugins();
+#if 0
 	// This function searches plugins which have an extension of ".tpm"
 	// in the default path: 
 	//    1. a folder which holds kirikiri executable
@@ -568,27 +562,33 @@ void TVPLoadPluigins(void)
 	// aaa.tpm is to be loaded before aab.tpm (sorted by ASCII order)
 
 	// search plugins from path: (exepath), (exepath)\system, (exepath)\plugin
-	// std::vector<tTVPFoundPlugin> list;
+	std::vector<tTVPFoundPlugin> list;
 
-	// tjs_string exepath = ExtractFileDir(TVPNativeProjectDir.AsNarrowStdString());
+	tjs_string exepath = IncludeTrailingBackslash(ExtractFileDir(ExePath()));
 
-	// TVPSearchPluginsAt(list, exepath);
-	// TVPSearchPluginsAt(list, exepath + "/system");
-	// TVPSearchPluginsAt(list, exepath + "/plugin");
+	TVPSearchPluginsAt(list, exepath);
+	TVPSearchPluginsAt(list, exepath + TJS_W("system\\"));
+#ifdef TJS_64BIT_OS
+	TVPSearchPluginsAt(list, exepath + TJS_W("plugin64\\"));
+#else
+	TVPSearchPluginsAt(list, exepath + TJS_W("plugin\\"));
+#endif
 
-	// // sort by filename
-	// std::sort(list.begin(), list.end());
+	// sort by filename
+	std::sort(list.begin(), list.end());
 
-	// // load each plugin
-	// TVPAutoLoadPluginCount = (tjs_int)list.size();
-	// for(std::vector<tTVPFoundPlugin>::iterator i = list.begin();
-	// 	i != list.end();
-	// 	i++)
-	// {
-	// 	TVPAddImportantLog(ttstr(TJS_W("(info) Loading ")) + ttstr(i->Name.c_str()));
-	// 	TVPLoadPlugin((i->Path + "/" + i->Name).c_str());
-	// }
+	// load each plugin
+	TVPAutoLoadPluginCount = (tjs_int)list.size();
+	for(std::vector<tTVPFoundPlugin>::iterator i = list.begin();
+		i != list.end();
+		i++)
+	{
+		TVPAddImportantLog(ttstr(TJS_W("(info) Loading ")) + ttstr(i->Name));
+		TVPLoadPlugin(i->Path + i->Name);
+	}
+#endif
 }
+#if 0
 //---------------------------------------------------------------------------
 tjs_int TVPGetAutoLoadPluginCount() { return TVPAutoLoadPluginCount; }
 //---------------------------------------------------------------------------
@@ -598,7 +598,6 @@ tjs_int TVPGetAutoLoadPluginCount() { return TVPAutoLoadPluginCount; }
 
 
 
-#if 0
 //---------------------------------------------------------------------------
 // interface to Wave decode plugins
 //---------------------------------------------------------------------------
@@ -652,7 +651,6 @@ ITSSWaveDecoder * TVPSearchAvailTSSWaveDecoder(const ttstr & storage, const ttst
 	return NULL; // not found
 }
 //---------------------------------------------------------------------------
-#endif
 //---------------------------------------------------------------------------
 #ifdef TVP_SUPPORT_OLD_WAVEUNPACKER
 IWaveUnpacker * TVPSearchAvailWaveUnpacker(const ttstr & storage, IStream **stream)
@@ -818,7 +816,6 @@ void TVP_md5_finish(TVP_md5_state_t *pms, tjs_uint8 *digest)
 {
 	md5_finish((md5_state_t*)pms, digest);
 }
-#if 0
 //---------------------------------------------------------------------------
 HWND TVPGetApplicationWindowHandle()
 {
@@ -834,7 +831,6 @@ void TVPHandleApplicationMessage()
 {
 	Application->HandleMessage();
 }
-#endif
 //---------------------------------------------------------------------------
 bool TVPRegisterGlobalObject(const tjs_char *name, iTJSDispatch2 * dsp)
 {
@@ -906,7 +902,7 @@ void TVPDoTryBlock(
 //---------------------------------------------------------------------------
 
 
-#if 0
+
 //---------------------------------------------------------------------------
 // TVPGetFileVersionOf
 //---------------------------------------------------------------------------
@@ -966,6 +962,7 @@ bool TVPGetFileVersionOf(const tjs_char* module_filename, tjs_int &major, tjs_in
 }
 //---------------------------------------------------------------------------
 #endif
+
 
 
 //---------------------------------------------------------------------------
@@ -1028,6 +1025,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(getList)
 			tTJSVariant val = (*i)->Name.c_str();
 			array->PropSetByNum(TJS_MEMBERENSURE, idx++, &val, array);
 		}
+
 #endif
 		if (result) *result = tTJSVariant(array, array);
 	}

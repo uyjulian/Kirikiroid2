@@ -26,7 +26,7 @@
 #include "DebugIntf.h"
 #include "PluginImpl.h"
 #include "LayerManager.h"
-#include "EventImpl.h"
+#include "EventIntf.h"
 
 #include "Application.h"
 #include "TVPScreen.h"

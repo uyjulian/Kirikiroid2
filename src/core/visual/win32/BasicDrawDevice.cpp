@@ -10,7 +10,7 @@
 #include "DebugIntf.h"
 #include "ThreadIntf.h"
 #include "ComplexRect.h"
-#include "EventImpl.h"
+#include "EventIntf.h"
 #include "WindowImpl.h"
 
 #define ZeroMemory(p,n) memset(p, 0, n);

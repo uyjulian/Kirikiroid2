@@ -143,6 +143,7 @@ bool TVPClipboardGetText(ttstr & text)
 		throw;
 	}
 	::CloseClipboard();
+
 	return result;
 #endif
 	return false;

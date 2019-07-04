@@ -12,12 +12,14 @@
 #define WaveImplH
 
 #define DIRECTSOUND_VERSION 0x0300
+
 #if 0
 #include <mmsystem.h>
 #include <dsound.h>
 #include <ks.h>
 #include <ksmedia.h>
 #endif
+
 #include "WaveIntf.h"
 #include "WaveLoopManager.h"
 
@@ -28,6 +30,7 @@
 #ifndef __DSOUND_INCLUDED__
 struct IDirectSound;
 #endif
+
 class iTVPSoundBuffer;
 
 
@@ -39,7 +42,7 @@ class iTVPSoundBuffer;
 
 #define TVP_WSB_ACCESS_FREQ (8)  // wave sound buffer access frequency (hz)
 
-#define TVP_TIMEOFS_INVALID_VALUE ((tjs_int)(- 2147483648LL)) // invalid value for 32bit time offset
+#define TVP_TIMEOFS_INVALID_VALUE ((tjs_int)(- 2147483648ll)) // invalid value for 32bit time offset
 
 //---------------------------------------------------------------------------
 
@@ -80,6 +83,7 @@ private:
 #if 0
 	LPDIRECTSOUND3DBUFFER Sound3DBuffer;
 #endif
+
 	void ThrowSoundBufferException(const ttstr &reason);
 	void TryCreateSoundBuffer(bool use3d);
 	void CreateSoundBuffer();
@@ -90,6 +94,7 @@ private:
 #if 0
 	WAVEFORMATEXTENSIBLE Format;
 #endif
+
 	tTVPWaveFormat C_InputFormat;
 	tTVPWaveFormat InputFormat;
 

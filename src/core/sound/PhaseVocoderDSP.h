@@ -71,7 +71,7 @@ public:
 
 public:
 	//! @brief		コンストラクタ
-	//! @param		framesize		フレームサイズ(2の累乗, 16〜)
+	//! @param		framesize		フレームサイズ(2の累乗, 16～)
 	//! @param		frequency		入力PCMのサンプリングレート
 	//! @param		channels		入力PCMのチャンネル数
 	//! @note		音楽用ではframesize=4096,oversamp=16ぐらいがよく、
@@ -158,9 +158,6 @@ public:
 	//!				実装は opt_default ディレクトリ下などに置かれる。
 	//!				(PhaseVocoderDSP.cpp内にはこれの実装はない)
 	void ProcessCore(int ch);
-#if defined(_M_IX86)||defined(_M_X64)
-	void ProcessCore_sse(int ch);
-#endif
 };
 //---------------------------------------------------------------------------
 

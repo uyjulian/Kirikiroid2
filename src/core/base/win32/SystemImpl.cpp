@@ -10,8 +10,10 @@
 //---------------------------------------------------------------------------
 #include "tjsCommHead.h"
 
-// #include <shellapi.h>
-// #include <shlobj.h>
+#if 0
+#include <shellapi.h>
+#include <shlobj.h>
+#endif
 
 #include "GraphicsLoaderImpl.h"
 
@@ -28,9 +30,13 @@
 
 #include "Application.h"
 #include "TVPScreen.h"
-//#include "CompatibleNativeFuncs.h"
+#if 0
+#include "CompatibleNativeFuncs.h"
+#endif
 #include "DebugIntf.h"
-//#include "VersionFormUnit.h"
+#if 0
+#include "PluginImpl.h"
+#endif
 #include "vkdefine.h"
 #include "ScriptMgnIntf.h"
 #include "tjsArray.h"
@@ -43,20 +49,23 @@ static bool TVPAppTitleInit = false;
 
 
 
-#if 0
+
 //---------------------------------------------------------------------------
 // TVPShowSimpleMessageBox
 //---------------------------------------------------------------------------
 static void TVPShowSimpleMessageBox(const ttstr & text, const ttstr & caption)
 {
+#if 0
 	HWND hWnd = TVPGetModalWindowOwnerHandle();
 	if( hWnd == INVALID_HANDLE_VALUE ) {
 		hWnd = NULL;
 	}
 	::MessageBox( hWnd, text.AsStdString().c_str(), caption.AsStdString().c_str(), MB_OK|MB_ICONINFORMATION );
+#endif
 }
 //---------------------------------------------------------------------------
-#endif
+
+
 
 bool TVPGetKeyMouseAsyncState(tjs_uint keycode, bool getcurrent);
 //---------------------------------------------------------------------------
@@ -100,6 +109,7 @@ bool TVPGetAsyncKeyState(tjs_uint keycode, bool getcurrent)
 
 
 
+
 #if 0
 //---------------------------------------------------------------------------
 // TVPGetPlatformName
@@ -123,6 +133,7 @@ ttstr TVPGetPlatformName()
 //---------------------------------------------------------------------------
 
 
+
 typedef void (WINAPI *RtlGetVersionFunc)(OSVERSIONINFOEX* );
 //---------------------------------------------------------------------------
 // TVPGetOSName
@@ -133,7 +144,7 @@ ttstr TVPGetOSName()
 	ovi.dwOSVersionInfoSize = sizeof(ovi);
 
 	bool isGetVersion = false;
-	HMODULE hModule = ::LoadLibrary( L"ntdll.dll" );
+	HMODULE hModule = ::LoadLibrary( TJS_W("ntdll.dll") );
 	if( hModule ) {
 		RtlGetVersionFunc func;
 		func = (RtlGetVersionFunc)::GetProcAddress( hModule, "RtlGetVersion" );
@@ -145,7 +156,15 @@ ttstr TVPGetOSName()
 		hModule = NULL;
 	}
 	if( isGetVersion == false ) {
-		GetVersionEx((OSVERSIONINFO*)&ovi);
+		// Probably do not call on Windows NT
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996)
+#endif
+		::GetVersionEx((OSVERSIONINFO*)&ovi);
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 	}
 	tjs_char buf[256];
 	const tjs_char *osname = NULL;
@@ -206,9 +225,17 @@ ttstr TVPGetOSName()
 				break;
 			case 4:
 				if( ovi.wProductType == VER_NT_WORKSTATION )
-					osname = TJS_W("Windows 10");
+					osname = TJS_W( "Windows 10" );
+				else
+					osname = TJS_W( "Windows Server 2016" );
 				break;
 			}
+		} else if( ovi.dwMajorVersion == 10 ) {
+			if( ovi.wProductType == VER_NT_WORKSTATION )
+				osname = TJS_W( "Windows 10" );
+			else
+				osname = TJS_W( "Windows Server 2016" );
+			break;
 		}
 		if( osname == NULL ) osname = TJS_W("Windows NT");
 		break;
@@ -217,10 +244,31 @@ ttstr TVPGetOSName()
 	}
 
 	TJS_snprintf(buf, sizeof(buf)/sizeof(tjs_char), TJS_W("%ls %d.%d.%d "), osname, ovi.dwMajorVersion,
-		ovi.dwMinorVersion, ovi.dwBuildNumber&0xfff);
+		ovi.dwMinorVersion, ovi.dwBuildNumber);
 
 	ttstr str(buf);
-	str += ttstr(ovi.szCSDVersion);
+	str += ttstr( ovi.szCSDVersion );
+
+	tjs_int major;
+	tjs_int minor;
+	tjs_int release;
+	tjs_int build;
+	TVPGetFileVersionOf( TJS_W( "kernel32.dll" ), major, minor, release, build );
+	//TJS_snprintf( buf, sizeof( buf ) / sizeof( tjs_char ), TJS_W( " kernel32.dll %d.%d Release %d Build %d " ), major, minor, release, build );
+	//str += ttstr( buf );
+	if( major >= 10 ) {
+		if( release >= 17134 ) {
+			str += ttstr( TJS_W("April 2018 Update or later") );
+		} else if( release >= 16299 ) {
+			str += ttstr( TJS_W("Fall Creators Update") );
+		} else if( release >= 15063 ) {
+			str += ttstr( TJS_W( "Creators Update" ) );
+		} else if( release >= 14393 ) {
+			str += ttstr( TJS_W( "Anniversary Update" ) );
+		} else if( release >= 10586 ) {
+			str += ttstr( TJS_W( "November Update" ) );
+		}
+	}
 
 	return str;
 }
@@ -259,11 +307,10 @@ bool TVPShellExecute(const ttstr &target, const ttstr &param)
 	// open or execute target file
 //	ttstr file = TVPGetNativeName(TVPNormalizeStorageName(target));
 #if 0
-	return TVPIsExistentStorageNoSearchNoNormalize(target);
-	if (::ShellExecute(NULL, NULL,
+	if(::ShellExecute(NULL, NULL,
 		target.c_str(),
 		param.IsEmpty() ? NULL : param.c_str(),
-		L"",
+		TJS_W(""),
 		SW_SHOWNORMAL)
 		<=(void *)32)
 	{
@@ -277,72 +324,24 @@ bool TVPShellExecute(const ttstr &target, const ttstr &param)
 }
 //---------------------------------------------------------------------------
 
-static tTJSVariant RegisterData;
-ttstr TVPGetAppDataPath();
-void TVPExecuteStorage(const ttstr &name, tTJSVariant *result, bool isexpression,
-	const tjs_char * modestr);
-static void InitRegisterData()
-{
-	static bool dataInited = false;
-	if (!dataInited) {
-		ttstr regfile = TVPGetAppDataPath() + TJS_W("RegisterData.tjs");
-		if (TVPIsExistentStorageNoSearch(regfile)) {
-			TVPExecuteStorage(regfile, &RegisterData, true, TJS_W(""));
-		}
-	}
-}
+
+
 
 //---------------------------------------------------------------------------
 // TVPReadRegValue
 //---------------------------------------------------------------------------
 static void TVPReadRegValue(tTJSVariant &result, const ttstr & key)
 {
+	result.Clear();
+	return;
+#if 0
 	// open specified registry key
 	if(key.IsEmpty()) { result.Clear(); return; }
 
 	// check whether the key contains root key name
-	//HKEY root = HKEY_CURRENT_USER;
+	HKEY root = HKEY_CURRENT_USER;
 	const tjs_char *key_p = key.c_str();
 
-	InitRegisterData();
-	// search value name
-	tTJSVariant CurrentNode = RegisterData;
-	const tjs_char *start = key_p;
-	while (*start && CurrentNode.Type() != tvtObject) {
-		iTJSDispatch2 *pObj;
-
-		switch (*key_p) {
-		case '\\':
-		case '/':
-			++key_p;
-		case '\0':
-			start = key_p;
-			if (CurrentNode.Type() != tvtObject) {
-				CurrentNode.Clear();
-				break;
-			}
-			pObj = CurrentNode.AsObject();
-			if (!pObj) {
-				CurrentNode.Clear();
-				break;
-			}
-			if (!TJS_SUCCEEDED(pObj->PropGet(TJS_MEMBERMUSTEXIST, ttstr(start, key_p - start - 1).c_str(), 0, &CurrentNode, pObj))) {
-				CurrentNode.Clear();
-				break;
-			}
-			start = key_p;
-			continue;
-		default:
-			++key_p;
-			continue;
-		}
-	}
-	if (*start) {
-		CurrentNode.Clear();
-		return;
-	}
-	result = CurrentNode;
-#if 0
 	if(key.StartsWith(TJS_W("HKEY_CLASSES_ROOT")))
 	{
 		key_p += 17;
@@ -499,18 +498,20 @@ static void TVPReadRegValue(tTJSVariant &result, const ttstr & key)
 
 
 
+
 #if 0
 //---------------------------------------------------------------------------
 // Static function for retrieving special folder path
 //---------------------------------------------------------------------------
 static ttstr TVPGetSpecialFolderPath(int csidl)
 {
-	WCHAR path[MAX_PATH+1];
+	tjs_char path[MAX_PATH+1];
 	if(!SHGetSpecialFolderPath(NULL, path, csidl, false))
 		return ttstr();
 	return ttstr(path);
 }
 //---------------------------------------------------------------------------
+
 #endif
 
 
@@ -536,6 +537,7 @@ ttstr TVPGetPersonalPath()
 		if(path.GetLastChar() != TJS_W('/')) path += TJS_W('/');
 		return path;
 	}
+
 #endif
 	return TVPGetAppPath();
 }
@@ -561,6 +563,7 @@ ttstr TVPGetAppDataPath()
 		if(path.GetLastChar() != TJS_W('/')) path += TJS_W('/');
 		return path;
 	}
+
 #endif
 	return TVPGetAppPath();
 }
@@ -578,7 +581,7 @@ ttstr TVPGetSavedGamesPath()
 	PWSTR ppszPath = NULL;
 	HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_SavedGames, 0, NULL, &ppszPath);
 	if( hr == S_OK ) {
-		path = ppszPath;
+		path = ttstr( ppszPath );
 		::CoTaskMemFree( ppszPath );
 	}
 	return path;
@@ -603,6 +606,7 @@ bool TVPCreateAppLock(const ttstr &lockname)
 	{
 		return false; // already running
 	}
+
 #endif
 
 	// No need to release the mutex object because the mutex is automatically
@@ -701,12 +705,12 @@ static void TVPOnApplicationActivate(bool activate_or_deactivate)
 
 #if 0
 //---------------------------------------------------------------------------
-static void TVPHeapDump()
+void TVPHeapDump()
 {
 	tjs_char buff[128];
 	HANDLE heaps[100];
 	DWORD c = ::GetProcessHeaps (100, heaps);
-	TJS_sprintf( buff, 128, TJS_W("The process has %d heaps."), c );
+	TJS_snprintf( buff, 128, TJS_W("The process has %d heaps."), c );
 	TVPAddLog( buff );
 
 	const HANDLE default_heap = ::GetProcessHeap();
@@ -717,7 +721,7 @@ static void TVPHeapDump()
 		bool isdefault = false;
 		bool isCRT = false;
 		if( ::HeapQueryInformation( heaps[i], HeapCompatibilityInformation, &heap_info, sizeof(heap_info), &ret_size) ) {
-			tjs_char* type = NULL;
+			const tjs_char* type = NULL;
 			switch( heap_info ) {
 			case 0:
 				type = TJS_W("standard");
@@ -767,11 +771,11 @@ static void TVPHeapDump()
 			if( isdefault ) mes += TJS_W(" [default]");
 			if( isCRT ) mes += TJS_W(" [CRT]");
 			TVPAddLog( mes );
-			TJS_sprintf( buff, 128, L"  Allocated: %d, size: %lld, overhead: %lld", use.count, use.total, use.overhead );
+			TJS_snprintf( buff, 128, TJS_W("  Allocated: %d, size: %lld, overhead: %lld"), use.count, use.total, use.overhead );
 			TVPAddLog( buff );
-			TJS_sprintf( buff, 128, L"  Uncommitted: %d, size: %lld, overhead: %lld", uncommit.count, uncommit.total, uncommit.overhead );
+			TJS_snprintf( buff, 128, TJS_W("  Uncommitted: %d, size: %lld, overhead: %lld"), uncommit.count, uncommit.total, uncommit.overhead );
 			TVPAddLog( buff );
-			TJS_sprintf( buff, 128, L"  Unused: %d, size: %lld, overhead: %lld", unused.count, unused.total, unused.overhead );
+			TJS_snprintf( buff, 128, TJS_W("  Unused: %d, size: %lld, overhead: %lld"), unused.count, unused.total, unused.overhead );
 			TVPAddLog( buff );
 		}
 	}
@@ -811,6 +815,38 @@ extern void TVPDoSaveSystemVariables()
 		;
 	}
 }
+//---------------------------------------------------------------------------
+struct tTVPGlobalHeapCompactCallback : public tTVPCompactEventCallbackIntf
+{
+	virtual void TJS_INTF_METHOD OnCompact(tjs_int level)
+	{
+		if(level >= TVP_COMPACT_LEVEL_IDLE)
+		{	// Do compact CRT and Global Heap
+#if 0
+			HANDLE hHeap = ::GetProcessHeap();
+			if( hHeap ) {
+				::HeapCompact( hHeap, 0 );
+			}
+			HANDLE hCrtHeap = (HANDLE)_get_heap_handle();
+			if( hCrtHeap && hCrtHeap != hHeap ) {
+				::HeapCompact( hCrtHeap, 0 );
+			}
+#endif
+		}
+	}
+} static TVPGlobalHeapCompactCallback;
+static bool TVPGlobalHeapCompactCallbackInit = false;
+//---------------------------------------------------------------------------
+void TVPAddGlobalHeapCompactCallback()
+{
+	// compact interface initialization
+	if(!TVPGlobalHeapCompactCallbackInit)
+	{
+		TVPAddCompactEventHook(&TVPGlobalHeapCompactCallback);
+		TVPGlobalHeapCompactCallbackInit = true;
+	}
+}
+//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 // TVPCreateNativeClass_System
@@ -838,30 +874,6 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/inform)
 		caption = *param[1];
 	else
 		caption = TJS_W("Information");
-
-	if (numparams >= 3 && param[2]->Type() != tvtVoid) {
-		if (param[2]->Type() == tvtObject) { // vector of button
-			tTJSArrayNI* ni;
-			param[2]->AsObjectNoAddRef()->NativeInstanceSupport(TJS_NIS_GETINSTANCE, TJSGetArrayClassID(), (iTJSNativeInstance**)&ni);
-			std::vector<ttstr> vecButtons;
-			vecButtons.reserve(ni->Items.size());
-			for (const ttstr &label : ni->Items) {
-				vecButtons.emplace_back(label);
-			}
-			int ret = TVPShowSimpleMessageBox(text, caption, vecButtons);
-			if (result) result->operator =(ret);
-		} else {
-			int nButtons = param[2]->AsInteger();
-			std::vector<ttstr> vecButtons;
-			if (nButtons >= 1)
-				vecButtons.emplace_back(TJS_W("OK"));
-			if (nButtons >= 2)
-				vecButtons.emplace_back(TJS_W("Cancel"));
-			int ret = TVPShowSimpleMessageBox(text, caption, vecButtons);
-			if (result) result->operator =(ret);
-		}
-		return TJS_S_OK;
-	}
 
 	TVPShowSimpleMessageBox(text, caption);
 
@@ -925,7 +937,11 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/system)
 
 	ttstr target = *param[0];
 
-	int ret = 0;// _wsystem(target.c_str());
+#if 0
+	int ret = _wsystem(target.c_str());
+#else
+	int ret = 0;
+#endif
 
 	TVPDeliverCompactEvent(TVP_COMPACT_LEVEL_MAX); // this should clear all caches
 
@@ -998,7 +1014,9 @@ TJS_END_NATIVE_STATIC_METHOD_DECL_OUTER(/*object to register*/cls,
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/dumpHeap)
 {
-//	TVPHeapDump();
+#if 0
+	TVPHeapDump();
+#endif
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL_OUTER(/*object to register*/cls,
@@ -1020,7 +1038,6 @@ TJS_END_NATIVE_STATIC_METHOD_DECL_OUTER(/*object to register*/cls,
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/showVersion)
 {
-//	TVPShowVersionForm();
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL_OUTER(/*object to register*/cls,

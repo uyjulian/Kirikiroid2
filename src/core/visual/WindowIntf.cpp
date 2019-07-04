@@ -23,7 +23,7 @@
 #include "VideoOvlIntf.h"
 #include "LayerManager.h"
 #include "BasicDrawDevice.h"
-#include "EventImpl.h"
+#include "EventIntf.h"
 
 #include "Application.h"
 

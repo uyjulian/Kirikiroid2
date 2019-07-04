@@ -10,7 +10,7 @@
 //---------------------------------------------------------------------------
 #include "tjsCommHead.h"
 
-#include "EventImpl.h"
+#include "EventIntf.h"
 #include "SystemControl.h"
 #include "ThreadIntf.h"
 #include "TickCount.h"
@@ -18,7 +18,9 @@
 #include "SysInitIntf.h"
 #include "DebugIntf.h"
 #include "WindowImpl.h"
-//#include <mmsystem.h>
+#if 0
+#include <mmsystem.h>
+#endif
 
 #include "Application.h"
 #include "NativeEventQueue.h"
@@ -107,13 +109,17 @@ bool TVPGetBreathing()
 //---------------------------------------------------------------------------
 void TVPSetSystemEventDisabledState(bool en)
 {
-	// TVPSystemControl->SetEventEnabled( !en );
-	// if(!en) TVPDeliverAllEvents();
+#if 0
+	TVPSystemControl->SetEventEnabled( !en );
+	if(!en) TVPDeliverAllEvents();
+#endif
 }
 //---------------------------------------------------------------------------
 bool TVPGetSystemEventDisabledState()
 {
-	// return !TVPSystemControl->GetEventEnabled();
+#if 0
+	return !TVPSystemControl->GetEventEnabled();
+#endif
 	return false;
 }
 //---------------------------------------------------------------------------
@@ -165,6 +171,7 @@ tTVPContinuousHandlerCallLimitThread::tTVPContinuousHandlerCallLimitThread()
 	Interval = (1<<TVP_SUBMILLI_FRAC_BITS)*1000/60; // default 60Hz
 	Enabled = false;
 	EventQueue.Allocate();
+	StartTread();
 }
 //---------------------------------------------------------------------------
 
@@ -253,7 +260,10 @@ void TVPBeginContinuousEvent()
 			TVPContinousHandlerLimitFrequency = (tjs_int)val;
 		}
 	}
-//	if(!TVPIsWaitVSync())
+
+#if 0
+	if(!TVPIsWaitVSync())
+#endif
 	{
 		if(TVPContinousHandlerLimitFrequency == 0)
 		{
@@ -271,6 +281,7 @@ void TVPBeginContinuousEvent()
 			TVPContinuousHandlerCallLimitThread->SetEnabled(true);
 		}
 	}
+
 
 	// TVPEnsureVSyncTimingThread();
 	// if we wait vsync, the continuous handler will be executed at the every timing of

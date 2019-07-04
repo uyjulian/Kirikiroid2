@@ -10,8 +10,10 @@
 //---------------------------------------------------------------------------
 #include "tjsCommHead.h"
 
-// #include <cderr.h>
-// #include <commdlg.h>
+#if 0
+#include <cderr.h>
+#include <commdlg.h>
+#endif
 
 #include "MsgIntf.h"
 #include "StorageImpl.h"
@@ -21,12 +23,6 @@
 
 #include "TVPScreen.h"
 
-std::string TVPShowFileSelector(
-    const std::string &title,
-    const std::string &filename,
-    std::string initdir,
-    bool issave
-    );
 
 //---------------------------------------------------------------------------
 // TVPSelectFile related
@@ -81,13 +77,13 @@ static UINT_PTR APIENTRY TVPOFNHookProc(HWND hdlg, UINT uiMsg, WPARAM wParam,
 	return 0;
 }
 //---------------------------------------------------------------------------
-static void TVPPushFilterPair(std::vector<std::wstring> &filters, std::wstring filter)
+static void TVPPushFilterPair(std::vector<tjs_string> &filters, tjs_string filter)
 {
-	std::wstring::size_type vpos = filter.find_first_of(L"|");
-	if( vpos != std::wstring::npos )
+	tjs_string::size_type vpos = filter.find_first_of(TJS_W("|"));
+	if( vpos != tjs_string::npos )
 	{
-		std::wstring name = filter.substr(0, vpos);
-		std::wstring wild = filter.c_str() + vpos+1;
+		tjs_string name = filter.substr(0, vpos);
+		tjs_string wild = filter.c_str() + vpos+1;
 		filters.push_back(name);
 		filters.push_back(wild);
 	}
@@ -104,13 +100,12 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 	// show open dialog box
 	// NOTE: currently this only shows ANSI version of file open dialog.
 	tTJSVariant val;
-	std::string initialdir;
-	std::string title;
-	std::string defaultext;
 #if 0
-	wchar_t* filter = NULL;
-	wchar_t* filename = NULL;
-
+	tjs_char* filter = NULL;
+	tjs_char* filename = NULL;
+	tjs_string initialdir;
+	tjs_string title;
+	tjs_string defaultext;
 	BOOL result;
 
 	try
@@ -135,7 +130,7 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 		if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("filter"), 0,
 			&val, params)))
 		{
-			std::vector<std::wstring> filterlist;
+			std::vector<tjs_string> filterlist;
 			if(val.Type() != tvtObject)
 			{
 				TVPPushFilterPair(filterlist, ttstr(val).AsStdString());
@@ -163,15 +158,15 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 
 			// create filter buffer
 			tjs_int bufsize = 2;
-			for(std::vector<std::wstring>::iterator i = filterlist.begin(); i != filterlist.end(); i++)
+			for(std::vector<tjs_string>::iterator i = filterlist.begin(); i != filterlist.end(); i++)
 			{
 				bufsize += (tjs_int)(i->length() + 1);
 			}
 
-			filter = new wchar_t[bufsize];
+			filter = new tjs_char[bufsize];
 
-			wchar_t* p = filter;
-			for(std::vector<std::wstring>::iterator i = filterlist.begin(); i != filterlist.end(); i++)
+			tjs_char* p = filter;
+			for(std::vector<tjs_string>::iterator i = filterlist.begin(); i != filterlist.end(); i++)
 			{
 				TJS_strcpy(p, i->c_str());
 				p += i->length() + 1;
@@ -191,7 +186,7 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 			ofn.nFilterIndex = 0;
 
 		// filenames
-		filename = new wchar_t[MAX_PATH + 1];
+		filename = new tjs_char[MAX_PATH + 1];
  		filename[0] = 0;
 
 		if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("name"), 0, &val, params)))
@@ -201,7 +196,7 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 			{
 				lname = TVPNormalizeStorageName(lname);
 				TVPGetLocalName(lname);
-				std::wstring name = lname.AsStdString();
+				tjs_string name = lname.AsStdString();
 				TJS_strncpy(filename, name.c_str(), MAX_PATH);
 				filename[MAX_PATH] = 0;
 			}
@@ -308,100 +303,6 @@ bool TVPSelectFile(iTJSDispatch2 *params)
 	delete [] filename;
 
 	return 0!=result;
-#endif
-#if 0
-
-    std::string filename;
-	std::string result;
-
-	// get filter
-	if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("filter"), 0,
-		&val, params)))
-	{
-	}
-
-// 		if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("filterIndex"), 0,
-// 			&val, params)))
-// 			ofn.nFilterIndex = (tjs_int)val;
-// 		else
-// 			ofn.nFilterIndex = 0;
-
-	// initial dir
-	if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("initialDir"), 0,
-		&val, params)))
-	{
-		ttstr lname(val);
-		if (!lname.IsEmpty()){
-			TVPGetLocalName(lname);
-			initialdir = tTJSNarrowStringHolder(lname.c_str());
-		}
-	}
-        
-	// default extension
-	if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("defaultExt"), 0,
-		&val, params)))
-	{
-		defaultext = tTJSNarrowStringHolder(val.AsStringNoAddRef()->operator const tjs_char*());
-	}
-
-	// filenames
-	if (TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("name"), 0,
-		&val, params)))
-	{
-		ttstr lname(val);
-		if (!lname.IsEmpty())
-		{
-			if (lname.IndexOf('/') >= 0) {
-				lname = TVPNormalizeStorageName(lname);
-				TVPGetLocalName(lname);
-				ttstr path = TVPExtractStoragePath(lname);
-				ttstr name = TVPExtractStorageName(lname);
-				lname = name;
-				initialdir = path.AsStdString();
-			} else {
-			}
-
-			if (!defaultext.empty() && TVPExtractStorageExt(lname).IsEmpty()) {
-				if (defaultext[0] != '.')
-					lname += TJS_W(".");
-				lname += defaultext.c_str();
-			}
-			filename = tTJSNarrowStringHolder(lname.c_str());
-		}
-	}
-	
-	// title
-	if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("title"), 0,
-		&val, params)))
-	{
-        title = tTJSNarrowStringHolder(val.AsStringNoAddRef()->operator const tjs_char*());
-	}
-
-	// flags
-	bool issave = false;
-	if(TJS_SUCCEEDED(params->PropGet(TJS_MEMBERMUSTEXIST, TJS_W("save"), 0,
-		&val, params)))
-		issave = val.operator bool();
-
-	// show dialog box
-    result = TVPShowFileSelector(title, filename, initialdir, issave);
-
-	if(!result.empty())
-	{
-		// returns some informations
-
-		// filter index
-		val = (tjs_int)0;
-		params->PropSet(TJS_MEMBERENSURE, TJS_W("filterIndex"), 0,
-			&val, params);
-
-		// file name
-		ttstr tresult = TVPNormalizeStorageName(ttstr(result.c_str()));
-		val = tresult;
-		params->PropSet(TJS_MEMBERENSURE, TJS_W("name"), 0,
-			&val, params);
-        return true;
-	}
 #endif
 	return false;
 }

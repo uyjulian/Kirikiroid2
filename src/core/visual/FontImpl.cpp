@@ -215,36 +215,7 @@ void TVPInitFontNames()
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.ttc")) break;
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.otf")) break;
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.otc")) break;
-// #if defined(__ANDROID__)
-// 		int fontCount = 0;
-// 		for (const ttstr &path : pathlist) {
-// 			fontCount += TVPEnumFontsProc(path + "/default.ttf");
-// 			if (fontCount) break;
-// 		}
-// 		if (fontCount) break;
-		
-// 		if (TVPEnumFontsProc(Android_GetInternalStoragePath() + "/default.ttf")) break;
-
-// 		{	// from internal storage
-// 			auto data = cocos2d::FileUtils::getInstance()->getDataFromFile("DroidSansFallback.ttf");
-// 			if (TVPInternalEnumFonts(data.getBytes(), data.getSize(), "DroidSansFallback.ttf", [](TVPFontNamePathInfo* info)->tTJSBinaryStream* {
-// 				auto data = cocos2d::FileUtils::getInstance()->getDataFromFile(info->Path.AsStdString());
-// 				tTVPMemoryStream *ret = new tTVPMemoryStream();
-// 				ret->WriteBuffer(data.getBytes(), data.getSize());
-// 				ret->SetPosition(0);
-// 				return ret;
-// 			})) break;
-// 		}
-// 		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/DroidSansFallback.ttf"))) break;
-// 		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/NotoSansHans-Regular.otf"))) break;
-// 		if (TVPEnumFontsProc(TJS_W("file://./system/fonts/DroidSans.ttf"))) break;
-// #elif defined(WIN32)
-// 		if (TVPEnumFontsProc(TJS_W("file://./c/windows/fonts/msyh.ttf"))) break;
-// 		if (TVPEnumFontsProc(TJS_W("file://./c/windows/fonts/simhei.ttf"))) break;
-// #endif
         
-        // std::string fullPath = cocos2d::FileUtils::getInstance()->fullPathForFilename("DroidSansFallback.ttf");
-        // if (TVPEnumFontsProc(fullPath)) break;
 	} while (false);
     // set default fontface name
 
@@ -295,7 +266,6 @@ void TVPInitFontNames()
 
 	if (TVPDefaultFontName.IsEmpty()) {
 		TVPAddLog(ttstr(TJS_W("WARNING: Can't find font")));
-		// TVPShowSimpleMessageBox(("Could not found any font.\nPlease ensure that at least \"default.ttf\" exists"), "Exception Occured");
     }
 }
 //---------------------------------------------------------------------------

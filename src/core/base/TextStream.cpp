@@ -266,16 +266,33 @@ public:
 					// ansi/mbcs
 					// read whole and hold it
 					Stream->SetPosition(ofs);
-					tjs_uint size = (tjs_uint)(Stream->GetSize()) - ofs;
+					tjs_uint size = (tjs_uint)(Stream->GetSize());
 					tjs_uint8 *nbuf = new tjs_uint8[size + 1];
 					try
 					{
 						Stream->ReadBuffer(nbuf, size);
 						nbuf[size] = 0; // terminater
-						BufferLen = TextStream_mbstowcs(NULL, (tjs_nchar*)nbuf, 0);
-						if (BufferLen == (size_t)-1) TVPThrowExceptionMessage(TJSNarrowToWideConversionError);
-						Buffer = new tjs_char [ BufferLen +1];
-						TextStream_mbstowcs(Buffer, (tjs_nchar*)nbuf, BufferLen);
+						if( encoding == TJS_W("UTF-8") ) {
+							BufferLen = TVPUtf8ToWideCharString((const char*)nbuf, NULL);
+							if(BufferLen == (size_t)-1) TVPThrowExceptionMessage(TJSNarrowToWideConversionError);
+							Buffer = new tjs_char [ BufferLen +1];
+							TVPUtf8ToWideCharString((const char*)nbuf, Buffer);
+						} else if( encoding == TJS_W("Shift_JIS") ) {
+							BufferLen = _TextStream_mbstowcs(sjis_mbtowc, NULL, (tjs_nchar*)nbuf, 0);
+							if(BufferLen == (size_t)-1) TVPThrowExceptionMessage(TJSNarrowToWideConversionError);
+							Buffer = new tjs_char [ BufferLen +1];
+							_TextStream_mbstowcs(sjis_mbtowc, Buffer, (tjs_nchar*)nbuf, BufferLen);
+						} else if( encoding == TJS_W("GBK") ) {
+							BufferLen = _TextStream_mbstowcs(sjis_mbtowc, NULL, (tjs_nchar*)nbuf, 0);
+							if(BufferLen == (size_t)-1) TVPThrowExceptionMessage(TJSNarrowToWideConversionError);
+							Buffer = new tjs_char [ BufferLen +1];
+							_TextStream_mbstowcs(gbk_mbtowc, Buffer, (tjs_nchar*)nbuf, BufferLen);
+						} else {
+							BufferLen = TextStream_mbstowcs(NULL, (tjs_nchar*)nbuf, 0);
+							if (BufferLen == (size_t)-1) TVPThrowExceptionMessage(TJSNarrowToWideConversionError);
+							Buffer = new tjs_char [ BufferLen +1];
+							TextStream_mbstowcs(Buffer, (tjs_nchar*)nbuf, BufferLen);
+						}
 					}
 					catch(...)
 					{

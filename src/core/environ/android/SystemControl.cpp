@@ -5,17 +5,24 @@
 #include "SystemControl.h"
 #include "EventIntf.h"
 #include "MsgIntf.h"
-//#include "WindowFormUnit.h"
+#if 0
+#include "WindowFormUnit.h"
+#endif
 #include "SysInitIntf.h"
 #include "SysInitImpl.h"
 #include "ScriptMgnIntf.h"
 #include "WindowIntf.h"
-//#include "WindowImpl.h"
+#if 0
+#include "WindowImpl.h"
+#endif
 #include "StorageIntf.h"
-//#include "EmergencyExit.h" // for TVPCPUClock
+#if 0
+#include "EmergencyExit.h" // for TVPCPUClock
+#endif
 #include "DebugIntf.h"
-//#include "VersionFormUnit.h"
+#if 0
 //#include "WaveImpl.h"
+#endif
 #include "SystemImpl.h"
 #include "UserEvent.h"
 #include "Application.h"
@@ -57,9 +64,10 @@ tTVPSystemControl::tTVPSystemControl() : EventEnable(true) {
 	LastRehashedTick = 0;
 
 	TVPSystemControlAlive = true;
+
 #if 0
-	SystemWatchTimer.SetOnTimerHandler( this, &tTVPSystemControl::SystemWatchTimerTimer );
 	SystemWatchTimer.SetInterval(50);
+	SystemWatchTimer.SetOnTimerHandler( this, &tTVPSystemControl::SystemWatchTimerTimer );
 	SystemWatchTimer.SetEnabled( true );
 #endif
 }
@@ -77,26 +85,26 @@ void tTVPSystemControl::BeginContinuousEvent() {
 	{
 		ContinuousEventCalling = true;
 		InvokeEvents();
-		/*
+#if 0
 		if(TVPGetMainThreadPriorityControl())
 		{
 			// make main thread priority lower
 			SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
 		}
-		*/
+#endif
 	}
 }
 void tTVPSystemControl::EndContinuousEvent() {
 	if(ContinuousEventCalling)
 	{
 		ContinuousEventCalling = false;
-		/*
+#if 0
 		if(TVPGetMainThreadPriorityControl())
 		{
 			// make main thread priority normal
 			SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 		}
-		*/
+#endif
 	}
 }
 //---------------------------------------------------------------------------
@@ -130,9 +138,13 @@ void tTVPSystemControl::SystemWatchTimerTimer() {
 	if( TVPTerminated ) {
 		// this will ensure terminating the application.
 		// the WM_QUIT message disappears in some unknown situations...
-		// Application->PostMessageToMainWindow( TVP_EV_DELIVER_EVENTS_DUMMY, 0, 0 );
+#if 0
+		Application->PostMessageToMainWindow( TVP_EV_DELIVER_EVENTS_DUMMY, 0, 0 );
+#endif
 		Application->Terminate();
-		// Application->PostMessageToMainWindow( TVP_EV_DELIVER_EVENTS_DUMMY, 0, 0 );
+#if 0
+		Application->PostMessageToMainWindow( TVP_EV_DELIVER_EVENTS_DUMMY, 0, 0 );
+#endif
 	}
 
 	// call events
@@ -142,15 +154,14 @@ void tTVPSystemControl::SystemWatchTimerTimer() {
 	TVPPushEnvironNoise(&LastCompactedTick, sizeof(LastCompactedTick));
 	TVPPushEnvironNoise(&LastShowModalWindowSentTick, sizeof(LastShowModalWindowSentTick));
 	TVPPushEnvironNoise(&MixedIdleTick, sizeof(MixedIdleTick));
-	// マウスカーソル位置を取得してノイズに加えている
-	// Android だと、加速度センサー値とかか
-	// GPS の場合は許可が必要でレーティングも上がるので好ましくない
-	//POINT pt;
-	//::GetCursorPos(&pt);
-	//TVPPushEnvironNoise(&pt, sizeof(pt));
+#if 0
+	POINT pt;
+	::GetCursorPos(&pt);
+	TVPPushEnvironNoise(&pt, sizeof(pt));
+#endif
 
 	// CPU clock monitoring
-	/*
+#if 0
 	{
 		static bool clock_rough_printed = false;
 		if( !clock_rough_printed && TVPCPUClockAccuracy == ccaRough ) {
@@ -167,7 +178,7 @@ void tTVPSystemControl::SystemWatchTimerTimer() {
 			clock_printed = true;
 		}
 	}
-	*/
+#endif
 
 	// check status and deliver events
 	DeliverEvents();

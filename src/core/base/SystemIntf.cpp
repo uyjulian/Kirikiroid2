@@ -119,37 +119,6 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/exit)
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/exit)
-//----------------------------------------------------------------------
-TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/inputString)
-{
-	if(numparams < 3) return TJS_E_BADPARAMCOUNT;
-
-	ttstr value = *param[2];
-
-//	bool b = TVPInputQuery(*param[0], *param[1], value);
-
-	// ttstr caption = *param[0], prompt = *param[1];
-	// this shows a dialog box which let user to input a string.
-	// return false if the user selects "cancel", otherwise return true.
-	// implement in each platform.
-	// std::vector<ttstr> btns;
-	// btns.emplace_back("OK");
-	// btns.emplace_back("Cancel");
-	// int ret = TVPShowSimpleInputBox(value, caption, prompt, btns);
-	// bool b = ret == 0; // the left button clicked
-
-	// if(result)
-	// {
-	// 	if(b)
-	// 		*result = value;
-	// 	else
-	// 		result->Clear();
-	// }
-	result->Clear();
-
-	return TJS_S_OK;
-}
-TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/inputString)
 //---------------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/addContinuousHandler)
 {

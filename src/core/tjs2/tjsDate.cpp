@@ -22,27 +22,27 @@ note:
 	The author assumes that it is a compiler dependented problem, so any remedies
 	are not given here.
 */
-// #ifdef WIN32
-// typedef struct timeval {
-// 	time_t tv_sec;
-// 	long tv_usec;
-// } timeval;
-// int gettimeofday(struct timeval * tp, struct timezone * tzp)
-// {
-// 	static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
-// 	FILETIME file_time;
-// 	uint64_t time;
-// 	GetSystemTimeAsFileTime( &file_time );
-// 	time = ((uint64_t)file_time.dwLowDateTime );
-// 	time += ((uint64_t)file_time.dwHighDateTime) << 32;
-// 	time -= EPOCH;
-// 	tp->tv_sec  = (time_t) ( time / 10000000L );
-// 	tp->tv_usec = (long) ( ( time % 10000000L ) / 10 );
-// 	return 0;
-// }
-// #else
+#if 0 || defined(WIN32)
+typedef struct timeval {
+	time_t tv_sec;
+	long tv_usec;
+} timeval;
+int gettimeofday(struct timeval * tp, struct timezone * tzp)
+{
+	static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
+	FILETIME file_time;
+	uint64_t time;
+	GetSystemTimeAsFileTime( &file_time );
+	time = ((uint64_t)file_time.dwLowDateTime );
+	time += ((uint64_t)file_time.dwHighDateTime) << 32;
+	time -= EPOCH;
+	tp->tv_sec  = (time_t) ( time / 10000000L );
+	tp->tv_usec = (long) ( ( time % 10000000L ) / 10 );
+	return 0;
+}
+#else
 #include <sys/time.h>
-// #endif
+#endif
 namespace TJS
 {
 //---------------------------------------------------------------------------

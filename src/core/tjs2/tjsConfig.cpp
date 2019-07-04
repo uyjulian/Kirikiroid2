@@ -703,7 +703,7 @@ tTJSNarrowStringHolder::tTJSNarrowStringHolder(const tjs_char * wide)
 
 	if( n == -1 )
 	{
-		Buf = TJS_N("");
+		Buf = (tjs_nchar*)TJS_N("");
 		Allocated = false;
 		return;
 	}
@@ -730,17 +730,19 @@ void TJSNativeDebuggerBreak()
 	// debugger, or the program may cause an unhandled debugger breakpoint
 	// exception.
 
-// #if defined(__WIN32__)
-// 	#if defined(_M_IX86)
-// 		#ifdef __BORLANDC__
-// 				__emit__ (0xcc); // int 3 (Raise debugger breakpoint exception)
-// 		#else
-// 				_asm _emit 0xcc; // int 3 (Raise debugger breakpoint exception)
-// 		#endif
-// 	#else
-		// __debugbreak();
-// 	#endif
-// #endif
+#if defined(__WIN32__)
+	#if defined(_M_IX86)
+		#ifdef __BORLANDC__
+				__emit__ (0xcc); // int 3 (Raise debugger breakpoint exception)
+		#elif defined(__GNUC__)
+				asm("int3");
+		#else
+				_asm _emit 0xcc; // int 3 (Raise debugger breakpoint exception)
+		#endif
+	#else
+		__debugbreak();
+	#endif
+#endif
 }
 //---------------------------------------------------------------------------
 

@@ -10,11 +10,11 @@
 #include <map>
 #include <SDL.h>
 
-ttstr ExePath();
+tjs_string ExePath();
 
 // 見通しのよい方法に変更した方が良い
 extern int _argc;
-extern char ** _argv;
+extern tjs_char ** _wargv;
 
 enum {
 	mrOk,
@@ -33,6 +33,7 @@ enum {
 enum {
 	mbOK = /*MB_OK*/0x00000000L,
 };
+
 enum class eTVPActiveEvent {
 	onActive,
 	onDeactive,
@@ -70,12 +71,16 @@ public:
 };
 #endif
 class tTVPApplication {
-//	std::vector<class TTVPWindowForm*> windows_list_;
-	ttstr title_;
+#if 0
+	std::vector<class TTVPWindowForm*> windows_list_;
+#endif
+	tjs_string title_;
 
 	bool is_attach_console_;
-	ttstr console_title_;
-//	AcceleratorKeyTable accel_key_;
+	tjs_string console_title_;
+#if 0
+	AcceleratorKeyTable accel_key_;
+#endif
 	bool tarminate_;
 	bool application_activating_;
 	bool has_map_report_process_;
@@ -84,17 +89,18 @@ class tTVPApplication {
 #if 0
 	std::stack<class tTVPWindow*> modal_window_stack_;
 #endif
+	std::vector<char> console_cache_;
 private:
 	void CheckConsole();
 	void CloseConsole();
 	void CheckDigitizer();
-	void ShowException( const ttstr& e );
+	void ShowException( const tjs_char* e );
 	void Initialize() {}
 
 public:
 	tTVPApplication();
 	~tTVPApplication();
-	bool StartApplication(ttstr path);
+	bool StartApplication( int argc, tjs_char* argv[] );
 	void Run();
 	void ProcessMessages();
 
@@ -103,7 +109,9 @@ public:
 
 	bool IsTarminate() const { return tarminate_; }
 
-//	HWND GetHandle();
+#if 0
+	HWND GetHandle();
+#endif
 	bool IsIconic() {
 #if 0
 		HWND hWnd = GetHandle();
@@ -133,11 +141,11 @@ public:
 	void HandleMessage();
 	void HandleIdle(MSG &msg);
 #endif
-	const ttstr &GetTitle() const { return title_; }
-	void SetTitle( const ttstr& caption );
+	tjs_string GetTitle() const { return title_; }
+	void SetTitle( const tjs_string& caption );
 #if 0
-	static inline int MessageDlg( const ttstr& string, const ttstr& caption, int type, int button ) {
-		return ::MessageBox( NULL, string.c_str(), caption.c_str(), type|button  );
+	static inline int MessageDlg( const tjs_string& string, const tjs_string& caption, int type, int button ) {
+		return ::MessageBox( nullptr, string.c_str(), caption.c_str(), type|button  );
 	}
 #endif
 	void Terminate();
@@ -146,13 +154,14 @@ public:
 	void SetShowMainForm( bool b ) {}
 
 
-//	HWND GetMainWindowHandle() const;
+#if 0
+	HWND GetMainWindowHandle() const;
+#endif
 
 	int ArgC;
-	char ** ArgV;
+	tjs_char ** ArgV;
 	typedef std::function<void()> tMsg;
 
-//	void PostMessageToMainWindow(UINT message, WPARAM wParam, LPARAM lParam);
 	void PostUserMessage(const std::function<void()> &func, void* param1 = nullptr, int param2 = 0);
 	void FilterUserMessage(const std::function<void(std::vector<std::tuple<void*, int, tMsg> > &)> &func);
 
@@ -160,13 +169,13 @@ public:
 	void ModalStarted( class tTVPWindow* form ) {
 		modal_window_stack_.push(form);
 	}
-
 	void ModalFinished();
 	void OnActiveAnyWindow();
 	void DisableWindows();
 	void EnableWindows( const std::vector<class TTVPWindowForm*>& win );
 	void GetDisableWindowList( std::vector<class TTVPWindowForm*>& win );
 	void GetEnableWindowList( std::vector<class TTVPWindowForm*>& win, class TTVPWindowForm* activeWindow );
+
 
 	void RegisterAcceleratorKey(HWND hWnd, char virt, short key, short cmd);
 	void UnregisterAcceleratorKey(HWND hWnd, short cmd);
@@ -175,7 +184,6 @@ public:
 	void OnActivate(  );
 	void OnDeactivate(  );
 	void OnExit();
-	void OnLowMemory();
 
 	bool GetActivating() const { return application_activating_; }
 	bool GetNotMinimizing() const;
@@ -194,9 +202,13 @@ private:
 	std::vector<std::tuple<void*, int, tMsg> > m_lstUserMsg;
 	std::map<void*, std::function<void(void*, eTVPActiveEvent)> > m_activeEvents;
 };
-std::vector<std::string>* LoadLinesFromFile( const ttstr& path );
+#if 0
+std::vector<std::string>* LoadLinesFromFile( const tjs_string& path );
+#endif
 
-//inline HINSTANCE GetHInstance() { return ((HINSTANCE)GetModuleHandle(0)); }
+#if 0
+inline HINSTANCE GetHInstance() { return ((HINSTANCE)GetModuleHandle(0)); }
+#endif
 extern class tTVPApplication* Application;
 
 

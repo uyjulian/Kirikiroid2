@@ -10,7 +10,6 @@
 #include "Random.h"
 #include "UtilStreams.h"
 #include "vkdefine.h"
-// #include "ConfigManager/IndividualConfigManager.h"
 #include "Platform.h"
 #include "Application.h"
 #include "ScriptMgnIntf.h"
@@ -20,7 +19,6 @@
 #include "RenderManager.h"
 #include "VideoOvlIntf.h"
 #include "Exception.h"
-// #include "win32/SystemControl.h"
 #include "win32/MenuItemImpl.h"
 #include <sys/time.h>
 #include <time.h>
@@ -472,7 +470,6 @@ public:
 						// this is the main window
 						iTJSDispatch2 * obj = TJSNativeInstance->GetOwnerNoAddRef();
 						obj->Invalidate(0, NULL, NULL, obj);
-						// TJSNativeInstance = NULL; // ¤³¤Î¶ÎëA¤Ç¤Ï¼È¤Ëthis¤¬Ï÷³ý¤µ¤ì¤Æ¤¤¤ë¤¿¤á¡¢\á\ó\Ð©`¤Ø\¢\¯\»\¹¤·¤Æ¤Ï¤¤¤±¤Ê¤¤
 					}
 				} else {
 					delete this;
@@ -500,26 +497,11 @@ public:
 		switch (mode) {
 		case ::imDisable:
 		case ::imClose:
-// #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
-// 			TVPHideIME();
-// #else
-// //#ifdef _MSC_VER
-// 			TVPMainScene::GetInstance()->detachWithIME();
-// #endif
 			break;
 		case ::imOpen:
 			//TVPMainScene::GetInstance()->attachWithIME();
 			//break;
 		default:
-// #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
-// 		{
-// 			Size screenSize = cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize();
-// 			TVPShowIME(0, _textInputPosY, screenSize.width, screenSize.height / 4);
-// 		}
-// #else
-// //#ifdef _MSC_VER
-// 			TVPMainScene::GetInstance()->attachWithIME();
-// #endif
 			break;
 		}
 	}
@@ -552,9 +534,6 @@ public:
 	}
 	virtual void TickBeat() override {
 	}
-	// virtual cocos2d::Node *GetPrimaryArea() override {
-	// 	return NULL;
-	// }
 	Sint32 mouseLastX = 0;
 	Sint32 mouseLastY = 0;
 	void sdlRecvEvent(SDL_Event event) {
@@ -716,9 +695,26 @@ bool sdlProcessEventsForFrames(int frames) {
 int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	char cwd[PATH_MAX];
+
+	tjs_char** wargv = reinterpret_cast<tjs_char**>(malloc(sizeof(tjs_char*) * argc));
+
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
 		strncat(cwd, "/", PATH_MAX);
-		::Application->StartApplication(cwd); //nice
+		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
+		for (int i = 0; i < argc; i += 1) {
+			tjs_char* warg;
+			if (!i)
+				warg = const_cast<tjs_char*>(convert.from_bytes(realpath(argv[i], NULL)).c_str());
+			else
+				warg = const_cast<tjs_char*>(convert.from_bytes(argv[i]).c_str());
+			tjs_char* warg_copy = reinterpret_cast<tjs_char*>(malloc(sizeof(tjs_char) * (strlen(argv[i]) + 1)));
+			memcpy(warg_copy, warg, sizeof(tjs_char) * (strlen(argv[i]) + 1));
+			wargv[i] = warg_copy;
+		}
+		_argc = argc;
+		_wargv = wargv;
+		::Application = new tTVPApplication();
+		::Application->StartApplication( _argc, _wargv );
 	}
 
     Uint32 startTime = 0;
@@ -783,10 +779,6 @@ bool TVP_stat(const tjs_char *name, tTVP_stat &s) {
 	return TVP_stat(holder, s);
 }
 
-std::string TVPGetPackageVersionString() {
-	return "sdl2";
-}
-
 // tjs_uint32 TVPGetRoughTickCount32()
 // {
 // 	// tjs_uint32 uptime = 0;
@@ -803,43 +795,6 @@ bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 	// tjs_uint8 code = _scancode[keycode];
 	// _scancode[keycode] &= 1;
 	return false;
-}
-
-int TVPShowSimpleInputBox(ttstr &text, const ttstr &caption, const ttstr &prompt, const std::vector<ttstr> &vecButtons) {
-	// JniMethodInfo methodInfo;
-	// if (JniHelper::getStaticMethodInfo(methodInfo, "org/tvp/kirikiri2/KR2Activity", "ShowInputBox", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V"))
-	// {
-	// 	jstring jstrTitle = methodInfo.env->NewStringUTF(caption.AsStdString().c_str());
-	// 	jstring jstrText = methodInfo.env->NewStringUTF(text.AsStdString().c_str());
-	// 	jstring jstrPrompt = methodInfo.env->NewStringUTF(prompt.AsStdString().c_str());
-	// 	jclass strcls = methodInfo.env->FindClass("java/lang/String");
-	// 	jobjectArray btns = methodInfo.env->NewObjectArray(vecButtons.size(), strcls, nullptr);
-	// 	for (unsigned int i = 0; i < vecButtons.size(); ++i) {
-	// 		jstring jstrBtn = methodInfo.env->NewStringUTF(vecButtons[i].AsStdString().c_str());
-	// 		methodInfo.env->SetObjectArrayElement(btns, i, jstrBtn);
-	// 		methodInfo.env->DeleteLocalRef(jstrBtn);
-	// 	}
-
-	// 	MsgBoxRet = -2;
-	// 	methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, jstrTitle, jstrPrompt, jstrText, btns);
-
-	// 	methodInfo.env->DeleteLocalRef(jstrTitle);
-	// 	methodInfo.env->DeleteLocalRef(jstrText);
-	// 	methodInfo.env->DeleteLocalRef(jstrPrompt);
-	// 	methodInfo.env->DeleteLocalRef(btns);
-	// 	methodInfo.env->DeleteLocalRef(methodInfo.classID);
-
-	// 	std::unique_lock<std::mutex> lk(MessageBoxLock);
-	// 	while (MsgBoxRet == -2) {
-	// 		MessageBoxCond.wait_for(lk, std::chrono::milliseconds(200));
-	// 		if (MsgBoxRet == -2) {
-	// 			TVPForceSwapBuffer(); // update opengl events
-	// 		}
-	// 	}
-	// 	text = MessageBoxRetText;
-	// 	return MsgBoxRet;
-	// }
-	return -1;
 }
 
 std::string TVPShowFileSelector(const std::string &title, const std::string &initfilename, std::string initdir, bool issave)
@@ -895,66 +850,6 @@ void TVPExitApplication(int code) {
 	exit(code);
 }
 
-void TVPGetMemoryInfo(TVPMemoryInfo &m)
-{
- //    /* to read /proc/meminfo */
- //    FILE* meminfo;
- //    char buffer[100] = {0};
- //    char* end;
- //    int found = 0;
-
- //    /* Try to read /proc/meminfo, bail out if fails */
-	// meminfo = fopen("/proc/meminfo", "r");
-
- //    static const char
- //        pszMemFree[] = "MemFree:",
- //        pszMemTotal[] = "MemTotal:",
- //        pszSwapTotal[] = "SwapTotal:",
- //        pszSwapFree[] = "SwapFree:",
- //        pszVmallocTotal[] = "VmallocTotal:",
- //        pszVmallocUsed[] = "VmallocUsed:";
-
- //    /* Read each line untill we got all we ned */
- //    while( fgets( buffer, sizeof( buffer ), meminfo ) )
- //    {
- //        if( strstr( buffer, pszMemFree ) == buffer )
- //        {
- //            m.MemFree = strtol( buffer + sizeof(pszMemFree), &end, 10 );
- //            found++;
- //        }
- //        else if( strstr( buffer, pszMemTotal ) == buffer )
- //        {
- //            m.MemTotal = strtol( buffer + sizeof(pszMemTotal), &end, 10 );
- //            found++;
- //        }
- //        else if( strstr( buffer, pszSwapTotal ) == buffer )
- //        {
- //            m.SwapTotal = strtol( buffer + sizeof(pszSwapTotal), &end, 10 );
- //            found++;
- //            break;
- //        }
- //        else if( strstr( buffer, pszSwapFree ) == buffer )
- //        {
- //            m.SwapFree = strtol( buffer + sizeof(pszSwapFree), &end, 10 );
- //            found++;
- //            break;
- //        }
- //        else if( strstr( buffer, pszVmallocTotal ) == buffer )
- //        {
- //            m.VirtualTotal = strtol( buffer + sizeof(pszVmallocTotal), &end, 10 );
- //            found++;
- //            break;
- //        }
- //        else if( strstr( buffer, pszVmallocUsed ) == buffer )
- //        {
- //            m.VirtualUsed = strtol( buffer + sizeof(pszVmallocUsed), &end, 10 );
- //            found++;
- //            break;
- //        }
- //    }
- //    fclose(meminfo);
-}
-
 // #include <sched.h>
 #include <unistd.h>
 void TVPRelinquishCPU() {
@@ -970,10 +865,6 @@ void TVPRelinquishCPU() {
 // 	mt[1].tv_sec = modtime;
 // 	mt[1].tv_usec = 0;
 // 	utimes(name, mt);
-// }
-
-// int TVPShowSimpleMessageBoxYesNo(const ttstr & text, const ttstr & caption) {
-// 	return 0;
 // }
 
 #include <string.h>
@@ -1034,22 +925,6 @@ iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w) {
 
 
 void TVPConsoleLog(const ttstr &l, bool important) {
-// 	static bool TVPLoggingToConsole = IndividualConfigManager::GetInstance()->GetValue<bool>("outputlog", true);
-// 	if (!TVPLoggingToConsole) return;
-// 	if (_consoleWin) {
-// 		_consoleWin->addLine(l, important ? Color3B::YELLOW : Color3B::GRAY);
-// 		TVPDrawSceneOnce(100); // force update in 10fps
-// 	}
-// #ifdef _WIN32
-// 	//cocos2d::log("%s", utf8.c_str());
-// 	char buf[16384] = { 0 };
-// 	WideCharToMultiByte(CP_ACP, 0, l.c_str(), -1, buf, sizeof(buf), nullptr, FALSE);
-// 	puts(buf);
-// #else
-// 	std::string utf8;
-// 	if (StringUtils::UTF16ToUTF8(l.c_str(), utf8))
-// 		cocos2d::log("%s", utf8.c_str());
-// #endif
 
 	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
 	std::string dest = convert.to_bytes(l.c_str());  
@@ -1078,88 +953,8 @@ namespace TJS {
 }
 
 bool TVPGetScreenSize(tjs_int idx, tjs_int &w, tjs_int &h) {
-	// if (idx != 0) return false;
-	// const cocos2d::Size &size = cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize();
-	// //w = size.height; h = size.width;
-	// w = 2048;
-	// h = w * (size.height / size.width);
 	return true;
 }
-
-
-int TVPShowSimpleMessageBox(const char *pszText, const char *pszTitle, unsigned int nButton, const char **btnText) {
-	// JniMethodInfo methodInfo;
-	// if (JniHelper::getStaticMethodInfo(methodInfo, "org/tvp/kirikiri2/KR2Activity", "ShowMessageBox", "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V"))
-	// {
-	// 	jstring jstrTitle = methodInfo.env->NewStringUTF(pszTitle);
-	// 	jstring jstrText = methodInfo.env->NewStringUTF(pszText);
-	// 	jclass strcls = methodInfo.env->FindClass("java/lang/String");
-	// 	jobjectArray btns = methodInfo.env->NewObjectArray(nButton, strcls, nullptr);
-	// 	for (unsigned int i = 0; i < nButton; ++i) {
-	// 		jstring jstrBtn = methodInfo.env->NewStringUTF(btnText[i]);
-	// 		methodInfo.env->SetObjectArrayElement(btns, i, jstrBtn);
-	// 		methodInfo.env->DeleteLocalRef(jstrBtn);
-	// 	}
-
-	// 	methodInfo.env->CallStaticVoidMethod(methodInfo.classID, methodInfo.methodID, jstrTitle, jstrText, btns);
-
-	// 	methodInfo.env->DeleteLocalRef(jstrTitle);
-	// 	methodInfo.env->DeleteLocalRef(jstrText);
-	// 	methodInfo.env->DeleteLocalRef(btns);
-	// 	methodInfo.env->DeleteLocalRef(methodInfo.classID);
-
-	// 	std::unique_lock<std::mutex> lk(MessageBoxLock);
-	// 	while (MsgBoxRet == -2) {
-	// 		MessageBoxCond.wait_for(lk, std::chrono::milliseconds(200));
-	// 		if (MsgBoxRet == -2) {
-	// 			TVPForceSwapBuffer(); // update opengl events
-	// 		}
-	// 	}
-	// 	return MsgBoxRet;
-	// }
-	TVPConsoleLog(pszText);
-	return -1;
-}
-
-int TVPShowSimpleMessageBox(const ttstr & text, const ttstr & caption, const std::vector<ttstr> &vecButtons) {
-	// tTJSNarrowStringHolder pszText(text.c_str());
-	// tTJSNarrowStringHolder pszTitle(caption.c_str());
-	// std::vector<const char *> btnText; btnText.reserve(vecButtons.size());
-	// std::vector<std::string> btnTextHold; btnTextHold.reserve(vecButtons.size());
-	// for (const ttstr &btn : vecButtons) {
-	// 	tjs_string wbtn(btn.AsStdString());
-	// 	std::string nbtn;
-	// 	if (TVPUtf16ToUtf8(nbtn, wbtn)) {
-	// 		btnTextHold.emplace_back(nbtn);
-	// 	}
-	// 	btnText.emplace_back(btnTextHold.back().c_str());
-	// }
-	// return TVPShowSimpleMessageBox(pszText, pszTitle, btnText.size(), &btnText[0]);
-	TVPConsoleLog(text, true);
-	return -1;
-}
-
-
-// ttstr TVPGetDataPath() {
-// 	// std::string path = cocos2d::FileUtils::getInstance()->getWritablePath();
-// 	return "pa";
-// }
-
-// #include "StorageImpl.h"
-// static std::string _TVPGetInternalPreferencePath() {
-// 	// std::string path = cocos2d::FileUtils::getInstance()->getWritablePath();
-// 	// path += ".preference";
-// 	// if (!TVPCheckExistentLocalFolder(path)) {
-// 	// 	TVPCreateFolders(path);
-// 	// }
-// 	// path += "/";
-// 	return "pah";
-// }
-
-// const std::string &TVPGetInternalPreferencePath() {
-// 	// static std::string ret = _TVPGetInternalPreferencePath();
-// 	return "pah";
-// }
 
 tjs_uint32 TVPGetCurrentShiftKeyState()
 {
@@ -1177,32 +972,6 @@ tjs_uint32 TVPGetCurrentShiftKeyState()
 
 ttstr TVPGetPlatformName()
 {
-	// switch (cocos2d::Application::getInstance()->getTargetPlatform()) {
-	// case ApplicationProtocol::Platform::OS_WINDOWS:
-	// 	return "Win32";
-	// case ApplicationProtocol::Platform::OS_LINUX:
-	// 	return "Linux";
-	// case ApplicationProtocol::Platform::OS_MAC:
-	// 	return "MacOS";
-	// case ApplicationProtocol::Platform::OS_ANDROID:
-	// 	return "Android";
-	// case ApplicationProtocol::Platform::OS_IPHONE:
-	// 	return "iPhone";
-	// case ApplicationProtocol::Platform::OS_IPAD:
-	// 	return "iPad";
-	// case ApplicationProtocol::Platform::OS_BLACKBERRY:
-	// 	return "BlackBerry";
-	// case ApplicationProtocol::Platform::OS_NACL:
-	// 	return "Nacl";
-	// case ApplicationProtocol::Platform::OS_TIZEN:
-	// 	return "Tizen";
-	// case ApplicationProtocol::Platform::OS_WINRT:
-	// 	return "WinRT";
-	// case ApplicationProtocol::Platform::OS_WP8:
-	// 	return "WinPhone8";
-	// default:
-	// 	return "Unknown";
-	// }
 	return "MacOS";
 }
 

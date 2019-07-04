@@ -6,15 +6,20 @@
 
 class NativeEvent {
 public:
-// 	LRESULT Result;
-// 	HWND HWnd;
+#if 0
+	LRESULT Result;
+	HWND HWnd;
+#endif
  	unsigned int Message;
 	intptr_t WParam;
 	intptr_t LParam;
 
-//	NativeEvent(){}
+#if 0
+	NativeEvent(){}
+#endif
 	NativeEvent( int mes ) : /*Result(0), HWnd(NULL),*/ Message(mes), WParam(0), LParam(0) {}
 };
+
 #if 0
 class NativeEventQueueIntarface {
 public:
@@ -33,14 +38,20 @@ public:
 };
 #endif
 class NativeEventQueueImplement/* : public NativeEventQueueIntarface*/ {
-//	HWND window_handle_;
-//	WNDCLASSEX	wc_;
+#if 0
+	HWND window_handle_;
+	WNDCLASSEX	wc_;
+#endif
 
 	int CreateUtilWindow();
-//	static LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
+#if 0
+	static LRESULT WINAPI WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
+#endif
 
 public:
-//	NativeEventQueueImplement() : window_handle_(NULL) {}
+#if 0
+	NativeEventQueueImplement() : window_handle_(NULL) {}
+#endif
 
 	// デフォルトハンドラ
 	void HandlerDefault(NativeEvent& event) {}
@@ -55,7 +66,9 @@ public:
 
 	void Clear(int msg = 0);
 
-//	void* GetOwner() { return window_handle_; }
+#if 0
+	HWND GetOwner() { return window_handle_; }
+#endif
 	virtual void Dispatch(class NativeEvent& event) = 0;
 };
 

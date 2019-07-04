@@ -13,6 +13,7 @@
 #ifndef REALFFT_H
 #define REALFFT_H
 
+
 /*
 	Based on
 		Real Discrete FFT package from
@@ -22,12 +23,13 @@
 			http://homepage3.nifty.com/blacksword/
 */
 
-//---------------------------------------------------------------------------
-
-    void rdft(int, int, float * , int * , float * );
-
 
 //---------------------------------------------------------------------------
+
+void rdft(int, int, float * __restrict, int * __restrict, float * __restrict);
+
+//---------------------------------------------------------------------------
+
 
 
 #endif

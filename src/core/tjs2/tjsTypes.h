@@ -14,17 +14,19 @@
 
 #include <stdint.h>
 
-// #ifdef HAVE_CONFIG_H
-//  #include "config.h"
+#if 0
+#ifdef HAVE_CONFIG_H
+ #include "config.h"
 
-//  #ifndef HAVE_STRINGIZE
-//  # error "preprocessor stringize required."
-//  #endif
+ #ifndef HAVE_STRINGIZE
+ # error "preprocessor stringize required."
+ #endif
 
-//  #if SIZEOF_INT < 4
-//  # error "sizeof(int) must be larger than or equal to 4."
-//  #endif
-// #endif /* end of HAVE_CONFIG_H */
+ #if SIZEOF_INT < 4
+ # error "sizeof(int) must be larger than or equal to 4."
+ #endif
+#endif /* end of HAVE_CONFIG_H */
+#endif
 
 
 
@@ -43,8 +45,7 @@
 
 
 /*[*/
-//#if defined(_WIN32)  && !defined(__GNUC__)
-#if defined(_WIN32)  
+#if defined(_WIN32)  && !defined(__GNUC__)
 /* VC++/BCC */
 
 typedef __int8 tjs_int8;
@@ -80,8 +81,8 @@ typedef double tjs_real;
 
 #define TJS_USERENTRY __cdecl
 
-#define TJS_I64_VAL(x) ((tjs_int64)(x##ll))
-#define TJS_UI64_VAL(x) ((tjs_uint64)(x##ull))
+#define TJS_I64_VAL(x) ((tjs_int64)(x##i64))
+#define TJS_UI64_VAL(x) ((tjs_uint64)(x##i64))
 
 #ifdef _M_X64
 #define TJS_64BIT_OS	/* 64bit windows */
@@ -108,6 +109,7 @@ typedef uintptr_t tjs_uintptr_t;
 #include <sys/types.h>
 #include <stdint.h>
 
+
 #if defined(__linux__)
 	typedef int8_t tjs_int8;
 	typedef u_int8_t tjs_uint8;
@@ -131,6 +133,8 @@ typedef uintptr_t tjs_uintptr_t;
 #ifdef __cplusplus
 typedef char16_t tjs_char;
 typedef std::u16string tjs_string;
+//typedef wchar_t tjs_char;
+//typedef std::wstring tjs_string;
 #else
 typedef unsigned short tjs_char;
 #endif
@@ -159,6 +163,7 @@ typedef uintptr_t tjs_uintptr_t;
 #define TJS_USERENTRY
 
 #define TJS_W(X) u##X
+//#define TJS_W(X) L##X
 
 #endif /* end of defined(_WIN32) && !defined(__GNUC__) */
 /*]*/

@@ -59,6 +59,8 @@ enum tTVPImeMode
 #define TVP_SS_MIDDLE  0x20
 #define TVP_SS_DOUBLE  0x40
 #define TVP_SS_REPEAT  0x80
+#define TVP_SS_X1      0x100
+#define TVP_SS_X2      0x200
 
 
 inline bool TVPIsAnyMouseButtonPressedInShiftStateFlags(tjs_uint32 state)

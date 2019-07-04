@@ -12,10 +12,13 @@
 
 
 #include "FilePathUtil.h"
-// #include <delayimp.h>
-// #include <mmsystem.h>
-// #include <objbase.h>
-// #include <commdlg.h>
+#if 0
+#include <delayimp.h>
+#include <mmsystem.h>
+#include <objbase.h>
+#include <commdlg.h>
+#include <thread>
+#endif
 
 #include "SysInitImpl.h"
 #include "StorageIntf.h"
@@ -27,31 +30,33 @@
 #include "tjsLex.h"
 #include "LayerIntf.h"
 #include "Random.h"
-// #include "DetectCPU.h"
+#if 0
+#include "DetectCPU.h"
+#endif
 #ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
 #endif
 #include "ScriptMgnIntf.h"
-//#include "VersionFormUnit.h"
-// #include "EmergencyExit.h"
-
-//#include "tvpgl_ia32_intf.h"
+#ifdef TVP_ARCHIVE_ENABLE_XP3
+#include "XP3Archive.h"
+#endif
+#if 0
+#include "EmergencyExit.h"
+#endif
 
 #include "BinaryStream.h"
 #include "Application.h"
 #include "Exception.h"
 #include "ApplicationSpecialPath.h"
-//#include "resource.h"
-//#include "ConfigFormUnit.h"
+#if 0
+#include "resource.h"
+#endif
+
 #include "TickCount.h"
 #ifdef IID
 #undef IID
 #endif
-#define uint32_t unsigned int
-// #include <thread>
-#undef uint32_t
 #include "Platform.h"
-// #include "ConfigManager/IndividualConfigManager.h"
 
 //---------------------------------------------------------------------------
 // global data
@@ -155,7 +160,6 @@ static void RegisterDllLoadHook(void)
 	if(flag) __pfnDliNotifyHook = DllLoadHook;
 }
 //---------------------------------------------------------------------------
-#endif
 
 
 
@@ -217,7 +221,7 @@ struct tTVPHWExceptionData
 	ULONG_PTR AccessFlag; // for EAccessViolation (0=read, 1=write, 8=execute)
 	void *AccessTarget; // for EAccessViolation
 	CONTEXT Context; // OS exception context
-	wchar_t Module[MAX_PATH]; // module name which caused the exception
+	tjs_char Module[MAX_PATH]; // module name which caused the exception
 
 	tjs_uint8 CodesAtEIP[TVP_HWE_MAX_CODES_AT_EIP];
 	tjs_int CodesAtEIPLen;
@@ -235,13 +239,13 @@ static tTVPHWExceptionData TVPLastHWExceptionData;
 
 HANDLE TVPHWExceptionLogHandle = NULL;
 //---------------------------------------------------------------------------
-static wchar_t TVPHWExceptionLogFilename[MAX_PATH];
+static tjs_char TVPHWExceptionLogFilename[MAX_PATH];
 
 static void TVPWriteHWELogFile()
 {
 	TVPEnsureDataPathDirectory();
 	TJS_strcpy(TVPHWExceptionLogFilename, TVPNativeDataPath.c_str());
-	TJS_strcat(TVPHWExceptionLogFilename, L"hwexcept.log");
+	TJS_strcat(TVPHWExceptionLogFilename, TJS_W("hwexcept.log"));
 	TVPHWExceptionLogHandle = CreateFile(TVPHWExceptionLogFilename, GENERIC_WRITE,
 		FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -251,16 +255,16 @@ static void TVPWriteHWELogFile()
 	SetFilePointer(TVPHWExceptionLogHandle, filesize, NULL, FILE_BEGIN);
 
 	// write header
-	const wchar_t headercomment[] =
-		L"THIS IS A HARDWARE EXCEPTION LOG FILE OF KIRIKIRI. "
-		L"PLEASE SEND THIS FILE TO THE AUTHOR WITH *.console.log FILE. ";
+	const tjs_char headercomment[] =
+		TJS_W("THIS IS A HARDWARE EXCEPTION LOG FILE OF KIRIKIRI. ")
+		TJS_W("PLEASE SEND THIS FILE TO THE AUTHOR WITH *.console.log FILE. ");
 	DWORD written = 0;
 	for(int i = 0; i < 4; i++)
-		WriteFile(TVPHWExceptionLogHandle, L"----", 4*sizeof(wchar_t), &written, NULL);
+		WriteFile(TVPHWExceptionLogHandle, TJS_W("----"), 4*sizeof(tjs_char), &written, NULL);
 	WriteFile(TVPHWExceptionLogHandle, headercomment, sizeof(headercomment)-1,
 		&written, NULL);
 	for(int i = 0; i < 4; i++)
-		WriteFile(TVPHWExceptionLogHandle, L"----", 4*sizeof(wchar_t), &written, NULL);
+		WriteFile(TVPHWExceptionLogHandle, TJS_W("----"), 4*sizeof(tjs_char), &written, NULL);
 		
 
 	// write version
@@ -392,7 +396,7 @@ void TVPHandleSEHException( int ErrorCode, EXCEPTION_RECORD *P, unsigned long os
 			VirtualQuery((void*)d->ESP[p], &mbi, sizeof(mbi));
 			if(mbi.State == MEM_COMMIT)
 			{
-				wchar_t module[MAX_PATH];
+				tjs_char module[MAX_PATH];
 				if(::GetModuleFileName((HMODULE)mbi.AllocationBase, module, MAX_PATH))
 				{
 					tjs_uint8 buf[16];
@@ -450,7 +454,7 @@ void TVPHandleSEHException( int ErrorCode, EXCEPTION_RECORD *P, unsigned long os
 	TVPWriteHWELogFile();
 }
 //---------------------------------------------------------------------------
-static void TVPDumpCPUFlags(ttstr &line, DWORD flags, DWORD bit, tjs_char *name)
+static void TVPDumpCPUFlags(ttstr &line, DWORD flags, DWORD bit, const tjs_char *name)
 {
 	line += name;
 	if(flags & bit)
@@ -735,7 +739,7 @@ void TVPDumpHWException()
 
 	line = TJS_W("Exception : ");
 
-	tjs_char *p = NULL;
+	const tjs_char *p = NULL;
 	switch(d->Code)
 	{
 	case  3:	p = TJS_W("Divide By Zero"); break;
@@ -824,7 +828,7 @@ void TVPDumpHWException()
 		VirtualQuery((void*)d->CallTrace[s], &mbi, sizeof(mbi));
 		if(mbi.State == MEM_COMMIT)
 		{
-			wchar_t module[MAX_PATH];
+			tjs_char module[MAX_PATH];
 			if(::GetModuleFileName((HMODULE)mbi.AllocationBase, module, MAX_PATH))
 			{
 				line += ttstr(ExtractFileName(module).c_str());
@@ -847,7 +851,7 @@ void TVPDumpHWException(void)
 
 
 
-#if 0
+
 //---------------------------------------------------------------------------
 // random generator initializer
 //---------------------------------------------------------------------------
@@ -889,8 +893,6 @@ static void TVPInitRandomGenerator()
 #endif
 	tjs_uint32 tick = TVPGetRoughTickCount32();
 	TVPPushEnvironNoise(&tick, sizeof(tick));
-	// std::thread::id tid = std::this_thread::get_id();
-	// TVPPushEnvironNoise(&tid, sizeof(tid));
 	time_t curtime = time(NULL);
 	TVPPushEnvironNoise(&curtime, sizeof(curtime));
 }
@@ -911,7 +913,7 @@ void TVPInitializeBaseSystems()
 
 	// set default current directory
 	{
-		TVPSetCurrentDirectory( IncludeTrailingBackslash(ExtractFileDir(ExePath().AsStdString())) );
+		TVPSetCurrentDirectory( IncludeTrailingBackslash(ExtractFileDir(ExePath())) );
 	}
 
 	// load message map file
@@ -936,7 +938,7 @@ void TVPInitializeBaseSystems()
 static int CALLBACK TVPBrowseCallbackProc(HWND hwnd,UINT uMsg,LPARAM lParam,LPARAM lpData)
 {
     if(uMsg==BFFM_INITIALIZED){
-		wchar_t exeDir[MAX_PATH];
+		tjs_char exeDir[MAX_PATH];
 		TJS_strcpy(exeDir, IncludeTrailingBackslash(ExtractFileDir(ExePath())).c_str());
         ::SendMessage(hwnd,BFFM_SETSELECTION,(WPARAM)TRUE,(LPARAM)exeDir);
     }
@@ -952,36 +954,66 @@ void TVPBeforeSystemInit()
 
 	TVPInitProgramArgumentsAndDataPath(false); // ensure command line
 
-	// set system archive delimiter after patch.tjs specified
-	tTJSVariant v;
-	if (TVPGetCommandLine(TJS_W("-arcdelim"), &v))
-		TVPArchiveDelimiter = ttstr(v)[0];
-
-	if (TVPIsExistentStorageNoSearchNoNormalize(TVPProjectDir)) {
-		TVPProjectDir += TVPArchiveDelimiter;
-	} else {
-		TVPProjectDir += TJS_W("/");
+#if 0
+	{	// CPU core limitation
+		bool cpuCoreLimit = true;
+		tTJSVariant opt;
+		if( TVPGetCommandLine( TJS_W( "-cpucorelimit" ), &opt ) )
+		{
+			ttstr str( opt );
+			if( str == TJS_W( "no" ) )
+			{
+				cpuCoreLimit = false;
+			}
+		}
+		if( cpuCoreLimit )
+		{
+			tjs_int numCore = std::thread::hardware_concurrency();
+#ifdef TJS_64BIT_OS
+			if( numCore > 63 )
+			{
+				HANDLE hProc = ::OpenProcess( PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId() );
+				BOOL success = ::SetProcessAffinityMask( hProc, 0x7fffffffffffffffULL );
+				if( success == FALSE ) {
+					TVPAddLog( TJS_W( "Faild to set process affinity." ) );
+				}
+				::CloseHandle( hProc );
+			}
+#else
+			if( numCore > 31 )
+			{
+				//DWORD mask = (0x01 << numCore) - 1;	// for debug.
+				HANDLE hProc = ::OpenProcess( PROCESS_ALL_ACCESS, FALSE, ::GetCurrentProcessId() );
+				BOOL success = ::SetProcessAffinityMask( hProc, 0x7fffffffUL );
+				if( success == FALSE ) {
+					TVPAddLog(TJS_W("Faild to set process affinity."));
+				}
+				::CloseHandle( hProc );
+			}
+#endif
+		}
 	}
-	TVPSetCurrentDirectory(TVPProjectDir);
 
 #ifdef TVP_REPORT_HW_EXCEPTION
 	// __dee_hacked_set_getExceptionObjectHook(TVP__dee_hacked_getExceptionObjectHook);
 		// register hook function for hardware exceptions
 #endif
-#if 0
+
 	Application->SetHintHidePause( 24*60*60*1000 );
 		// not to hide tool tip hint immediately
 	Application->SetShowHint( false );
 	Application->SetShowHint( true );
 		// to ensure assigning new HintWindow Class defined in HintWindow.cpp 
+
 #endif
 
 	// randomize
 	TVPInitRandomGenerator();
 
 	// memory usage
-	{
+	TVPTotalPhysMemory = 128 * 1024 * 1024;
 #if 0
+	{
 		MEMORYSTATUSEX status = { sizeof(MEMORYSTATUSEX) };
 		::GlobalMemoryStatusEx(&status);
 
@@ -989,7 +1021,7 @@ void TVPBeforeSystemInit()
 
 		TVPTotalPhysMemory = status.ullTotalPhys;
 
-		ttstr memstr( std::to_wstring(TVPTotalPhysMemory).c_str() );
+		ttstr memstr( to_tjs_string(TVPTotalPhysMemory).c_str() );
 		TVPAddImportantLog( TVPFormatMessage(TVPInfoTotalPhysicalMemory, memstr) );
 
 		tTJSVariant opt;
@@ -1020,55 +1052,10 @@ void TVPBeforeSystemInit()
 			if(TJSObjectHashBitsLimit > 4)
 				TJSObjectHashBitsLimit = 4;
 		}
-#endif
-		TVPTotalPhysMemory = 128 * 1024 * 1024;
-		// TVPMemoryInfo meminf;
-		// TVPGetMemoryInfo(meminf);
-		// TVPPushEnvironNoise(&meminf, sizeof(meminf));
-		
-		// TVPTotalPhysMemory = meminf.MemTotal * 1024;
-		// if (TVPTotalPhysMemory > 768 * 1024 * 1024) {
-		// 	TVPTotalPhysMemory -= 512 * 1024 * 1024; // assume that system reserved 512M memory
-		// } else {
-		// 	TVPTotalPhysMemory /= 2; // use half memory in small memory devices
-		// }
-
-		// TVPAddImportantLog(TVPFormatMessage(TVPInfoTotalPhysicalMemory, tjs_int64(TVPTotalPhysMemory)));
-		// if (TVPTotalPhysMemory > 256 * 1024 * 1024) {
-		// 	std::string str = "high"; //IndividualConfigManager::GetInstance()->GetValue<std::string>("memusage", "unlimited");
-		// 	if (str == ("low"))
-		// 		TVPTotalPhysMemory = 0; // assumes zero
-		// 	else if (str == ("medium"))
-		// 		TVPTotalPhysMemory = 128 * 1024 * 1024;
-		// 	else if (str == ("high"))
-		// 		TVPTotalPhysMemory = 256 * 1024 * 1024;
-		// } else { // use minimum memory usage if less than 256M(512M physics)
-		// 	TVPTotalPhysMemory = 0;
-		// }
-
-		// if (TVPTotalPhysMemory < 128 * 1024 * 1024)
-		// {
-		// 	// very very low memory, forcing to assume zero memory
-		// 	TVPTotalPhysMemory = 0;
-		// }
-
-		// if (TVPTotalPhysMemory < 128 * 1024 * 1024)
-		// {
-		// 	// extra low memory
-		// 	if (TJSObjectHashBitsLimit > 0)
-		// 		TJSObjectHashBitsLimit = 0;
-		// 	TVPSegmentCacheLimit = 0;
-		// 	TVPFreeUnusedLayerCache = true; // in LayerIntf.cpp
-		// } else if (TVPTotalPhysMemory < 256 * 1024 * 1024)
-		// {
-		// 	// low memory
-		// 	if (TJSObjectHashBitsLimit > 4)
-		// 		TJSObjectHashBitsLimit = 4;
-		// }
 	}
-#if 0
 
-	wchar_t buf[MAX_PATH];
+
+	tjs_char buf[MAX_PATH];
 	bool bufset = false;
 	bool nosel = false;
 	bool forcesel = false;
@@ -1084,18 +1071,18 @@ void TVPBeforeSystemInit()
 		}
 		else
 		{
-			wchar_t exeDir[MAX_PATH];
+			tjs_char exeDir[MAX_PATH];
 			TJS_strcpy(exeDir, IncludeTrailingBackslash(ExtractFileDir(ExePath())).c_str());
 			for(tjs_int i = 1; i<_argc; i++)
 			{
-				if(_argv[i][0] == '-' && _argv[i][1] == '-' && _argv[i][2] == 0)
+				if(_wargv[i][0] == TJS_W('-') && _wargv[i][1] == TJS_W('-') && _wargv[i][2] == 0)
 					break;
 
-				if(_argv[i][0] != '-')
+				if(_wargv[i][0] != TJS_W('-'))
 				{
 					// TODO: set the current directory
 					::SetCurrentDirectory( exeDir );
-					TJS_strncpy(buf, ttstr(_argv[i]).c_str(), MAX_PATH-1);
+					TJS_strncpy(buf, ttstr(_wargv[i]).c_str(), MAX_PATH-1);
 					buf[MAX_PATH-1] = TJS_W('\0');
 					if(DirectoryExists(buf)) // is directory?
 						TJS_strcat(buf, TJS_W("\\"));
@@ -1114,8 +1101,8 @@ void TVPBeforeSystemInit()
 		// sel option was set
 		if(bufset)
 		{
-			wchar_t path[MAX_PATH];
-			wchar_t *dum = 0;
+			tjs_char path[MAX_PATH];
+			tjs_char *dum = 0;
 			GetFullPathName(buf, MAX_PATH-1, path, &dum);
 			TJS_strcpy(buf, path);
 			TVPProjectDirSelected = false;
@@ -1128,7 +1115,7 @@ void TVPBeforeSystemInit()
 	// check "content-data" directory
 	if(!forcedataxp3 && !nosel)
 	{
-		wchar_t tmp[MAX_PATH];
+		tjs_char tmp[MAX_PATH];
 		TJS_strcpy(tmp, IncludeTrailingBackslash(ExtractFileDir(ExePath())).c_str());
 		TJS_strcat(tmp, TJS_W("content-data"));
 		if(DirectoryExists(tmp))
@@ -1144,7 +1131,7 @@ void TVPBeforeSystemInit()
 	// check "data.xp3" archive
  	if(!nosel)
 	{
-		wchar_t tmp[MAX_PATH];
+		tjs_char tmp[MAX_PATH];
 		TJS_strcpy(tmp, IncludeTrailingBackslash(ExtractFileDir(ExePath())).c_str());
 		TJS_strcat(tmp, TJS_W("data.xp3"));
 		if(FileExists(tmp))
@@ -1159,7 +1146,7 @@ void TVPBeforeSystemInit()
 	// check "data.exe" archive
  	if(!nosel)
 	{
-		wchar_t tmp[MAX_PATH];
+		tjs_char tmp[MAX_PATH];
 		TJS_strcpy(tmp, IncludeTrailingBackslash(ExtractFileDir(ExePath())).c_str());
 		TJS_strcat(tmp, TJS_W("data.exe"));
 		if(FileExists(tmp))
@@ -1187,7 +1174,7 @@ void TVPBeforeSystemInit()
 	// check "data" directory
 	if(!forcedataxp3 && !nosel)
 	{
-		wchar_t tmp[MAX_PATH];
+		tjs_char tmp[MAX_PATH];
 		TJS_strcpy(tmp, IncludeTrailingBackslash(ExtractFileDir(ExePath())).c_str());
 		TJS_strcat(tmp, TJS_W("data"));
 		if(DirectoryExists(tmp))
@@ -1213,7 +1200,7 @@ void TVPBeforeSystemInit()
 	if(!forcedataxp3 && (!nosel || forcesel))
 	{
 		BOOL			bRes;
-		wchar_t			chPutFolder[MAX_PATH];
+		tjs_char			chPutFolder[MAX_PATH];
 		LPITEMIDLIST	pidlRetFolder;
 		BROWSEINFO		stBInfo;
 		::ZeroMemory( &stBInfo, sizeof(stBInfo) );
@@ -1266,12 +1253,20 @@ void TVPBeforeSystemInit()
 		TVPAddImportantLog( TVPFormatMessage(TVPInfoSelectedProjectDirectory, TVPProjectDir) );
 	}
 #endif
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		strncat(cwd, "/", PATH_MAX);
+		TVPProjectDirSelected = true;
+		ttstr buf(cwd);
+		TVPProjectDir = TVPNormalizeStorageName(buf.AsStdString());
+		TVPSetCurrentDirectory(TVPProjectDir);
+		TVPNativeProjectDir = buf.AsStdString();
+	}
 }
 //---------------------------------------------------------------------------
 static void TVPDumpOptions();
 //---------------------------------------------------------------------------
-extern bool TVPEnableGlobalHeapCompaction;
-extern void TVPGL_SSE2_Init();
+extern void TVPAddGlobalHeapCompactCallback();
 extern bool TVPAutoSaveBookMark;
 static bool TVPHighTimerPeriod = false;
 static uint32_t TVPTimeBeginPeriodRes = 0;
@@ -1279,7 +1274,9 @@ static uint32_t TVPTimeBeginPeriodRes = 0;
 void TVPAfterSystemInit()
 {
 	// check CPU type
-	// TVPDetectCPU();
+#if 0
+	TVPDetectCPU();
+#endif
 
 	TVPAllocGraphicCacheOnHeap = false; // always false since beta 20
 
@@ -1295,42 +1292,52 @@ void TVPAfterSystemInit()
 			limitmb = opt.AsInteger();
 	}
 
-
+	// 物理メモリより仮想メモリの方が小さい(32bitでメモリ搭載量が多い)場合、仮想メモリの方でキャッシュ計算する
+#if 0
+	MEMORYSTATUSEX status = { sizeof(MEMORYSTATUSEX) };
+	::GlobalMemoryStatusEx(&status);
+#endif
+	tjs_uint64 totalMemory = TVPTotalPhysMemory;
+#if 0
+	if( totalMemory > status.ullTotalVirtual ) {
+		totalMemory = status.ullTotalVirtual;
+	}
+#endif
 	if(limitmb == -1)
 	{
-		if(TVPTotalPhysMemory <= 32*1024*1024)
+		if(totalMemory <= 32*1024*1024)
 			TVPGraphicCacheSystemLimit = 0;
-		else if(TVPTotalPhysMemory <= 48*1024*1024)
+		else if(totalMemory <= 48*1024*1024)
 			TVPGraphicCacheSystemLimit = 0;
-		else if(TVPTotalPhysMemory <= 64*1024*1024)
+		else if(totalMemory <= 64*1024*1024)
 			TVPGraphicCacheSystemLimit = 0;
-		else if(TVPTotalPhysMemory <= 96*1024*1024)
+		else if(totalMemory <= 96*1024*1024)
 			TVPGraphicCacheSystemLimit = 4;
-		else if(TVPTotalPhysMemory <= 128*1024*1024)
+		else if(totalMemory <= 128*1024*1024)
 			TVPGraphicCacheSystemLimit = 8;
-		else if(TVPTotalPhysMemory <= 192*1024*1024)
+		else if(totalMemory <= 192*1024*1024)
 			TVPGraphicCacheSystemLimit = 12;
-		else if(TVPTotalPhysMemory <= 256*1024*1024)
+		else if(totalMemory <= 256*1024*1024)
 			TVPGraphicCacheSystemLimit = 20;
-		else if(TVPTotalPhysMemory <= 512*1024*1024)
+		else if(totalMemory <= 512*1024*1024)
 			TVPGraphicCacheSystemLimit = 40;
 		else
-			TVPGraphicCacheSystemLimit = tjs_uint64(TVPTotalPhysMemory / (1024*1024*10));	// cachemem = physmem / 10
+			TVPGraphicCacheSystemLimit = tjs_uint64(totalMemory / (1024*1024*10));	// cachemem = physmem / 10
 		TVPGraphicCacheSystemLimit *= 1024*1024;
 	}
 	else
 	{
 		TVPGraphicCacheSystemLimit = limitmb * 1024*1024;
 	}
-	// 32bit なので 512MB までに制限
+	// キャッシュは 512MB までに制限
 	if( TVPGraphicCacheSystemLimit >= 512*1024*1024 )
 		TVPGraphicCacheSystemLimit = 512*1024*1024;
 
-
-	if(TVPTotalPhysMemory <= 64*1024*1024)
+	if(totalMemory <= 64*1024*1024)
 		TVPSetFontCacheForLowMem();
 
 //	TVPGraphicCacheSystemLimit = 1*1024*1024; // DEBUG 
+
 
 	if(TVPGetCommandLine(TJS_W("-autosave"), &opt))
 	{
@@ -1340,24 +1347,18 @@ void TVPAfterSystemInit()
 		}
 	}
 	// check TVPGraphicSplitOperation option
-	std::string _val = "software";//IndividualConfigManager::GetInstance()->GetValue<std::string>("renderer", "software");
-	if (_val != "software") {
-		TVPGraphicSplitOperationType = gsotNone;
-	} else {
-		TVPDrawThreadNum = 0;//IndividualConfigManager::GetInstance()->GetValue<int>("software_draw_thread", 0);
-		if (TVPGetCommandLine(TJS_W("-gsplit"), &opt))
-		{
-			ttstr str(opt);
-			if (str == TJS_W("no"))
-				TVPGraphicSplitOperationType = gsotNone;
-			else if (str == TJS_W("int"))
-				TVPGraphicSplitOperationType = gsotInterlace;
-			else if (str == TJS_W("yes") || str == TJS_W("simple"))
-				TVPGraphicSplitOperationType = gsotSimple;
-			else if (str == TJS_W("bidi"))
-				TVPGraphicSplitOperationType = gsotBiDirection;
+	if(TVPGetCommandLine(TJS_W("-gsplit"), &opt))
+	{
+		ttstr str(opt);
+		if(str == TJS_W("no"))
+			TVPGraphicSplitOperationType = gsotNone;
+		else if(str == TJS_W("int"))
+			TVPGraphicSplitOperationType = gsotInterlace;
+		else if(str == TJS_W("yes") || str == TJS_W("simple"))
+			TVPGraphicSplitOperationType = gsotSimple;
+		else if(str == TJS_W("bidi"))
+			TVPGraphicSplitOperationType = gsotBiDirection;
 
-		}
 	}
 
 	// check TVPDefaultHoldAlpha option
@@ -1388,14 +1389,6 @@ void TVPAfterSystemInit()
 	// dump option
 	TVPDumpOptions();
 
-	// initilaize x86 graphic routines
-#if 0
-#ifndef TJS_64BIT_OS
-	TVPGL_IA32_Init();
-#endif
-	TVPGL_SSE2_Init();
-#endif
-
 	// timer precision
 	uint32_t prectick = 1;
 	if(TVPGetCommandLine(TJS_W("-timerprec"), &opt))
@@ -1407,7 +1400,7 @@ void TVPAfterSystemInit()
 	}
 
         // draw thread num
-        tjs_int drawThreadNum = 0;
+        tjs_int drawThreadNum = 1;
         if (TVPGetCommandLine(TJS_W("-drawthread"), &opt)) {
           ttstr str(opt);
           if (str == TJS_W("auto"))
@@ -1416,6 +1409,7 @@ void TVPAfterSystemInit()
             drawThreadNum = (tjs_int)opt;
         }
         TVPDrawThreadNum = drawThreadNum;
+
 #if 0
 	if(prectick)
 	{
@@ -1452,7 +1446,7 @@ void TVPAfterSystemInit()
 	if(TVPGetCommandLine(TJS_W("-ghcompact"), &opt)) {
 		ttstr str(opt);
 		if(str == TJS_W("yes") || str == TJS_W("true")) {
-			TVPEnableGlobalHeapCompaction = true;
+			TVPAddGlobalHeapCompactCallback();
 		}
 	}
 #endif
@@ -1517,69 +1511,20 @@ void TVPMainWindowClosed()
 
 
 
+
 //---------------------------------------------------------------------------
 // GetCommandLine
 //---------------------------------------------------------------------------
-static std::vector<std::string> * TVPGetEmbeddedOptions()
-{
-#if 0
-	HMODULE hModule = ::GetModuleHandle(NULL);
-	const char *buf = NULL;
-	unsigned int size = 0;
-	HRSRC hRsrc = ::FindResource(NULL, MAKEINTRESOURCE(IDR_OPTION), TEXT("TEXT"));
-	if( hRsrc != NULL ) {
-		size = ::SizeofResource( hModule, hRsrc );
-		HGLOBAL hGlobal = ::LoadResource( hModule, hRsrc );
-		if( hGlobal != NULL ) {
-			buf = reinterpret_cast<const char*>(::LockResource(hGlobal));
-		}
-	}
-	if( buf == NULL ) return NULL;
-#endif
-	std::vector<std::string> *ret = NULL;
-#if 0
-	try {
-		ret = new std::vector<std::string>();
-		const char *tail = buf + size;
-		const char *start = buf;
-		while( buf < tail ) {
-			if( buf[0] == 0x0D && buf[1] == 0x0A ) {	// CR LF
-				ret->push_back( std::string(start,buf) );
-				start = buf + 2;
-				buf++;
-			} else if( buf[0] == 0x0D || buf[0] == 0x0A ) {	// CR or LF
-				ret->push_back( std::string(start,buf) );
-				start = buf + 1;
-			} else if( buf[0] == '\0' ) {
-				ret->push_back( std::string(start,buf) );
-				start = buf + 1;
-				break;
-			}
-			buf++;
-		}
-		if( start < buf ) {
-			ret->push_back( std::string(start,buf) );
-		}
-	} catch(...) {
-		if(ret) delete ret;
-		throw;
-	}
-	TVPAddImportantLog( (const tjs_char*)TVPInfoLoadingExecutableEmbeddedOptionsSucceeded );
-#endif
-	return ret;
-}
-//---------------------------------------------------------------------------
-static std::vector<std::string> * TVPGetConfigFileOptions(const ttstr& filename)
+static std::vector<std::string> * TVPGetConfigFileOptions(const tjs_string& filename)
 {
 #if 0
 	// load .cf file
-	std::wstring errmsg;
+	tjs_string errmsg;
 	if(!FileExists(filename))
 		errmsg = (const tjs_char*)TVPFileNotFound;
-#endif
+
 	std::vector<std::string> * ret = NULL; // new std::vector<std::string>();
-#if 0
-	if (errmsg == TJS_W(""))
+	if(errmsg == TJS_W(""))
 	{
 		try
 		{
@@ -1600,8 +1545,9 @@ static std::vector<std::string> * TVPGetConfigFileOptions(const ttstr& filename)
 		TVPAddImportantLog( TVPFormatMessage(TVPInfoLoadingConfigurationFileFailed, filename.c_str(), errmsg.c_str()) );
 	else
 		TVPAddImportantLog( TVPFormatMessage(TVPInfoLoadingConfigurationFileSucceeded, filename.c_str()) );
+
 #endif
-	return ret;
+	return NULL;
 }
 //---------------------------------------------------------------------------
 
@@ -1661,7 +1607,6 @@ void TVPEnsureDataPathDirectory()
 //---------------------------------------------------------------------------
 static void PushAllCommandlineArguments()
 {
-#if 0
 	// store arguments given by commandline to "TVPProgramArguments"
 	bool acceptfilenameargument = GetSystemSecurityOption("acceptfilenameargument") != 0;
 
@@ -1673,22 +1618,22 @@ static void PushAllCommandlineArguments()
 		if(argument_stopped)
 		{
 			ttstr arg_name_and_value = TJS_W("-arg") + ttstr(file_argument_count) + TJS_W("=")
-				+ ttstr(_argv[i]);
+				+ ttstr(_wargv[i]);
 			file_argument_count++;
 			TVPProgramArguments.push_back(arg_name_and_value);
 		}
 		else
 		{
-			if(_argv[i][0] == '-')
+			if(_wargv[i][0] == TJS_W('-'))
 			{
-				if(_argv[i][1] == '-' && _argv[i][2] == 0)
+				if(_wargv[i][1] == TJS_W('-') && _wargv[i][2] == 0)
 				{
 					// argument stopper
 					argument_stopped = true;
 				}
 				else
 				{
-					ttstr value(_argv[i]);
+					ttstr value(_wargv[i]);
 					if(!TJS_strchr(value.c_str(), TJS_W('=')))
 						value += TJS_W("=yes");
 					TVPProgramArguments.push_back(TVPParseCommandLineOne(value));
@@ -1696,7 +1641,6 @@ static void PushAllCommandlineArguments()
 			}
 		}
 	}
-#endif
 }
 //---------------------------------------------------------------------------
 static void PushConfigFileOptions(const std::vector<std::string> * options)
@@ -1716,15 +1660,15 @@ static void TVPInitProgramArgumentsAndDataPath(bool stop_after_datapath_got)
 	{
 		TVPProgramArgumentsInit = true;
 
+
 		// find options from self executable image
-		const int num_option_layers = 3;
+		const int num_option_layers = 2;
 		std::vector<std::string> * options[num_option_layers];
 		for(int i = 0; i < num_option_layers; i++) options[i] = NULL;
 		try
 		{
-			// read embedded options and default configuration file
-			options[0] = TVPGetEmbeddedOptions();
-//			options[1] = TVPGetConfigFileOptions(ApplicationSpecialPath::GetConfigFileName(ExePath()));
+			// read default configuration file
+			options[0] = TVPGetConfigFileOptions(ApplicationSpecialPath::GetConfigFileName(ExePath()));
 
 			// at this point, we need to push all exsting known options
 			// to be able to see datapath
@@ -1735,21 +1679,20 @@ static void TVPInitProgramArgumentsAndDataPath(bool stop_after_datapath_got)
 			// read datapath
 			tTJSVariant val;
 			tjs_string config_datapath;
-// 			if(TVPGetCommandLine(TJS_W("-datapath"), &val))
-// 				config_datapath = ((ttstr)val).AsStdString();
-			TVPNativeDataPath = ApplicationSpecialPath::GetDataPathDirectory(config_datapath, ExePath().AsStdString());
+			if(TVPGetCommandLine(TJS_W("-datapath"), &val))
+				config_datapath = ((ttstr)val).AsStdString();
+			TVPNativeDataPath = ApplicationSpecialPath::GetDataPathDirectory(config_datapath, ExePath());
 
 			if(stop_after_datapath_got) return;
 
 			// read per-user configuration file
-//			options[2] = TVPGetConfigFileOptions(ApplicationSpecialPath::GetUserConfigFileName(config_datapath, ExePath()));
+			options[1] = TVPGetConfigFileOptions(ApplicationSpecialPath::GetUserConfigFileName(config_datapath, ExePath()));
 
 			// push each options into option stock
 			// we need to clear TVPProgramArguments first because of the
 			// option priority order.
 			TVPProgramArguments.clear();
 			PushAllCommandlineArguments();
-			PushConfigFileOptions(options[2]); // has more priority
 			PushConfigFileOptions(options[1]); // has more priority
 			PushConfigFileOptions(options[0]); // has lesser priority
 		} catch(...) {
@@ -1822,7 +1765,7 @@ bool TVPGetCommandLine(const tjs_char * name, tTJSVariant *value)
 //---------------------------------------------------------------------------
 void TVPSetCommandLine(const tjs_char * name, const ttstr & value)
 {
-//	TVPInitProgramArgumentsAndDataPath(false);
+	TVPInitProgramArgumentsAndDataPath(false);
 
 	tjs_int namelen = (tjs_int)TJS_strlen(name);
 	std::vector<ttstr>::iterator i;
@@ -1859,49 +1802,26 @@ bool TVPCheckPrintDataPath()
 	// print current datapath to stdout, then exit
 	for(int i=1; i<_argc; i++)
 	{
-		if(!strcmp(_argv[i], "-printdatapath")) // this does not refer TVPGetCommandLine
+		if(!TJS_strcmp(_wargv[i], TJS_W("-printdatapath"))) // this does not refer TVPGetCommandLine
 		{
 			TVPInitProgramArgumentsAndDataPath(true);
-			wprintf(L"%s\n", TVPNativeDataPath.c_str());
+			wprintf(TJS_W("%s\n"), TVPNativeDataPath.c_str());
 
 			return true; // processed
 		}
 	}
+
 #endif
 	return false;
 }
 //---------------------------------------------------------------------------
-
-
-
-//---------------------------------------------------------------------------
-// TVPCheckAbout
-//---------------------------------------------------------------------------
-bool TVPCheckAbout(void)
-{
-#if 0
-	if(TVPGetCommandLine(TJS_W("-about")))
-	{
-		Sleep(600);
-		tjs_char msg[80];
-		TJS_snprintf(msg, sizeof(msg)/sizeof(tjs_char), TVPInfoCpuClockRoughly, (int)TVPCPUClock);
-		TVPAddImportantLog(msg);
-
-		TVPShowVersionForm();
-		return true;
-	}
-#endif
-	return false;
-}
-//---------------------------------------------------------------------------
-
 
 
 
 //---------------------------------------------------------------------------
 // TVPExecuteAsync
 //---------------------------------------------------------------------------
-static void TVPExecuteAsync( const std::wstring& progname)
+static void TVPExecuteAsync( const tjs_string& progname)
 {
 #if 0
 	STARTUPINFO si;
@@ -1965,54 +1885,6 @@ static bool TVPWaitWritePermit(const tjs_string& fn)
 #endif
 }
 //---------------------------------------------------------------------------
-
-
-#if 0
-//---------------------------------------------------------------------------
-// TVPShowUserConfig
-//---------------------------------------------------------------------------
-static void TVPShowUserConfig(std::string orgexe)
-{
-	TVPEnsureDataPathDirectory();
-
-	Application->SetTitle( ChangeFileExt(ExtractFileName(orgexe), "") );
-	TConfSettingsForm *form = new TConfSettingsForm(Application, true);
-	form->InitializeConfig(orgexe);
-	form->ShowModal();
-	delete form;
-}
-//---------------------------------------------------------------------------
-#endif
-
-//---------------------------------------------------------------------------
-// TVPExecuteUserConfig
-//---------------------------------------------------------------------------
-bool TVPExecuteUserConfig()
-{
-	return false;
-	// check command line argument
-#if 0
-
-	tjs_int i;
-	bool process = false;
-	for(i=1; i<_argc; i++)
-	{
-		if(!TJS_strcmp(_wargv[i], TJS_W("-userconf"))) // this does not refer TVPGetCommandLine
-			process = true;
-	}
-
-	if(!process) return false;
-
-	// execute user config mode
-	//TVPShowUserConfig(ExePath());
-	TVPShowUserConfig();
-
-	// exit
-	return true;
-#endif
-}
-//---------------------------------------------------------------------------
-
 
 
 

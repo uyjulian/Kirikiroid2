@@ -253,7 +253,7 @@ void tTJS::Release()
 void tTJS::Shutdown()
 {
 	TJSVariantArrayStackCompactNow();
-	Global->Clear();
+	if(Global) Global->Clear();
 	if(Global) Global->Release(), Global = NULL;
 	if(Cache) delete Cache, Cache = NULL;
 }

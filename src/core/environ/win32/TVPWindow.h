@@ -14,6 +14,7 @@
 #define MK_ALT (0x20)
 #endif
 #endif
+
 enum {
 	 ssShift = TVP_SS_SHIFT,
 	 ssAlt = TVP_SS_ALT,
@@ -23,7 +24,10 @@ enum {
 	 ssMiddle = TVP_SS_MIDDLE,
 	 ssDouble = TVP_SS_DOUBLE,
 	 ssRepeat = TVP_SS_REPEAT,
+	 ssX1 = TVP_SS_X1,
+	 ssX2 = TVP_SS_X2,
 };
+
 #if 0
 class tTVPWindow {
 	WNDCLASSEX	wc_;
@@ -47,8 +51,8 @@ protected:
 
 	HWND				window_handle_;
 
-	std::wstring	window_class_name_;
-	std::wstring	window_title_;
+	tjs_string	window_class_name_;
+	tjs_string	window_title_;
 	SIZE		window_client_size_;
 	SIZE		min_size_;
 	SIZE		max_size_;
@@ -95,7 +99,7 @@ protected:
 
 	virtual LRESULT WINAPI Proc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
-	HRESULT CreateWnd( const std::wstring& classname, const std::wstring& title, int width, int height, HWND hParent=NULL );
+	HRESULT CreateWnd( const tjs_string& classname, const tjs_string& title, int width, int height, HWND hParent=NULL );
 
 	virtual void OnDestroy();
 	virtual void OnPaint();
@@ -124,6 +128,8 @@ protected:
 		if(TVPGetAsyncKeyState(VK_LBUTTON)) s |= ssLeft;
 		if(TVPGetAsyncKeyState(VK_RBUTTON)) s |= ssRight;
 		if(TVPGetAsyncKeyState(VK_MBUTTON)) s |= ssMiddle;
+		if(TVPGetAsyncKeyState(VK_XBUTTON1)) s |= ssX1;
+		if(TVPGetAsyncKeyState(VK_XBUTTON2)) s |= ssX2;
 		return s;
 	}
 	inline bool IsTouchEvent(LPARAM extraInfo) const {
@@ -157,7 +163,7 @@ public:
 
 	virtual bool Initialize();
 
-	void SetWidnowTitle( const std::wstring& title );
+	void SetWidnowTitle( const tjs_string& title );
 	void SetScreenSize( int width, int height );
 
 	HWND GetHandle() { return window_handle_; }
@@ -177,8 +183,8 @@ public:
 	bool GetEnable() const;
 	void SetEnable( bool s );
 
-	void GetCaption( std::wstring& v ) const;
-	void SetCaption( const std::wstring& v );
+	void GetCaption( tjs_string& v ) const;
+	void SetCaption( const tjs_string& v );
 	
 	void SetBorderStyle( enum tTVPBorderStyle st);
 	enum tTVPBorderStyle GetBorderStyle() const;
@@ -313,10 +319,6 @@ enum {
 	orientLandscape,
 };
 
-namespace cocos2d {
-	class Node;
-}
-
 class iWindowLayer {
 protected:
 	tTVPMouseCursorState MouseCursorState = mcsVisible;
@@ -374,7 +376,6 @@ public:
 	virtual void ResetTouchVelocity(tjs_int id) = 0;
 	virtual bool GetMouseVelocity(float& x, float& y, float& speed) const = 0;
 	virtual void TickBeat() = 0;
-	// virtual cocos2d::Node *GetPrimaryArea() = 0;
 
 	void SetZoomNumer(tjs_int n) { SetZoom(n, ZoomDenom); }
 	tjs_int GetZoomNumer() const { return ZoomNumer; }

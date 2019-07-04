@@ -48,7 +48,6 @@ TJS_EXP_FUNC_DEF(void, TVPThrowExceptionMessage, (const tjs_char *msg, const tts
 TJS_EXP_FUNC_DEF(void, TVPThrowExceptionMessage, (const tjs_char *msg,
 	const ttstr & p1, const ttstr & p2));
 
-TJS_EXP_FUNC_DEF(ttstr, TVPGetAboutString, ());
 TJS_EXP_FUNC_DEF(ttstr, TVPGetVersionInformation, ());
 TJS_EXP_FUNC_DEF(ttstr, TVPGetVersionString, ());
 

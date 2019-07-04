@@ -26,6 +26,22 @@
 #endif
 
 
+
+
+#if 1
+extern tTJSNativeClass * TVPCreateNativeClass_WaveSoundBuffer();
+extern void TVPSoundSetGlobalVolume(tjs_int v);
+extern tjs_int TVPSoundGetGlobalVolume();
+extern void TVPSoundSetGlobalFocusMode(tTVPSoundGlobalFocusMode b);
+extern tTVPSoundGlobalFocusMode TVPSoundGetGlobalFocusMode();
+#endif
+
+static void (*TVPSetGlobalVolume)(tjs_int v) = TVPSoundSetGlobalVolume;
+static tjs_int (*TVPGetGlobalVolume)() = TVPSoundGetGlobalVolume;
+static void (*TVPSetGlobalFocusMode)(tTVPSoundGlobalFocusMode b) = TVPSoundSetGlobalFocusMode;
+static tTVPSoundGlobalFocusMode (*TVPGetGlobalFocusMode)() = TVPSoundGetGlobalFocusMode;
+
+
 //---------------------------------------------------------------------------
 // PCM related constants / definitions
 //---------------------------------------------------------------------------
@@ -82,19 +98,11 @@ tjs_uint8 TVP_GUID_KSDATAFORMAT_SUBTYPE_IEEE_FLOAT[16] =
   0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71 };
 //---------------------------------------------------------------------------
 
-
-// #include "DetectCPU.h"
-//#include "tvpgl_ia32_intf.h"
-
 //---------------------------------------------------------------------------
 // CPU specific optimized routine prototypes
 //---------------------------------------------------------------------------
 extern void PCMConvertLoopInt16ToFloat32(void * __restrict dest, const void * __restrict src, size_t numsamples);
 extern void PCMConvertLoopFloat32ToInt16(void * __restrict dest, const void * __restrict src, size_t numsamples);
-#if 0
-extern void PCMConvertLoopInt16ToFloat32_sse(void * __restrict dest, const void * __restrict src, size_t numsamples);
-extern void PCMConvertLoopFloat32ToInt16_sse(void * __restrict dest, const void * __restrict src, size_t numsamples);
-#endif
 
 
 //---------------------------------------------------------------------------
@@ -111,19 +119,7 @@ static void TVPConvertFloatPCMTo16bits(tjs_int16 *output, const float *input,
 	if(!downmix)
 	{
 		tjs_int total = channels * count;
-#if 0
-		bool use_sse =
-				(TVPCPUType & TVP_CPU_HAS_MMX) &&
-				(TVPCPUType & TVP_CPU_HAS_SSE) &&
-				(TVPCPUType & TVP_CPU_HAS_CMOV);
-
-		if(use_sse)
-			PCMConvertLoopFloat32ToInt16_sse(output, input, total);
-		else
-			PCMConvertLoopFloat32ToInt16(output, input, total);
-#else
 		PCMConvertLoopFloat32ToInt16(output, input, total);
-#endif
 	}
 	else
 	{
@@ -357,20 +353,7 @@ static void TVPConvertIntegerPCMToFloat(float *output, const void *input,
 
 		if(validbits == 16)
 		{
-#if 0
-			// most popular
-			bool use_sse =
-					(TVPCPUType & TVP_CPU_HAS_MMX) &&
-					(TVPCPUType & TVP_CPU_HAS_SSE) &&
-					(TVPCPUType & TVP_CPU_HAS_CMOV);
-
-			if(use_sse)
-				PCMConvertLoopInt16ToFloat32_sse(output, p, total);
-			else
-				PCMConvertLoopInt16ToFloat32(output, p, total);
-#else
 			PCMConvertLoopInt16ToFloat32(output, p, total);
-#endif
 		}
 		else
 		{
@@ -426,6 +409,7 @@ void TVPConvertPCMToFloat(float *output, const void *input,
 		format.BitsPerSample, format.IsFloat, count);
 }
 //---------------------------------------------------------------------------
+
 
 
 
@@ -739,8 +723,6 @@ tTVPWaveDecoder * tTVPWDC_RIFFWave::Create(const ttstr & storagename,
 }
 //---------------------------------------------------------------------------
 #endif
-
-
 
 //---------------------------------------------------------------------------
 // tTVPWaveDecoder interface management
@@ -1125,11 +1107,19 @@ iTJSDispatch2 * tTJSNI_BaseWaveSoundBuffer::GetWaveLabelsObjectNoAddRef()
 
 
 //---------------------------------------------------------------------------
+static tTJSNativeInstance *TVP_SoundCreateNativeInstance()
+{
+	TJS_eTJSError( TJSNotImplemented );
+	return nullptr;
+}
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
 // tTJSNC_WaveSoundBuffer : TJS WaveSoundBuffer class
 //---------------------------------------------------------------------------
 tjs_uint32 tTJSNC_WaveSoundBuffer::ClassID = -1;
 tTJSNC_WaveSoundBuffer::tTJSNC_WaveSoundBuffer()  :
-	tTJSNativeClass(TJS_W("WaveSoundBuffer"))
+	tTJSNativeClass(TJS_W("WaveSoundBuffer")), Factory( TVP_SoundCreateNativeInstance )
 {
 	// registration of native members
 
@@ -1137,7 +1127,7 @@ tTJSNC_WaveSoundBuffer::tTJSNC_WaveSoundBuffer()  :
 	TJS_DECL_EMPTY_FINALIZE_METHOD
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_CONSTRUCTOR_DECL(/*var.name*/_this,
-	/*var.type*/tTJSNI_WaveSoundBuffer,
+	/*var.type*/tTJSNI_BaseWaveSoundBuffer,
 	/*TJS class name*/WaveSoundBuffer)
 {
 	return TJS_S_OK;
@@ -1151,7 +1141,7 @@ TJS_END_NATIVE_CONSTRUCTOR_DECL(/*TJS class name*/WaveSoundBuffer)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/open)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	if(numparams < 1) return TJS_E_BADPARAMCOUNT;
 	_this->Open(*param[0]);
@@ -1163,7 +1153,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/open)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/play)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	_this->Play();
 
@@ -1174,7 +1164,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/play)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/stop)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	_this->Stop();
 
@@ -1185,7 +1175,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/stop)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/fade)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 	if(numparams < 2) return TJS_E_BADPARAMCOUNT;
 
 	tjs_int to;
@@ -1205,7 +1195,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/fade)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/stopFade)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	_this->StopFade(false, true);
 
@@ -1216,7 +1206,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/stopFade)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/setPos) // not setPosition
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	if(numparams < 3) return TJS_E_BADPARAMCOUNT;
 
@@ -1225,7 +1215,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/setPos) // not setPosition
 	y = (*param[1]);
 	z = (*param[2]);
 
-	_this->SetPos( static_cast<D3DVALUE>(x), static_cast<D3DVALUE>(y), static_cast<D3DVALUE>(z) );
+	_this->SetPos( static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) );
 
 	return TJS_S_OK;
 }
@@ -1238,7 +1228,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/setPos)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/onStatusChanged)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	tTJSVariantClosure obj = _this->GetActionOwnerNoAddRef();
 	if(obj.Object)
@@ -1255,7 +1245,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/onStatusChanged)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/onFadeCompleted)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	tTJSVariantClosure obj = _this->GetActionOwnerNoAddRef();
 	if(obj.Object)
@@ -1271,7 +1261,7 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/onFadeCompleted)
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/onLabel)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this,
-		/*var. type*/tTJSNI_WaveSoundBuffer);
+		/*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 	tTJSVariantClosure obj = _this->GetActionOwnerNoAddRef();
 	if(obj.Object)
@@ -1293,7 +1283,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(position)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = (tjs_int64)_this->GetPosition();
 
@@ -1303,7 +1293,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(position)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetPosition((tjs_uint64)(tjs_int64)*param);
 
@@ -1317,7 +1307,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(samplePosition)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = (tjs_int64)_this->GetSamplePosition();
 
@@ -1327,7 +1317,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(samplePosition)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetSamplePosition((tjs_uint64)(tjs_int64)*param);
 
@@ -1341,7 +1331,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(paused)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetPaused();
 
@@ -1351,7 +1341,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(paused)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetPaused(*param);
 
@@ -1365,7 +1355,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(totalTime)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = (tjs_int64)_this->GetTotalTime();
 
@@ -1375,7 +1365,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(totalTime)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		// not yet implemented
 
@@ -1389,7 +1379,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(looping)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetLooping();
 
@@ -1399,7 +1389,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(looping)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetLooping(*param);
 
@@ -1413,7 +1403,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(volume)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetVolume();
 
@@ -1423,7 +1413,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(volume)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetVolume(*param);
 
@@ -1437,7 +1427,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(volume2)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetVolume2();
 
@@ -1447,7 +1437,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(volume2)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetVolume2(*param);
 
@@ -1461,7 +1451,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(pan)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetPan();
 
@@ -1471,7 +1461,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(pan)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetPan(*param);
 
@@ -1485,7 +1475,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(posX)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = (tTVReal)_this->GetPosX();
 
@@ -1495,9 +1485,9 @@ TJS_BEGIN_NATIVE_PROP_DECL(posX)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
-		_this->SetPosX( static_cast<D3DVALUE>( (tTVReal)*param ));
+		_this->SetPosX( static_cast<float>( (tTVReal)*param ));
 
 		return TJS_S_OK;
 	}
@@ -1509,7 +1499,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(posY)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = (tTVReal)_this->GetPosY();
 
@@ -1519,9 +1509,9 @@ TJS_BEGIN_NATIVE_PROP_DECL(posY)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
-		_this->SetPosY( static_cast<D3DVALUE>( (tTVReal)*param ) );
+		_this->SetPosY( static_cast<float>( (tTVReal)*param ) );
 
 		return TJS_S_OK;
 	}
@@ -1533,7 +1523,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(posZ)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = (tTVReal)_this->GetPosZ();
 
@@ -1543,9 +1533,9 @@ TJS_BEGIN_NATIVE_PROP_DECL(posZ)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
-		_this->SetPosZ( static_cast<D3DVALUE>((tTVReal)*param) );
+		_this->SetPosZ( static_cast<float>((tTVReal)*param) );
 
 		return TJS_S_OK;
 	}
@@ -1557,7 +1547,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(status)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetStatusString();
 
@@ -1573,7 +1563,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(frequency)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetFrequency();
 
@@ -1583,7 +1573,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(frequency)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		_this->SetFrequency((tjs_int)*param);
 
@@ -1597,7 +1587,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(bits) // not bitsPerSample
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetBitsPerSample();
 
@@ -1613,7 +1603,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(channels)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		*result = _this->GetChannels();
 
@@ -1629,7 +1619,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(flags)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		iTJSDispatch2 * dsp = _this->GetWaveFlagsObjectNoAddRef();
 		*result = tTJSVariant(dsp, dsp);
@@ -1645,7 +1635,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(labels)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		iTJSDispatch2 * dsp = _this->GetWaveLabelsObjectNoAddRef();
 		*result = tTJSVariant(dsp, dsp);
@@ -1661,7 +1651,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(filters)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_WaveSoundBuffer);
+		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BaseWaveSoundBuffer);
 
 		iTJSDispatch2 * dsp = _this->GetFiltersNoAddRef();
 		*result = tTJSVariant(dsp, dsp);
@@ -1677,7 +1667,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(globalVolume)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		*result = tTJSNI_WaveSoundBuffer::GetGlobalVolume();
+		*result = TVPGetGlobalVolume();
 
 		return TJS_S_OK;
 	}
@@ -1685,7 +1675,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(globalVolume)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		tTJSNI_WaveSoundBuffer::SetGlobalVolume(*param);
+		TVPSetGlobalVolume(*param);
 
 		return TJS_S_OK;
 	}
@@ -1697,7 +1687,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(globalFocusMode)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		*result = (tjs_int)tTJSNI_WaveSoundBuffer::GetGlobalFocusMode();
+		*result = (tjs_int)TVPGetGlobalFocusMode();
 
 		return TJS_S_OK;
 	}
@@ -1705,7 +1695,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(globalFocusMode)
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
-		tTJSNI_WaveSoundBuffer::SetGlobalFocusMode(
+		TVPSetGlobalFocusMode(
 			(tTVPSoundGlobalFocusMode)(tjs_int)*param);
 
 		return TJS_S_OK;
@@ -1749,7 +1739,7 @@ tjs_error TJS_INTF_METHOD tTJSNI_WaveFlags::Construct(tjs_int numparams,
 
 	iTJSDispatch2 *dsp = param[0]->AsObjectNoAddRef();
 
-	tTJSNI_WaveSoundBuffer *buffer = NULL;
+	tTJSNI_BaseWaveSoundBuffer *buffer = NULL;
 	if(TJS_FAILED(dsp->NativeInstanceSupport(TJS_NIS_GETINSTANCE,
 		tTJSNC_WaveSoundBuffer::ClassID, (iTJSNativeInstance**)&buffer)))
 		TVPThrowInternalError;
@@ -1887,5 +1877,14 @@ iTJSDispatch2 * TVPCreateWaveFlagsObject(iTJSDispatch2 * buffer)
 	return out;
 }
 //---------------------------------------------------------------------------
+extern tTJSNativeClass * TVPCreateNativeClass_QueueSoundBuffer();
 
-
+tTJSNativeClass * TVPCreateNativeClass_SoundBuffer()
+{
+	TVPSetGlobalVolume = TVPSoundSetGlobalVolume;
+	TVPGetGlobalVolume = TVPSoundGetGlobalVolume;
+	TVPSetGlobalFocusMode = TVPSoundSetGlobalFocusMode;
+	TVPGetGlobalFocusMode = TVPSoundGetGlobalFocusMode;
+	return TVPCreateNativeClass_WaveSoundBuffer();
+}
+//---------------------------------------------------------------------------

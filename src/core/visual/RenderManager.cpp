@@ -1,7 +1,5 @@
 #include <string>
 #include "RenderManager.h"
-// #include "renderer/CCTexture2D.h"
-// typedef cocos2d::Texture2D::PixelFormat CCPixelFormat;
 #include "MsgIntf.h"
 #include "LayerBitmapIntf.h"
 #include "SysInitIntf.h"
@@ -99,7 +97,6 @@ static void * TVPAllocBitmapBits(tjs_uint size, tjs_uint width, tjs_uint height)
 
 	tjs_uint8 * ptrorg, *ptr;
 	tjs_uint allocbytes = 16 + size + sizeof(tTVPLayerBitmapMemoryRecord)+sizeof(tjs_uint32)* 2;
-	TVPCheckMemory();
 	ptr = ptrorg = (tjs_uint8*)malloc(allocbytes);
 	if (!ptr) TVPThrowExceptionMessage(TVPCannotAllocateBitmapBits,
 		TJS_W("at TVPAllocBitmapBits"), ttstr((tjs_int)allocbytes) + TJS_W("(") +
@@ -367,19 +364,6 @@ public:
 	}
 	virtual tjs_int GetPitch() const { return Pitch; }
 
-	// virtual cocos2d::Texture2D* GetAdapterTexture(cocos2d::Texture2D* origTex) override {
-	// 	if (!origTex || origTex->getPixelsWide() != Width || origTex->getPixelsHigh() != Height) {
-	// 		origTex = new cocos2d::Texture2D;
-	// 		origTex->autorelease();
-	// 		origTex->initWithData(BmpData, Pitch * Height,
-	// 			CCPixelFormat::RGBA8888, Pitch / 4, Height,
-	// 			cocos2d::Size::ZERO);
-	// 	} else {
-	// 		origTex->updateWithData(BmpData, 0, 0, Pitch / 4, Height);
-	// 	}
-	// 	return origTex;
-	// }
-
 	virtual size_t GetBitmapSize() override { return Pitch * Height * (Format == TVPTextureFormat::RGBA ? 4 : 1); }
 };
 
@@ -464,19 +448,6 @@ public:
 		assert(0);
 	}
 
-	// virtual cocos2d::Texture2D* GetAdapterTexture(cocos2d::Texture2D* origTex) override {
-	// 	GetPixelData();
-	// 	if (!origTex || origTex->getPixelsWide() != Width || origTex->getPixelsHigh() != Height) {
-	// 		origTex = new cocos2d::Texture2D;
-	// 		origTex->autorelease();
-	// 		origTex->initWithData(BmpData, Pitch * Height,
-	// 			CCPixelFormat::RGBA8888, Width, Height,
-	// 			cocos2d::Size::ZERO);
-	// 	} else {
-	// 		origTex->updateWithData(BmpData, 0, 0, Width, Height);
-	// 	}
-	// 	return origTex;
-	// }
 };
 
 class tTVPSoftwareTexture2D_half : public tTVPSoftwareTexture2D_compress {
@@ -543,22 +514,6 @@ public:
 		memcpy(buf, tTVPSoftwareTexture2D_half::GetScanLineForRead(line), Pitch);
 		return 1;
 	}
-
-	// virtual cocos2d::Texture2D* GetAdapterTexture(cocos2d::Texture2D* origTex) override {
-	// 	if (!origTex || origTex->getPixelsWide() != Width || origTex->getPixelsHigh() != _scanline.size()) {
-	// 		origTex = new cocos2d::Texture2D;
-	// 		origTex->autorelease();
-	// 		origTex->initWithData(nullptr, Pitch * _scanline.size(),
-	// 			CCPixelFormat::RGBA8888, Width, _scanline.size(),
-	// 			cocos2d::Size::ZERO);
-	// 	}
-	// 	int y = 0;
-	// 	for (const tjs_uint8* line : _scanline) {
-	// 		origTex->updateWithData(line, 0, y, Width, 1);
-	// 		++y;
-	// 	}
-	// 	return origTex;
-	// }
 
 	virtual tjs_uint GetInternalHeight() const override { return _scanline.size(); }
 

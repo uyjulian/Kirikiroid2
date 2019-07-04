@@ -23,7 +23,6 @@ extern bool TVPProjectDirSelected;
 extern void TVPEnsureDataPathDirectory();
 
 
-extern bool TVPExecuteUserConfig();
 
 extern bool TVPTerminated;
 extern bool TVPTerminateOnWindowClose;

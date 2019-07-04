@@ -11,14 +11,17 @@
 //! @brief 実数離散フーリエ変換
 //---------------------------------------------------------------------------
 
+#include "tjsCommHead.h"
+
 /*
 	Real Discrete FFT package from
 		http://momonga.t.u-tokyo.ac.jp/~ooura/fft-j.html
 */
 
+
 //---------------------------------------------------------------------------
 
-static void cft1st(int n, float * a, float * w)
+static void cft1st(int n, float * __restrict a, float * __restrict w)
 {
 	int j, k1, k2;
 	float wk1r, wk1i, wk2r, wk2i, wk3r, wk3i;
@@ -124,7 +127,7 @@ static void cft1st(int n, float * a, float * w)
 
 
 
-static void cftmdl(int n, int l, float *  a, float *  w)
+static void cftmdl(int n, int l, float * __restrict a, float * __restrict w)
 {
 	int j, j1, j2, j3, k, k1, k2, m, m2;
 	float wk1r, wk1i, wk2r, wk2i, wk3r, wk3i;
@@ -250,7 +253,7 @@ static void cftmdl(int n, int l, float *  a, float *  w)
 	}
 }
 
-static void bitrv2(int n, int *  ip, float *  a)
+static void bitrv2(int n, int * __restrict ip, float * __restrict a)
 {
 	int j, j1, k, k1, l, m, m2;
 	float xr, xi, yr, yi;
@@ -349,7 +352,7 @@ static void bitrv2(int n, int *  ip, float *  a)
 	}
 }
 
-static void rftfsub(int n, float *  a, int nc, float *  c)
+static void rftfsub(int n, float * __restrict a, int nc, float * __restrict c)
 {
 	int j, k, kk, ks, m;
 	float wkr, wki, xr, xi, yr, yi;
@@ -360,7 +363,7 @@ static void rftfsub(int n, float *  a, int nc, float *  c)
 	for (j = 2; j < m; j += 2) {
 		k = n - j;
 		kk += ks;
-		wkr = 0.5 - c[nc - kk];
+		wkr = 0.5f - c[nc - kk];
 		wki = c[kk];
 		xr = a[j] - a[k];
 		xi = a[j + 1] + a[k + 1];
@@ -373,7 +376,7 @@ static void rftfsub(int n, float *  a, int nc, float *  c)
 	}
 }
 
-static void cftfsub(int n, float *  a, float *  w)
+static void cftfsub(int n, float * __restrict a, float * __restrict w)
 {
 	int j, j1, j2, j3, l;
 	float x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
@@ -423,7 +426,7 @@ static void cftfsub(int n, float *  a, float *  w)
 }
 
 
-static void cftbsub(int n, float *  a, float *  w)
+static void cftbsub(int n, float * __restrict a, float * __restrict w)
 {
 	int j, j1, j2, j3, l;
 	float x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
@@ -473,7 +476,7 @@ static void cftbsub(int n, float *  a, float *  w)
 }
 
 
-static void rftbsub(int n, float *  a, int nc, float *  c)
+static void rftbsub(int n, float * __restrict a, int nc, float * __restrict c)
 {
 	int j, k, kk, ks, m;
 	float wkr, wki, xr, xi, yr, yi;
@@ -485,7 +488,7 @@ static void rftbsub(int n, float *  a, int nc, float *  c)
 	for (j = 2; j < m; j += 2) {
 		k = n - j;
 		kk += ks;
-		wkr = 0.5 - c[nc - kk];
+		wkr = 0.5f - c[nc - kk];
 		wki = c[kk];
 		xr = a[j] - a[k];
 		xi = a[j + 1] + a[k + 1];
@@ -504,7 +507,7 @@ static void rftbsub(int n, float *  a, int nc, float *  c)
 
 #include <math.h>
 
-void makewt(int nw, int *  ip, float *  w)
+static void makewt(int nw, int * __restrict ip, float * __restrict w)
 {
 	int j, nwh;
 	float delta, x, y;
@@ -513,7 +516,7 @@ void makewt(int nw, int *  ip, float *  w)
 	ip[1] = 1;
 	if (nw > 2) {
 		nwh = nw >> 1;
-		delta = atan(1.0) / nwh;
+		delta = (float)(atan(1.0) / nwh);
 		w[0] = 1;
 		w[1] = 0;
 		w[nwh] = cos(delta * nwh);
@@ -533,7 +536,7 @@ void makewt(int nw, int *  ip, float *  w)
 }
 
 
-void makect(int nc, int *  ip, float *  c)
+static void makect(int nc, int * __restrict ip, float * __restrict c)
 {
 	int j, nch;
 	float delta;
@@ -541,12 +544,12 @@ void makect(int nc, int *  ip, float *  c)
 	ip[1] = nc;
 	if (nc > 1) {
 		nch = nc >> 1;
-		delta = atan(1.0) / nch;
-		c[0] = cos(delta * nch);
-		c[nch] = 0.5 * c[0];
+		delta = (float)(atan(1.0) / nch);
+		c[0] = (float)(cos(delta * nch));
+		c[nch] = 0.5f * c[0];
 		for (j = 1; j < nch; j++) {
-			c[j] = 0.5 * cos(delta * j);
-			c[nc - j] = 0.5 * sin(delta * j);
+			c[j] = (float)(0.5 * cos(delta * j));
+			c[nc - j] = (float)(0.5 * sin(delta * j));
 		}
 	}
 }
@@ -555,7 +558,7 @@ void makect(int nc, int *  ip, float *  c)
 
 
 
-void rdft(int n, int isgn, float *  a, int *  ip, float *  w)
+void rdft(int n, int isgn, float * __restrict a, int * __restrict ip, float * __restrict w)
 {
 	int nw, nc;
 	float xi;
@@ -582,7 +585,7 @@ void rdft(int n, int isgn, float *  a, int *  ip, float *  w)
 		a[0] += a[1];
 		a[1] = xi;
 	} else {
-		a[1] = 0.5 * (a[0] - a[1]);
+		a[1] = 0.5f * (a[0] - a[1]);
 		a[0] -= a[1];
 		if (n > 4) {
 			rftbsub(n, a, nc, w + nw);
@@ -595,5 +598,10 @@ void rdft(int n, int isgn, float *  a, int *  ip, float *  w)
 }
 
 
+
+
+
 //---------------------------------------------------------------------------
+
+
 

@@ -117,15 +117,19 @@ public:
 
 /*[*/
 const tjs_int TVPMaxThreadNum = 8;
-// typedef void (TJS_USERENTRY *TVP_THREAD_TASK_FUNC)(void *);
-// typedef void * TVP_THREAD_PARAM;
+#if 0
+typedef void (TJS_USERENTRY *TVP_THREAD_TASK_FUNC)(void *);
+typedef void * TVP_THREAD_PARAM;
+#endif
 typedef const std::function<void(int)> &TVP_THREAD_TASK_FUNC;
 /*]*/
 
 TJS_EXP_FUNC_DEF(tjs_int, TVPGetProcessorNum, ());
 TJS_EXP_FUNC_DEF(tjs_int, TVPGetThreadNum, ());
 TJS_EXP_FUNC_DEF(void, TVPBeginThreadTask, (tjs_int num));
-// TJS_EXP_FUNC_DEF(void, TVPExecThreadTask, (TVP_THREAD_TASK_FUNC func, TVP_THREAD_PARAM param));
+#if 0
+TJS_EXP_FUNC_DEF(void, TVPExecThreadTask, (TVP_THREAD_TASK_FUNC func, TVP_THREAD_PARAM param));
+#endif
 TJS_EXP_FUNC_DEF(void, TVPExecThreadTask, (int numThreads, TVP_THREAD_TASK_FUNC func));
 TJS_EXP_FUNC_DEF(void, TVPEndThreadTask, ());
 

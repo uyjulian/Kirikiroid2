@@ -10,13 +10,14 @@
 //! @file
 //! @brief 数学関数群
 //---------------------------------------------------------------------------
+#include "tjsCommHead.h"
 #include <stdlib.h>
 
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-void DeinterleaveApplyingWindow(float *  dest[], const float *  src,
-					float *  win, int numch, size_t destofs, size_t len)
+void DeinterleaveApplyingWindow(float * __restrict dest[], const float * __restrict src,
+					float * __restrict win, int numch, size_t destofs, size_t len)
 {
 	size_t n;
 	switch(numch)
@@ -60,9 +61,9 @@ void DeinterleaveApplyingWindow(float *  dest[], const float *  src,
 
 
 //---------------------------------------------------------------------------
-void  InterleaveOverlappingWindow(float *  dest,
-	const float *  const *  src,
-	float *  win, int numch, size_t srcofs, size_t len)
+void  InterleaveOverlappingWindow(float * __restrict dest,
+	const float * __restrict const * __restrict src,
+	float * __restrict win, int numch, size_t srcofs, size_t len)
 {
 	size_t n;
 	switch(numch)
@@ -105,4 +106,5 @@ void  InterleaveOverlappingWindow(float *  dest,
 
 
 //---------------------------------------------------------------------------
+
 

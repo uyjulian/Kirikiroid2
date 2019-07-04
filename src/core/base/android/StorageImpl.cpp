@@ -162,7 +162,7 @@ static int _utf8_strcasecmp(const char *a, const char *b) {
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPFileMedia::GetLocallyAccessibleName(ttstr &name)
 {
-	// ttstr newname;
+	ttstr newname;
 
 	// const tjs_char *ptr = name.c_str();
 	// if( *ptr == TJS_W('.') ) ptr++;
@@ -178,7 +178,8 @@ void TJS_INTF_METHOD tTVPFileMedia::GetLocallyAccessibleName(ttstr &name)
 	// 	}
 	// }
 	// name = newname;
-	ttstr newname;
+
+	// ttstr newname = realpath(name.AsNarrowStdString().c_str(), NULL);
 
 	const tjs_char *ptr = name.c_str();
 
@@ -275,6 +276,7 @@ void TJS_INTF_METHOD tTVPFileMedia::GetLocallyAccessibleName(ttstr &name)
             break;
         }
     }
+	
 
 #endif
 	name = newname;
@@ -426,7 +428,7 @@ bool TVPRemoveFolder(const ttstr &name)
 ttstr TVPGetAppPath()
 {
 	// static ttstr exepath(TVPExtractStoragePath(TVPNormalizeStorageName(Application->GetPackageCodePath())));
-	static ttstr exepath(TVPExtractStoragePath(TVPProjectDir));
+	static ttstr exepath(TVPExtractStoragePath(TVPNormalizeStorageName(ExePath())));
 	return exepath;
 }
 //---------------------------------------------------------------------------

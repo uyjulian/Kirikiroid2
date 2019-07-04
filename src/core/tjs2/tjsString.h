@@ -20,27 +20,29 @@
 #include "tjsVariantString.h"
 
 
-// #include <sstream>
-// template<typename T>
-// tjs_string to_format_str( T value, const tjs_char* format ) {
-// #if 0
-// 	tjs_char buff[128];
-// 	TJS_snprintf( buff, 128, format, value);
-// 	return tjs_string(buff);
-// #else
-// 	std::basic_ostringstream<tjs_char> sout;
-// 	sout << value;
-// 	return sout.str();
-// #endif
-// }
-// inline tjs_string to_tjs_string( int value ) { return to_format_str( value, TJS_W("%d") ); }
-// inline tjs_string to_tjs_string( long value ) { return to_format_str( value, TJS_W("%ld") ); }
-// inline tjs_string to_tjs_string( long long value ) { return to_format_str( value, TJS_W("%lld") ); }
-// inline tjs_string to_tjs_string( unsigned value ) { return to_format_str( value, TJS_W("%u") ); }
-// inline tjs_string to_tjs_string( unsigned long value ) { return to_format_str( value, TJS_W("%lu") ); }
-// inline tjs_string to_tjs_string( unsigned long long value ) { return to_format_str( value, TJS_W("%llu") ); }
-// inline tjs_string to_tjs_string( float value ) { return to_format_str( value, TJS_W("%f") ); }
-// inline tjs_string to_tjs_string( double value ) { return to_format_str( value, TJS_W("%lf") ); }
+#if 0
+#include <sstream>
+template<typename T>
+tjs_string to_format_str( T value, const tjs_char* format ) {
+#if 0
+	tjs_char buff[128];
+	TJS_snprintf( buff, 128, format, value);
+	return tjs_string(buff);
+#else
+	std::basic_ostringstream<tjs_char> sout;
+	sout << value;
+	return sout.str();
+#endif
+}
+inline tjs_string to_tjs_string( int value ) { return to_format_str( value, TJS_W("%d") ); }
+inline tjs_string to_tjs_string( long value ) { return to_format_str( value, TJS_W("%ld") ); }
+inline tjs_string to_tjs_string( long long value ) { return to_format_str( value, TJS_W("%lld") ); }
+inline tjs_string to_tjs_string( unsigned value ) { return to_format_str( value, TJS_W("%u") ); }
+inline tjs_string to_tjs_string( unsigned long value ) { return to_format_str( value, TJS_W("%lu") ); }
+inline tjs_string to_tjs_string( unsigned long long value ) { return to_format_str( value, TJS_W("%llu") ); }
+inline tjs_string to_tjs_string( float value ) { return to_format_str( value, TJS_W("%f") ); }
+inline tjs_string to_tjs_string( double value ) { return to_format_str( value, TJS_W("%lf") ); }
+#endif
 
 
 namespace TJS
@@ -141,13 +143,13 @@ public:
 	const tjs_string AsStdString() const
 	{
 		if(!Ptr) return tjs_string(TJS_W(""));
-// #ifdef UNICODE
+#if 1 || defined(UNICODE)
 		return tjs_string(c_str());
-// #else
-// 			// this constant string value must match std::string in type
-// 		tTJSNarrowStringHolder holder(Ptr->operator const tjs_char*());
-// 		return std::string(holder.operator const char *());
-// #endif
+#else
+			// this constant string value must match std::string in type
+		tTJSNarrowStringHolder holder(Ptr->operator const tjs_char*());
+		return std::string(holder.operator const char *());
+#endif
 	}
 	const std::string AsNarrowStdString() const
 	{
