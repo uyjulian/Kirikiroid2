@@ -80,7 +80,6 @@ void TJS_INTF_METHOD tTVPFileMedia::NormalizeDomainName(ttstr &name)
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPFileMedia::NormalizePathName(ttstr &name)
 {
-	// 非Windows環境では大文字小文字区別する実装の方が良いか？
 	// normalize path name
 	// make all characters small
 	tjs_char *p = name.Independ();
@@ -226,25 +225,7 @@ void TJS_INTF_METHOD tTVPFileMedia::GetLocallyAccessibleName(ttstr &name)
         ptr += 2;  // skip "./"
         newname.Clear();
     }
-// #if CC_TARGET_PLATFORM == CC_PLATFORM_IOS
-//     {
-//         std::string prefix = "/";
-//         prefix += tTJSNarrowStringHolder(ptr).Buf;
-//         static const std::vector<ttstr> &prefixPath = _getPrefixPath();
-// 		static const std::vector<std::string> &homeDir = _getHomeDir();
-// 		for (int i = 0; i < prefixPath.size(); ++i) {
-// 			const std::string &dir = homeDir[i];
-// 			if (prefix.length() < dir.length()) continue;
-// 			std::string actualPrefix = prefix.substr(0, dir.length());
-// 			if (!_utf8_strcasecmp(actualPrefix.c_str(), dir.c_str())) {
-// 				newname = prefixPath[i];
-// 				ptr += prefixPath[i].length();
-// 				while (*ptr && *ptr == TJS_W('/')) ++ptr;
-// 				break;
-// 			}
-// 		}
-//     }
-// #endif
+
     while(*ptr) {
     	const tjs_char *ptr_end = ptr;
     	while(*ptr_end && *ptr_end != TJS_W('/')) ++ptr_end;
@@ -304,6 +285,7 @@ iTVPStorageMedia * TVPCreateFileMedia()
 
 
 
+
 //---------------------------------------------------------------------------
 // TVPPreNormalizeStorageName
 //---------------------------------------------------------------------------
@@ -313,6 +295,40 @@ void TVPPreNormalizeStorageName(ttstr &name)
 	// TVP storage system naming rule.
 	tjs_int namelen = name.GetLen();
 	if(namelen == 0) return;
+
+	tjs_char lastchar = name.GetLastChar();
+
+	if( TJS_strstr(name.c_str(), TJS_W(":")) == nullptr && TJS_strstr(name.c_str(), TJS_W("file:")) == nullptr ) {
+		char* tmppath = realpath(name.AsNarrowStdString().c_str(), NULL);
+		if (tmppath) {
+			ttstr newname(TJS_W("file:"));
+			newname += tmppath;
+			if (lastchar == TJS_W('/'))
+				newname += TJS_W("/");
+			name = newname;
+			free(tmppath);
+			return;
+		}
+	}
+
+	if(namelen >= 1) {
+		if( name[0] == TJS_W('.') ) {
+			ttstr newname(TJS_W("file:"));
+			char cwd[PATH_MAX];
+			if (getcwd(cwd, sizeof(cwd)) != NULL) {
+				newname += ttstr(cwd);
+			}
+			newname += (name.c_str()+1);
+			name = newname;
+			return;
+		}
+		if( name[0] == TJS_W('/') ) {
+			ttstr newname(TJS_W("file:"));
+			newname += name;
+			name = newname;
+			return;
+		}
+	}
 
 	if(namelen >= 2)
 	{
@@ -427,7 +443,6 @@ bool TVPRemoveFolder(const ttstr &name)
 //---------------------------------------------------------------------------
 ttstr TVPGetAppPath()
 {
-	// static ttstr exepath(TVPExtractStoragePath(TVPNormalizeStorageName(Application->GetPackageCodePath())));
 	static ttstr exepath(TVPExtractStoragePath(TVPNormalizeStorageName(ExePath())));
 	return exepath;
 }
