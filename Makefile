@@ -308,7 +308,6 @@ SOURCES += src/plugins/csvParser.cpp
 SOURCES += src/plugins/dirlist.cpp
 SOURCES += src/plugins/fftgraph.cpp
 SOURCES += src/plugins/getSample.cpp
-SOURCES += src/plugins/getabout.cpp
 SOURCES += src/plugins/layerExPerspective.cpp
 SOURCES += src/plugins/ncbind/ncbind.cpp
 SOURCES += src/plugins/saveStruct.cpp
