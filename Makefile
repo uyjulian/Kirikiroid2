@@ -27,7 +27,7 @@ CXXFLAGS += $(CFLAGS) -std=c++11
 GIT_HASH = nothing
 CUR_TIME = $(shell date +%s)
 CFLAGS += -Wall
-CFLAGS += -DTJS_TEXT_OUT_CRLF -DUSE_UNICODE_FSTRING -DTVP_TEXT_READ_ANSI_MBCS 
+CFLAGS += -DTJS_TEXT_OUT_CRLF -DTVP_TEXT_READ_ANSI_MBCS 
 CFLAGS += -Isrc/core
 CFLAGS += -Isrc/core/base
 CFLAGS += -Isrc/core/base/android
