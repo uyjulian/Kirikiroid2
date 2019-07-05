@@ -13,39 +13,31 @@
 #include "Platform.h"
 #include "Application.h"
 #include "ScriptMgnIntf.h"
-#include "win32/TVPWindow.h"
+#include "TVPWindow.h"
 #include "VelocityTracker.h"
 #include "SystemImpl.h"
 #include "RenderManager.h"
 #include "VideoOvlIntf.h"
 #include "Exception.h"
-#include "win32/MenuItemImpl.h"
+#include "MenuItemImpl.h"
 #include <sys/time.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <SDL.h>
-
 #include <unistd.h>
 #include <stdio.h>
 #include <limits.h>
-
-
-
 #include <wchar.h>
-
-#include <string> 
-#include <locale> 
-#include <codecvt> 
+#include <string>
+#include <locale>
+#include <codecvt>
+#include <iostream>
 
 
 class TVPWindowLayer;
 
-// static TVPWindowManagerOverlay *_windowMgrOverlay = nullptr;
-// static TVPConsoleWindow* _consoleWin = nullptr;
 static float _touchMoveThresholdSq;
 static float _mouseCursorScale;
-// static Vec2 _mouseTouchPoint, _mouseBeginPoint;
-// static std::set<Touch*> _mouseTouches;
 static tTVPMouseButton _mouseBtn;
 static int _touchBeginTick;
 static bool _virutalMouseMode = false;
@@ -57,7 +49,7 @@ static TVPWindowLayer *_lastWindowLayer, *_currentWindowLayer;
 bool sdlProcessEvents();
 bool sdlProcessEventsForFrames(int frames);
 
-#include <iostream>
+
 
 class TVPWindowLayer : public iWindowLayer {
 protected:
@@ -71,16 +63,12 @@ protected:
 	
 	tjs_int ActualZoomDenom; // Zooming factor denominator (actual)
 	tjs_int ActualZoomNumer; // Zooming factor numerator (actual)
-	// Sprite *DrawSprite = nullptr;
-	// Node *PrimaryLayerArea = nullptr;
 	int LayerWidth = 0, LayerHeight = 0;
-	//iTVPTexture2D *DrawTexture = nullptr;
 	TVPWindowLayer *_prevWindow, *_nextWindow;
 	friend class TVPWindowManagerOverlay;
 	friend class TVPMainScene;
 	int _LastMouseX = 0, _LastMouseY = 0;
 	std::string _caption;
-//	std::map<tTJSNI_BaseVideoOverlay*, Sprite*> _AllOverlay;
 	float _drawSpriteScaleX = 1.0f, _drawSpriteScaleY = 1.0f;
 	float _drawTextureScaleX = 1.f, _drawTextureScaleY = 1.f;
 	bool UseMouseKey = false, MouseLeftButtonEmulatedPushed = false, MouseRightButtonEmulatedPushed = false;
@@ -95,7 +83,6 @@ protected:
 	static const int TVP_MOUSE_SHIFT_ACCEL = 40;
 	static const int TVP_TOOLTIP_SHOW_DELAY = 500;
 	SDL_Texture* framebuffer;
-	// SDL_Texture* framebuffer;
 	SDL_Renderer* renderer;
 	tTJSNI_Window *TJSNativeInstance;
 	bool hasDrawn = false;
@@ -107,8 +94,6 @@ public:
 		_nextWindow = nullptr;
 		_prevWindow = _lastWindowLayer;
 		_lastWindowLayer = this;
-		// ActualZoomDenom = 1;
-		// ActualZoomNumer = 1;
 		if (_prevWindow) {
 			_prevWindow->_nextWindow = this;
 		}
@@ -122,11 +107,10 @@ public:
 			TJSNativeInstance = nullptr;
 		}
 		
-		window = SDL_CreateWindow("An SDL2 window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
+		window = SDL_CreateWindow("Kirikiroid2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 640, 480);
 		SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
-		// SDL_ShowWindow(window);
 	}
 
 	virtual ~TVPWindowLayer() {
@@ -135,14 +119,6 @@ public:
 		if (_prevWindow) _prevWindow->_nextWindow = _nextWindow;
 
 		if (_currentWindowLayer == this) {
-			// TVPWindowLayer *anotherWin = _lastWindowLayer;
-			// while (anotherWin && !anotherWin->isVisible()) {
-			// 	anotherWin = anotherWin->_prevWindow;
-			// }
-			// if (anotherWin && anotherWin->isVisible()) {
-			// 	anotherWin->setPosition(0, 0);
-			// 	//anotherWin->setVisible(true);
-			// }
 			_currentWindowLayer = _lastWindowLayer;
 		}
 		SDL_DestroyTexture(framebuffer);
@@ -155,32 +131,12 @@ public:
 	}
 
 	bool init() {
-		// bool ret = inherit::init();
-		// setClippingToBounds(false);
-		// DrawSprite = Sprite::create();
-		// DrawSprite->setAnchorPoint(Vec2(0, 1)); // top-left
-		// PrimaryLayerArea = Node::create();
-		// addChild(PrimaryLayerArea);
-		// PrimaryLayerArea->addChild(DrawSprite);
-		// setAnchorPoint(Size::ZERO);
-		// EventListenerMouse *evmouse = EventListenerMouse::create();
-		// evmouse->onMouseScroll = std::bind(&TVPWindowLayer::onMouseScroll, this, std::placeholders::_1);
-		// evmouse->onMouseDown = std::bind(&TVPWindowLayer::onMouseDownEvent, this, std::placeholders::_1);
-		// evmouse->onMouseUp = std::bind(&TVPWindowLayer::onMouseUpEvent, this, std::placeholders::_1);
-		// evmouse->onMouseMove = std::bind(&TVPWindowLayer::onMouseMoveEvent, this, std::placeholders::_1);
-		// _eventDispatcher->addEventListenerWithSceneGraphPriority(evmouse, this);
-		// setTouchEnabled(false);
-		// //_touchListener->setSwallowTouches(true);
-		// setVisible(false);
-		
-
 		return true;
 	}
 
 	static TVPWindowLayer *create(tTJSNI_Window *w) {
 		TVPWindowLayer *ret = new TVPWindowLayer (w);
 		ret->init();
-		// ret->autorelease();
 		return ret;
 	}
 
@@ -218,14 +174,8 @@ public:
 
 	}
 	virtual void BringToFront() override {
-		// left = tjs_int64(left) * ActualZoomNumer / ActualZoomDenom;
-		// top = tjs_int64(top) * ActualZoomNumer / ActualZoomDenom;
-		// right = tjs_int64(right) * ActualZoomNumer / ActualZoomDenom;
-		// bottom = tjs_int64(bottom) * ActualZoomNumer / ActualZoomDenom;
 		if (_currentWindowLayer != this) {
 			if (_currentWindowLayer) {
-				// const Size &size = _currentWindowLayer->getViewSize();
-				// _currentWindowLayer->setPosition(Vec2(size.width, 0));
 				_currentWindowLayer->TJSNativeInstance->OnReleaseCapture();
 			}
 			_currentWindowLayer = this;
@@ -328,11 +278,6 @@ public:
 		SDL_RenderPresent(renderer);
 		hasDrawn = true;
 	}
-#if 0
-	virtual void AddOverlay(tTJSNI_BaseVideoOverlay *ovl) = 0;
-	virtual void RemoveOverlay(tTJSNI_BaseVideoOverlay *ovl) = 0;
-	virtual void UpdateOverlay() = 0;
-#endif
 	virtual void InvalidateClose() override {
 		isBeingDeleted = true;
 	}
@@ -362,10 +307,6 @@ public:
 					// not the main window
 					action = caFree;
 				}
-				//if (TVPFullScreenedWindow != this) {
-					// if this is not a fullscreened window
-				//	SetVisible(false);
-				//}
 				iTJSDispatch2 * obj = TJSNativeInstance->GetOwnerNoAddRef();
 				TJSNativeInstance->NotifyWindowClose();
 				obj->Invalidate(0, NULL, NULL, obj);
@@ -657,22 +598,7 @@ public:
 			}
 		}
 	}
-
-	// void SetZoomNumer(tjs_int n) { SetZoom(n, ZoomDenom); }
-	// tjs_int GetZoomNumer() const { return ZoomNumer; }
-	// void SetZoomDenom(tjs_int d) { SetZoom(ZoomNumer, d); }
-	// tjs_int GetZoomDenom() const { return ZoomDenom; }
-
-	// dummy function
-	// TODO
 };
-
-
-
-
-//TODO: Frame update use tTVPApplication::Run, then iTVPTexture2D::RecycleProcess
-//TODO: Rendering: On every frame copy from GetAdapterTexture
-//TODO: Startup game at path ::Application->StartApplication(path);
 
 bool sdlProcessEvents() {
 	SDL_Event event;
@@ -723,7 +649,6 @@ int main(int argc, char **argv) {
     short timePerFrame = 16; // miliseconds
     
 	while (sdlProcessEvents()) {
-		// TVPRelinquishCPU();
 		if (!startTime) {
             startTime = SDL_GetTicks(); 
         } else {
@@ -759,7 +684,6 @@ bool TVPGetKeyMouseAsyncState(tjs_uint keycode, bool getcurrent)
 #undef st_ctime
 #undef st_mtime
 
-//int stat64(const char* __path, struct stat64* __buf) __INTRODUCED_IN(21); // force link it !
 bool TVP_stat(const char *name, tTVP_stat &s) {
 	struct stat t;
 	// static_assert(sizeof(t.st_size) == 4, "");
@@ -779,16 +703,6 @@ bool TVP_stat(const tjs_char *name, tTVP_stat &s) {
 	return TVP_stat(holder, s);
 }
 
-// tjs_uint32 TVPGetRoughTickCount32()
-// {
-// 	// tjs_uint32 uptime = 0;
-// 	// struct timespec on;
-// 	// if (clock_gettime(CLOCK_MONOTONIC, &on) == 0)
-// 	// 	uptime = on.tv_sec * 1000 + on.tv_nsec / 1000000;
-// 	// return uptime;
-// 	return SDL_GetTicks();
-// }
-
 bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 {
 	// if (keycode >= sizeof(_scancode) / sizeof(_scancode[0])) return false;
@@ -797,132 +711,21 @@ bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 	return false;
 }
 
-std::string TVPShowFileSelector(const std::string &title, const std::string &initfilename, std::string initdir, bool issave)
-{
-	// if (initdir.empty()) {
-	// 	ttstr dir = TVPGetAppPath();
-	// 	TVPGetLocalName(dir);
-	// 	initdir = dir.AsStdString();
-	// }
-	// std::string _fileSelectorResult;
-	// TVPFileSelectorForm* _fileSelector = TVPFileSelectorForm::create(initfilename, initdir, issave);
-	// _fileSelector->setOnClose([&](const std::string &result) {
-	// 	_fileSelectorResult = result;
-	// 	_fileSelector = nullptr;
-	// });
-	// TVPMainScene::GetInstance()->pushUIForm(_fileSelector);
-	// Director* director = Director::getInstance();
-	// while (_fileSelector) {
-	// 	TVPProcessInputEvents();
-	// 	int remain = TVPDrawSceneOnce(30); // 30 fps
-	// 	if (remain > 0) {
- //            std::this_thread::sleep_for(std::chrono::milliseconds(remain));
-	// 	}
-	// }
-	return "";
-}
-
-// bool TVPWriteDataToFile(const ttstr &filepath, const void *data, unsigned int size) {
-// 	tjs_string wfilename(filepath.AsStdString());
-// 	std::string nfilename;
-// 	if (TVPUtf16ToUtf8(nfilename, wfilename)) {
-// 		FILE *fp = fopen(nfilename.c_str(), "wb");
-// 		if (fp) {
-// 			// file api is OK
-// 			int writed = fwrite(data, 1, size, fp);
-// 			fclose(fp);
-// 			return writed == size;
-// 		}
-// 	}
-// 	return false;
-// }
-
 void TVPExitApplication(int code) {
-	// TVPDeliverCompactEvent(TVP_COMPACT_LEVEL_MAX);
-	// if (!TVPIsSoftwareRenderManager())
-	// 	iTVPTexture2D::RecycleProcess();
-	// JniMethodInfo t;
-	// if (JniHelper::getStaticMethodInfo(t, "org/tvp/kirikiri2/KR2Activity", "exit", "()V")) {
-	// 	t.env->CallStaticVoidMethod(t.classID, t.methodID);
-	// 	t.env->DeleteLocalRef(t.classID);
-	// }
 	SDL_Quit();
 	exit(code);
 }
 
-// #include <sched.h>
-#include <unistd.h>
 void TVPRelinquishCPU() {
-	// sched_yield();
-	// nanosleep(15);
 	SDL_Delay(0);
 }
 
-// void TVP_utime(const char *name, time_t modtime) {
-// 	timeval mt[2];
-// 	mt[0].tv_sec = modtime;
-// 	mt[0].tv_usec = 0;
-// 	mt[1].tv_sec = modtime;
-// 	mt[1].tv_usec = 0;
-// 	utimes(name, mt);
-// }
-
 #include <string.h>
 
-// bool TVPCreateFolders(const ttstr &folder)
-// {
-// 	tTJSNarrowStringHolder path(folder.c_str());
-
-//     const size_t len = strlen(path);
-//     char _path[PATH_MAX];
-//     char *p; 
-
-//     errno = 0;
-
-//     /* Copy string so its mutable */
-//     if (len > sizeof(_path)-1) {
-//         errno = ENAMETOOLONG;
-//         return false; 
-//     }   
-//     strcpy(_path, path);
-
-//     /* Iterate the string */
-//     for (p = _path + 1; *p; p++) {
-//         if (*p == '/') {
-//             /* Temporarily truncate */
-//             *p = '\0';
-
-//             if (mkdir(_path, S_IRWXU) != 0) {
-//                 if (errno != EEXIST)
-//                     return false; 
-//             }
-
-//             *p = '/';
-//         }
-//     }   
-
-//     if (mkdir(_path, S_IRWXU) != 0) {
-//         if (errno != EEXIST)
-//             return false; 
-//     }   
-
-// 	return true;
-// }
-
 iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w) {
-//Start the rendering here
 	TVPWindowLayer* ret = TVPWindowLayer::create(w);
-	//TODO: Check iWindowLayer and implement it, then add it using below function
-	// TVPMainScene::GetInstance()->addLayer(ret);
-	// if (_consoleWin) ret->setVisible(false);
 	return ret;
-	// return ret;
 }
-
-// void TVPRemoveWindowLayer(iWindowLayer *lay) {
-// 	// static_cast<TVPWindowLayer*>(lay)->removeFromParent();
-// }
-
 
 void TVPConsoleLog(const ttstr &l, bool important) {
 
@@ -934,9 +737,6 @@ void TVPConsoleLog(const ttstr &l, bool important) {
 namespace TJS {
 	static const int MAX_LOG_LENGTH = 16 * 1024;
 	void TVPConsoleLog(const tjs_char *l) {
-		// std::string utf8;
-		// assert(sizeof(tjs_char) == sizeof(wchar_t));
-		// std::u16string buf((const wchar_t*)l);
 		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
 		std::string dest = convert.to_bytes(l);  
 		fprintf(stderr, "%s", dest.c_str());
@@ -960,13 +760,6 @@ tjs_uint32 TVPGetCurrentShiftKeyState()
 {
 	tjs_uint32 f = 0;
 
-	// if (_scancode[VK_SHIFT] & 1) f |= ssShift;
-	// if (_scancode[VK_MENU] & 1) f |= ssAlt;
-	// if (_scancode[VK_CONTROL] & 1) f |= ssCtrl;
-	// if (_scancode[VK_LBUTTON] & 1) f |= ssLeft;
-	// if (_scancode[VK_RBUTTON] & 1) f |= ssRight;
-	//if (_scancode[VK_MBUTTON] & 1) f |= TVP_SS_MIDDLE;
-
 	return f;
 }
 
@@ -980,6 +773,4 @@ ttstr TVPGetOSName()
 	return TVPGetPlatformName();
 }
 
-void TVPShowPopMenu(tTJSNI_MenuItem* menu) {
-	// TODO: STUB
-};
+void TVPShowPopMenu(tTJSNI_MenuItem* menu) {};
