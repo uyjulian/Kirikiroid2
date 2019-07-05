@@ -10,10 +10,12 @@
 //---------------------------------------------------------------------------
 #include "tjsCommHead.h"
 
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 #if 1
 #include <zlib.h>
 #else
 #include <zlib/zlib.h>
+#endif
 #endif
 #include "TextStream.h"
 #include "MsgIntf.h"
@@ -201,7 +203,9 @@ public:
 					TVPThrowExceptionMessage(TVPUnsupportedCipherMode, name);
 
 
+
 				if(CryptMode == 2)
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 				{
 					// compressed text stream
 					tjs_uint64 compressed = Stream->ReadI64LE();
@@ -235,6 +239,12 @@ public:
 					Buffer[BufferLen] = 0;
 					BufferPtr = Buffer;
 				}
+#else
+				{
+					TVPThrowExceptionMessage(TVPUnsupportedModeString,
+						TJS_W("the program was not compiled with zlib support"));
+				}
+#endif
 			}
 			else
 			{
@@ -449,12 +459,14 @@ class tTVPTextWriteStream : public iTJSTextWriteStream
 		// 0: (unused)	(old buggy crypt mode)
 		// 1: simple crypt
 		// 2: complessed
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
     int CompressionLevel; // compression level of zlib
 
 	z_stream_s *ZStream;
 	tjs_uint CompressionSizePosition;
 	tjs_nchar *CompressionBuffer;
 	bool CompressionFailed;
+#endif
 
 public:
 	tTVPTextWriteStream(const ttstr & name, const ttstr &modestr)
@@ -466,11 +478,13 @@ public:
 		// oN: write from binary offset N (in bytes)
 		Stream = NULL;
 		CryptMode = -1;
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 		CompressionLevel = Z_DEFAULT_COMPRESSION;
 		ZStream = NULL;
 		CompressionSizePosition = 0;
 		CompressionBuffer = NULL;
 		CompressionFailed = false;
+#endif
 
 		// check c/z mode
 		const tjs_char *p;
@@ -484,9 +498,17 @@ public:
 		if((p = TJS_strchr(modestr.c_str(), TJS_W('z'))) != NULL)
 		{
 			CryptMode = 2; // compressed (cannot be with 'c')
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 			if(p[1] >= TJS_W('0') && p[1] <= TJS_W('9'))
 				CompressionLevel = p[1] - TJS_W('0');
+#endif
 		}
+
+#ifndef TVP_COMPRESSION_ENABLE_ZLIB
+		if(CryptMode == 2)
+			TVPThrowExceptionMessage(TVPUnsupportedModeString,
+				TJS_W("the program was not compiled with zlib support"));
+#endif
 
 		if(CryptMode != -1 && CryptMode != 1 && CryptMode != 2)
 			TVPThrowExceptionMessage(TVPUnsupportedModeString,
@@ -533,6 +555,7 @@ public:
 										0x00, 0x00/*dummy 2bytes*/ };
 		Stream->WriteBuffer(bommark, 2);
 
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 		if(CryptMode == 2)
 		{
 			// allocate and initialize zlib straem
@@ -557,10 +580,12 @@ public:
 			WriteI64LE((tjs_uint64)0);
 			WriteI64LE((tjs_uint64)0);
 		}
+#endif
 	}
 
 	~tTVPTextWriteStream() noexcept(false)
 	{
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 		if(CryptMode == 2)
 		{
 
@@ -603,6 +628,7 @@ public:
 			delete[] CompressionBuffer;
 
 		}
+#endif
 
 		if(Stream) delete Stream;
 	}
@@ -707,6 +733,7 @@ public:
 
 	void WriteRawData(void *ptr, size_t size)
 	{
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 		if(CryptMode == 2)
 		{
 			// compressed with zlib stream.
@@ -727,6 +754,7 @@ public:
 			}
 		}
 		else
+#endif
 		{
 			Stream->WriteBuffer(ptr, (tjs_uint)size); // write directly
 		}

@@ -18,10 +18,12 @@
 #include "UtilStreams.h"
 #include "SysInitIntf.h"
 
-#ifdef ANDROID
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
+#if 1
 #include <zlib.h>
 #else
 #include <zlib/zlib.h>
+#endif
 #endif
 #include <algorithm>
 
@@ -380,6 +382,7 @@ tTVPXP3Archive::tTVPXP3Archive(const ttstr & name) : tTVPArchive(name)
 			st->ReadBuffer(&index_flag, 1);
 			tjs_uint index_size;
 
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 			if((index_flag & TVP_XP3_INDEX_ENCODE_METHOD_MASK) ==
 				TVP_XP3_INDEX_ENCODE_ZLIB)
 			{
@@ -415,7 +418,9 @@ tTVPXP3Archive::tTVPXP3Archive(const ttstr & name) : tTVPArchive(name)
 				}
 				delete [] compressed;
 			}
-			else if((index_flag & TVP_XP3_INDEX_ENCODE_METHOD_MASK) ==
+			else 
+#endif
+			if((index_flag & TVP_XP3_INDEX_ENCODE_METHOD_MASK) ==
 				TVP_XP3_INDEX_ENCODE_RAW)
 			{
 				// uncompressed index
@@ -486,9 +491,11 @@ tTVPXP3Archive::tTVPXP3Archive(const ttstr & name) : tTVPArchive(name)
 					if((flags & TVP_XP3_SEGM_ENCODE_METHOD_MASK) ==
 							TVP_XP3_SEGM_ENCODE_RAW)
 						seg.IsCompressed = false;
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 					else if((flags & TVP_XP3_SEGM_ENCODE_METHOD_MASK) ==
 							TVP_XP3_SEGM_ENCODE_ZLIB)
 						seg.IsCompressed = true;
+#endif
 					else
 						TVPThrowExceptionMessage(TVPReadError); // unknown encode method
 						
@@ -853,6 +860,7 @@ void tTVPXP3ArchiveStream::EnsureSegment()
 	// erase buffer
 	if(SegmentData) SegmentData->Release(), SegmentData = NULL;
 
+#ifdef TVP_COMPRESSION_ENABLE_ZLIB
 	// is compressed segment ?
 	if(CurSegment->IsCompressed)
 	{
@@ -892,6 +900,7 @@ void tTVPXP3ArchiveStream::EnsureSegment()
 		}
 	}
 	else
+#endif
 	{
 		// not a compressed segment
 

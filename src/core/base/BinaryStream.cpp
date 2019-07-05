@@ -10,10 +10,12 @@
 //---------------------------------------------------------------------------
 #include "tjsCommHead.h"
 
-#if 1
+#if 0
+#ifdef ANDROID
 #include <zlib.h>
 #else
 #include <zlib/zlib.h>
+#endif
 #endif
 
 #include "TextStream.h"
