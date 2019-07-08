@@ -620,28 +620,24 @@ bool sdlProcessEventsForFrames(int frames) {
 
 int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
-	char cwd[PATH_MAX];
 
 	tjs_char** wargv = reinterpret_cast<tjs_char**>(malloc(sizeof(tjs_char*) * argc));
 
-	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-		strncat(cwd, "/", PATH_MAX);
-		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
-		for (int i = 0; i < argc; i += 1) {
-			tjs_char* warg;
-			if (!i)
-				warg = const_cast<tjs_char*>(convert.from_bytes(realpath(argv[i], NULL)).c_str());
-			else
-				warg = const_cast<tjs_char*>(convert.from_bytes(argv[i]).c_str());
-			tjs_char* warg_copy = reinterpret_cast<tjs_char*>(malloc(sizeof(tjs_char) * (strlen(argv[i]) + 1)));
-			memcpy(warg_copy, warg, sizeof(tjs_char) * (strlen(argv[i]) + 1));
-			wargv[i] = warg_copy;
-		}
-		_argc = argc;
-		_wargv = wargv;
-		::Application = new tTVPApplication();
-		::Application->StartApplication( _argc, _wargv );
+	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
+	for (int i = 0; i < argc; i += 1) {
+		tjs_char* warg;
+		if (!i)
+			warg = const_cast<tjs_char*>(convert.from_bytes(realpath(argv[i], NULL)).c_str());
+		else
+			warg = const_cast<tjs_char*>(convert.from_bytes(argv[i]).c_str());
+		tjs_char* warg_copy = reinterpret_cast<tjs_char*>(malloc(sizeof(tjs_char) * (strlen(argv[i]) + 1)));
+		memcpy(warg_copy, warg, sizeof(tjs_char) * (strlen(argv[i]) + 1));
+		wargv[i] = warg_copy;
 	}
+	_argc = argc;
+	_wargv = wargv;
+	::Application = new tTVPApplication();
+	::Application->StartApplication( _argc, _wargv );
 
     Uint32 startTime = 0;
     Uint32 endTime = 0;
