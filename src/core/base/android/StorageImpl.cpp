@@ -314,9 +314,10 @@ void TVPPreNormalizeStorageName(ttstr &name)
 	if(namelen >= 1) {
 		if( name[0] == TJS_W('.') ) {
 			ttstr newname(TJS_W("file:"));
-			char cwd[PATH_MAX];
-			if (getcwd(cwd, sizeof(cwd)) != NULL) {
+			char* cwd = realpath(".", NULL);
+			if (cwd != NULL) {
 				newname += ttstr(cwd);
+				free(cwd);
 			}
 			newname += (name.c_str()+1);
 			name = newname;

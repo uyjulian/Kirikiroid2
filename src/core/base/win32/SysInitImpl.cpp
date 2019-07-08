@@ -1253,11 +1253,12 @@ void TVPBeforeSystemInit()
 		TVPAddImportantLog( TVPFormatMessage(TVPInfoSelectedProjectDirectory, TVPProjectDir) );
 	}
 #endif
-	char cwd[PATH_MAX];
-	if (getcwd(cwd, sizeof(cwd)) != NULL) {
-		strncat(cwd, "/", PATH_MAX);
+	char* cwd = realpath(".", NULL);
+	if (cwd != NULL) {
 		TVPProjectDirSelected = true;
 		ttstr buf(cwd);
+		free(cwd);
+		buf += "/";
 		TVPProjectDir = TVPNormalizeStorageName(buf.AsStdString());
 		TVPSetCurrentDirectory(TVPProjectDir);
 		TVPNativeProjectDir = buf.AsStdString();
