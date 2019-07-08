@@ -1,3 +1,4 @@
+#include "tjsCommHead.h"
 #include "FFWaveDecoder.h"
 #include "WaveIntf.h"
 #include "StorageIntf.h"
