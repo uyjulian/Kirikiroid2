@@ -90,7 +90,11 @@ inline void DumpMemoryLeaks()
 #endif
 
 tjs_string ExePath() {
-	return ttstr(ttstr(_wargv[0])).AsStdString();
+	static tjs_string exepath(TJS_W(""));
+	if (exepath.empty()) {
+		exepath = tjs_string(_wargv[0]);
+	}
+	return exepath;
 }
 
 bool TVPCheckPrintDataPath();
