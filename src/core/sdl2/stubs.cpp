@@ -30,7 +30,6 @@
 #include <wchar.h>
 #include <string>
 #include <locale>
-#include <codecvt>
 #include <iostream>
 
 
@@ -217,9 +216,7 @@ public:
 
 	}
 	virtual void SetCaption(const tjs_string & ws) override {
-		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
-		std::string s = convert.to_bytes(ws.c_str());  
-		SDL_SetWindowTitle(window, s.c_str());
+		SDL_SetWindowTitle(window, ttstr(ws).AsNarrowStdString().c_str());
 	}
 	virtual void SetWidth(tjs_int w) override {
 		int h;
@@ -623,13 +620,13 @@ int main(int argc, char **argv) {
 
 	tjs_char** wargv = reinterpret_cast<tjs_char**>(malloc(sizeof(tjs_char*) * argc));
 
-	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
 	for (int i = 0; i < argc; i += 1) {
-		tjs_char* warg;
+		const tjs_char* warg;
 		if (!i)
-			warg = const_cast<tjs_char*>(convert.from_bytes(realpath(argv[i], NULL)).c_str());
+			warg = ttstr(realpath(argv[i], NULL)).c_str();
 		else
-			warg = const_cast<tjs_char*>(convert.from_bytes(argv[i]).c_str());
+			warg = ttstr(argv[i]).c_str();
+
 		tjs_char* warg_copy = reinterpret_cast<tjs_char*>(malloc(sizeof(tjs_char) * (strlen(argv[i]) + 1)));
 		memcpy(warg_copy, warg, sizeof(tjs_char) * (strlen(argv[i]) + 1));
 		wargv[i] = warg_copy;
@@ -724,18 +721,13 @@ iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w) {
 }
 
 void TVPConsoleLog(const ttstr &l, bool important) {
-
-	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
-	std::string dest = convert.to_bytes(l.c_str());  
-	fprintf(stderr, "%s", dest.c_str());
+	fprintf(stderr, "%s", l.AsNarrowStdString().c_str());
 }
 
 namespace TJS {
 	static const int MAX_LOG_LENGTH = 16 * 1024;
 	void TVPConsoleLog(const tjs_char *l) {
-		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert; 
-		std::string dest = convert.to_bytes(l);  
-		fprintf(stderr, "%s", dest.c_str());
+		fprintf(stderr, "%s", ttstr(l).AsNarrowStdString().c_str());
 	}
 
 	void TVPConsoleLog(const tjs_nchar *format, ...) {
