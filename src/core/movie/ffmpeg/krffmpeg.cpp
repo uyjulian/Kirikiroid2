@@ -1,19 +1,19 @@
-#ifdef _MSC_VER
-#include <windows.h>
-#endif
+// #ifdef _MSC_VER
+// #include <windows.h>
+// #endif
 // #include <thread>
-#include "krmovie.h"
+// #include "krmovie.h"
 extern "C" {
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavfilter/avfilter.h"
 }
 // #include <mutex>
-#include "MsgIntf.h"
-#include "StorageIntf.h"
+// #include "MsgIntf.h"
+// #include "StorageIntf.h"
 // #include "VideoOvlImpl.h"
-#include "KRMoviePlayer.h"
-#include "KRMovieLayer.h"
+// #include "KRMoviePlayer.h"
+// #include "KRMovieLayer.h"
 
 // extern std::thread::id TVPMainThreadID;
 
