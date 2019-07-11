@@ -618,7 +618,8 @@ bool sdlProcessEventsForFrames(int frames) {
 int main(int argc, char **argv) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 
-	tjs_char** wargv = reinterpret_cast<tjs_char**>(malloc(sizeof(tjs_char*) * argc));
+	_argc = argc;
+	_wargv = new tjs_char*[argc];
 
 	for (int i = 0; i < argc; i += 1) {
 		const tjs_char* warg;
@@ -627,12 +628,11 @@ int main(int argc, char **argv) {
 		else
 			warg = ttstr(argv[i]).c_str();
 
-		tjs_char* warg_copy = reinterpret_cast<tjs_char*>(malloc(sizeof(tjs_char) * (strlen(argv[i]) + 1)));
+		tjs_char* warg_copy = new tjs_char[strlen(argv[i]) + 1];
 		memcpy(warg_copy, warg, sizeof(tjs_char) * (strlen(argv[i]) + 1));
-		wargv[i] = warg_copy;
+		_wargv[i] = warg_copy;
 	}
-	_argc = argc;
-	_wargv = wargv;
+
 	::Application = new tTVPApplication();
 	::Application->StartApplication( _argc, _wargv );
 
