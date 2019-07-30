@@ -20,10 +20,10 @@
 #include "LayerBitmapIntf.h"
 #include "LayerIntf.h"
 #include "SysInitIntf.h"
-#include "VideoOvlIntf.h"
 #include "LayerManager.h"
+#include "VideoOvlIntf.h"
+#include "DrawDevice.h"
 #include "BasicDrawDevice.h"
-#include "EventIntf.h"
 
 #include "Application.h"
 
@@ -83,6 +83,7 @@ void TVPClearAllWindowInputEvents()
 }
 //---------------------------------------------------------------------------
 
+
 #if 0
 //---------------------------------------------------------------------------
 bool TVPIsWaitVSync()
@@ -97,6 +98,7 @@ bool TVPIsWaitVSync()
 }
 //---------------------------------------------------------------------------
 #endif
+
 
 
 
@@ -161,13 +163,17 @@ tTJSNI_BaseWindow::Construct(tjs_int numparams, tTJSVariant **param,
 	Owner = tjs_obj; // no addref
 	TVPRegisterWindowToList(static_cast<tTJSNI_Window*>(this));
 
-	// set default draw device object "PassThrough"
+	// set default draw device object "Basic" or "Null"
 	{
 		iTJSDispatch2 * cls = NULL;
 		iTJSDispatch2 * newobj = NULL;
 		try
 		{
+#if 0
+			cls = TVPCreateDefaultDrawDevice();
+#else
 			cls = new tTJSNC_BasicDrawDevice();
+#endif
 			if(TJS_FAILED(cls->CreateNew(0, NULL, NULL, &newobj, 0, NULL, cls)))
 				TVPThrowExceptionMessage(TVPInternalError,
 					TJS_W("tTJSNI_Window::Construct"));
@@ -182,7 +188,6 @@ tTJSNI_BaseWindow::Construct(tjs_int numparams, tTJSVariant **param,
 		if(cls) cls->Release();
 		if(newobj) newobj->Release();
 	}
-
 
 	return TJS_S_OK;
 }
@@ -251,7 +256,6 @@ tTJSNI_BaseWindow::Invalidate()
 
 	// release draw device
 	SetDrawDeviceObject(tTJSVariant());
-
 
 	inherited::Invalidate();
 
@@ -414,6 +418,36 @@ void tTJSNI_BaseWindow::OnTouchMove( tjs_real x, tjs_real y, tjs_real cx, tjs_re
 		TVPPostEvent(Owner, Owner, eventname, 0, TVP_EPT_IMMEDIATE, 5, arg);
 	}
 	if(DrawDevice) DrawDevice->OnTouchMove(x, y, cx, cy, id);
+}
+//---------------------------------------------------------------------------
+void tTJSNI_BaseWindow::OnPointerDown( tjs_int type, tjs_real x, tjs_real y, tjs_real cx, tjs_real cy, tjs_uint32 flags, tjs_uint32 id ) {
+	if( !CanDeliverEvents() ) return;
+	if( Owner )
+	{
+		tTJSVariant arg[7] = { type, x, y, cx, cy, (tjs_int64)flags, (tjs_int64)id };
+		static ttstr eventname( TJS_W( "onPointerDown" ) );
+		TVPPostEvent( Owner, Owner, eventname, 0, TVP_EPT_IMMEDIATE, 7, arg );
+	}
+}
+//---------------------------------------------------------------------------
+void tTJSNI_BaseWindow::OnPointerMove( tjs_int type, tjs_real x, tjs_real y, tjs_real cx, tjs_real cy, tjs_uint32 flags, tjs_uint32 id ) {
+	if( !CanDeliverEvents() ) return;
+	if( Owner )
+	{
+		tTJSVariant arg[7] = { type, x, y, cx, cy, (tjs_int64)flags, (tjs_int64)id };
+		static ttstr eventname( TJS_W( "onPointerMove" ) );
+		TVPPostEvent( Owner, Owner, eventname, 0, TVP_EPT_IMMEDIATE, 7, arg );
+	}
+}
+//---------------------------------------------------------------------------
+void tTJSNI_BaseWindow::OnPointerUp( tjs_int type, tjs_real x, tjs_real y, tjs_real cx, tjs_real cy, tjs_uint32 flags, tjs_uint32 id ) {
+	if( !CanDeliverEvents() ) return;
+	if( Owner )
+	{
+		tTJSVariant arg[7] = { type, x, y, cx, cy, (tjs_int64)flags, (tjs_int64)id };
+		static ttstr eventname( TJS_W( "onPointerUp" ) );
+		TVPPostEvent( Owner, Owner, eventname, 0, TVP_EPT_IMMEDIATE, 7, arg );
+	}
 }
 //---------------------------------------------------------------------------
 void tTJSNI_BaseWindow::OnTouchScaling( tjs_real startdist, tjs_real curdist, tjs_real cx, tjs_real cy, tjs_int flag ) {
@@ -738,7 +772,6 @@ bool tTJSNI_BaseWindow::GetWaitVSync() const
 
 
 
-
 //---------------------------------------------------------------------------
 // tTJSNC_Window : TJS Window class
 //---------------------------------------------------------------------------
@@ -809,20 +842,28 @@ TJS_END_NATIVE_METHOD_DECL(/*func. name*/showModal)
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/setMaskRegion)
 {
+#ifdef ANDROID
+	return TJS_E_NOTIMPL;
+#else
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Window);
 	tjs_int threshold = 1;
 	if(numparams >= 1 && param[0]->Type() != tvtVoid)
 		threshold = (tjs_int)*param[0];
 	_this->SetMaskRegion(threshold);
 	return TJS_S_OK;
+#endif
 }
 TJS_END_NATIVE_METHOD_DECL(/*func. name*/setMaskRegion)
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/removeMaskRegion)
 {
+#ifdef ANDROID
+	return TJS_E_NOTIMPL;
+#else
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Window);
 	_this->RemoveMaskRegion();
 	return TJS_S_OK;
+#endif
 }
 TJS_END_NATIVE_METHOD_DECL(/*func. name*/removeMaskRegion)
 //----------------------------------------------------------------------
@@ -1737,17 +1778,25 @@ TJS_BEGIN_NATIVE_PROP_DECL(imeMode) // not defaultImeMode
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
+#ifdef ANDROID
+		return TJS_E_NOTIMPL;
+#else
 		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Window);
 		*result = (tjs_int)_this->GetDefaultImeMode();
 		return TJS_S_OK;
+#endif
 	}
 	TJS_END_NATIVE_PROP_GETTER
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
+#ifdef ANDROID
+		return TJS_E_NOTIMPL;
+#else
 		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Window);
 		_this->SetDefaultImeMode((tTVPImeMode)(tjs_int)*param);
 		return TJS_S_OK;
+#endif
 	}
 	TJS_END_NATIVE_PROP_SETTER
 }
@@ -1757,17 +1806,25 @@ TJS_BEGIN_NATIVE_PROP_DECL(mouseCursorState)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
+#ifdef ANDROID
+		return TJS_E_NOTIMPL;
+#else
 		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Window);
 		*result = (tjs_int)_this->GetMouseCursorState();
 		return TJS_S_OK;
+#endif
 	}
 	TJS_END_NATIVE_PROP_GETTER
 
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
+#ifdef ANDROID
+		return TJS_E_NOTIMPL;
+#else
 		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Window);
 		_this->SetMouseCursorState((tTVPMouseCursorState)(tjs_int)*param);
 		return TJS_S_OK;
+#endif
 	}
 	TJS_END_NATIVE_PROP_SETTER
 }
@@ -1906,7 +1963,27 @@ TJS_BEGIN_NATIVE_PROP_DECL(layerTreeOwnerInterface)
 	TJS_DENY_NATIVE_PROP_SETTER
 }
 TJS_END_NATIVE_PROP_DECL(layerTreeOwnerInterface)
-//----------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TJS_BEGIN_NATIVE_PROP_DECL( displayDensity )
+{
+	TJS_BEGIN_NATIVE_PROP_GETTER
+	{
+#ifdef WIN32
+		*result = (tjs_int)::GetDeviceCaps( ::GetDC(0), LOGPIXELSX );
+#elif defined( ANDROID )
+		*result = (tjs_int)Application->getDensity();
+#else
+		*result = (tjs_int)96;
+#endif
+		return TJS_S_OK;
+	}
+	TJS_END_NATIVE_PROP_GETTER
+
+	TJS_DENY_NATIVE_PROP_SETTER
+}
+TJS_END_NATIVE_PROP_DECL( displayDensity )
+//---------------------------------------------------------------------------
+
 
 	TJS_END_NATIVE_MEMBERS
 

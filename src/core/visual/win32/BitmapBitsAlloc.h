@@ -1,3 +1,4 @@
+
 #ifndef __BITMAP_BITS_ALLOC_H__
 #define __BITMAP_BITS_ALLOC_H__
 #include <stdint.h>

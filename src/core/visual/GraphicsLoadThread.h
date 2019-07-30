@@ -52,6 +52,7 @@ private:
 	 * 読込み完了した画像をメインスレッドでBitmapへ格納して、イベント通知する
 	 */
 	void HandleLoadedImage();
+
 public:
 	/**
 	 * 読込みを読込みスレッドに要求する(キューへ入れる)

@@ -13,10 +13,12 @@
 #include "EventIntf.h"
 #include "WindowImpl.h"
 
-#define ZeroMemory(p,n) memset(p, 0, n);
-// #include <d3d9.h>
-// #include <mmsystem.h>
+#if 0
+#include <d3d9.h>
+#include <mmsystem.h>
+#endif
 #include <algorithm>
+#define ZeroMemory(p,n) memset(p, 0, n);
 
 //---------------------------------------------------------------------------
 // オプション
@@ -354,6 +356,10 @@ void tTVPBasicDrawDevice::TryRecreateWhenDeviceLost()
 		if( hr == D3DERR_DEVICENOTRESET ) {
 			hr = Direct3DDevice->Reset(&D3dPP);
 		}
+		if( hr == D3DERR_DEVICELOST ) {
+			// 復帰できない
+			return;
+		}
 		if( FAILED(hr) ) {
 			success = CreateD3DDevice();
 		} else {
@@ -541,7 +547,9 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyLayerResize(iTVPLayerManager * m
 	BackBufferDirty = true;
 
 	// テクスチャを捨てて作り直す。
-//	CreateTexture();
+#if 0
+	CreateTexture();
+#endif
 }
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPBasicDrawDevice::Show()
@@ -661,6 +669,10 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyBitmapCompleted(iTVPLayerManager
 	tjs_int x, tjs_int y, tTVPBaseTexture * bmp,
 	const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity)
 {
+#if 0
+	const BITMAPINFO *bitmapinfo = bmpinfo->GetBITMAPINFO();
+#endif
+
 	// bits, bitmapinfo で表されるビットマップの cliprect の領域を、x, y に描画
 	// する。
 	// opacity と type は無視するしかないので無視する
@@ -692,12 +704,15 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyBitmapCompleted(iTVPLayerManager
 		{
 			// bottom-down
 			src_pitch = bitmapinfo->bmiHeader.biWidth * 4;
+			//src_pitch = -bitmapinfo->bmiHeader.biWidth * 4;
+			//src_p += bitmapinfo->bmiHeader.biWidth * 4 * (bitmapinfo->bmiHeader.biHeight - 1);
 		}
 		else
 		{
 			// bottom-up
 			src_pitch = -bitmapinfo->bmiHeader.biWidth * 4;
 			src_p += bitmapinfo->bmiHeader.biWidth * 4 * (bitmapinfo->bmiHeader.biHeight - 1);
+			//src_pitch = bitmapinfo->bmiHeader.biWidth * 4;
 		}
 
 		for(; src_y < src_y_limit; src_y ++, dest_y ++)
@@ -860,6 +875,7 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::RevertFromFullScreen( HWND window, tjs
 }
 //---------------------------------------------------------------------------
 #endif
+
 
 
 

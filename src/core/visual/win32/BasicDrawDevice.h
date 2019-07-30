@@ -3,7 +3,9 @@
 #define BASIC_DRAW_DEVICE_H
 
 #include "DrawDevice.h"
-//#include <d3d9.h>
+#if 0
+#include <d3d9.h>
+#endif
 
 //---------------------------------------------------------------------------
 //! @brief		「Basic」デバイス(もっとも基本的な描画を行うのみのデバイス)
@@ -23,9 +25,13 @@ class tTVPBasicDrawDevice : public tTVPDrawDevice
 	int	D3dPP;
 	int			DispMode;
 
-//	UINT	CurrentMonitor;
+#if 0
+	UINT	CurrentMonitor;
+#endif
  	void*	TextureBuffer; //!< テクスチャのサーフェースへのメモリポインタ
-// 	long	TexturePitch; //!< テクスチャのピッチ
+#if 0
+	long	TexturePitch; //!< テクスチャのピッチ
+#endif
 
 	tjs_uint TextureWidth; //!< テクスチャの横幅
 	tjs_uint TextureHeight; //!< テクスチャの縦幅
@@ -41,6 +47,7 @@ private:
 	~tTVPBasicDrawDevice(); //!< デストラクタ
 
 	void InvalidateAll();
+
 #if 0
 	UINT GetMonitorNumber( HWND window );
 
@@ -54,15 +61,21 @@ private:
 #endif
 	void DestroyD3DDevice() {}
 
-// 	bool CreateTexture();
-// 	void DestroyTexture();
+#if 0
+	bool CreateTexture();
+	void DestroyTexture();
+#endif
 
 	void TryRecreateWhenDeviceLost();
-//	void ErrorToLog( HRESULT hr );
-//	void CheckMonitorMoved();
+#if 0
+	void ErrorToLog( HRESULT hr );
+	void CheckMonitorMoved();
+#endif
 
 public:
-//	void SetToRecreateDrawer() { DestroyD3DDevice(); }
+#if 0
+	void SetToRecreateDrawer() { DestroyD3DDevice(); }
+#endif
 	enum tDrawerType
 	{
 		dtNone, //!< drawer なし
@@ -76,19 +89,25 @@ public:
 	tDrawerType GetPreferredDrawerType() const { return PreferredDrawerType; }
 
 public:
-//	void EnsureDevice();
+#if 0
+	void EnsureDevice();
+#endif
 
 //---- LayerManager の管理関連
 	virtual void TJS_INTF_METHOD AddLayerManager(iTVPLayerManager * manager);
 
 //---- 描画位置・サイズ関連
-//	virtual void TJS_INTF_METHOD SetTargetWindow(HWND wnd, bool is_main);
+#if 0
+	virtual void TJS_INTF_METHOD SetTargetWindow(HWND wnd, bool is_main);
+#endif
 	virtual void TJS_INTF_METHOD SetDestRectangle(const tTVPRect & rect);
 	virtual void TJS_INTF_METHOD NotifyLayerResize(iTVPLayerManager * manager);
 
 //---- 再描画関連
 	virtual void TJS_INTF_METHOD Show();
-//	virtual bool TJS_INTF_METHOD WaitForVBlank( tjs_int* in_vblank, tjs_int* delayed );
+#if 0
+	virtual bool TJS_INTF_METHOD WaitForVBlank( tjs_int* in_vblank, tjs_int* delayed );
+#endif
 
 //---- LayerManager からの画像受け渡し関連
 	virtual void TJS_INTF_METHOD StartBitmapCompletion(iTVPLayerManager * manager);
@@ -99,11 +118,13 @@ public:
 
 //---- デバッグ支援
 	virtual void TJS_INTF_METHOD SetShowUpdateRect(bool b);
+
 #if 0
 //---- フルスクリーン
 	virtual bool TJS_INTF_METHOD SwitchToFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution );
 	virtual void TJS_INTF_METHOD RevertFromFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color );
 #endif
+
 };
 //---------------------------------------------------------------------------
 

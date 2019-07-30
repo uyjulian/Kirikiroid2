@@ -21,7 +21,6 @@
 #include "voMode.h"
 
 #include "NativeEventQueue.h"
-//#include "typedefine.h"
 
 //---------------------------------------------------------------------------
 // tTJSNI_VideoOverlay : VideoOverlay Native Instance
@@ -39,7 +38,9 @@ class tTJSNI_VideoOverlay : public tTJSNI_BaseVideoOverlay
 	tTVPRect Rect;
 	bool Visible;
 
-//	HWND OwnerWindow;
+#if 0
+	HWND OwnerWindow;
+#endif
 
 	// HWND UtilWindow; // window which receives messages from video overlay object
 	NativeEventQueue<tTJSNI_VideoOverlay> EventQueue;
@@ -129,7 +130,7 @@ public:
 	tTJSNI_BaseLayer *GetLayer2() { return Layer2; }
 
 	void SetMode( tTVPVideoOverlayMode m );
-	virtual tTVPVideoOverlayMode GetMode() const override { return Mode; }
+	tTVPVideoOverlayMode GetMode() { return Mode; }
 
 	tjs_real GetPlayRate();
 	void SetPlayRate(tjs_real r);

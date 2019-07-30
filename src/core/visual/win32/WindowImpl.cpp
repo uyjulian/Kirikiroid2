@@ -12,13 +12,17 @@
 
 //#define DIRECTDRAW_VERSION 0x0300
 //#include <ddraw.h>
-//#include <d3d9.h>
+#if 0
+#include <d3d9.h>
+#endif
 
 #include <algorithm>
 #include "MsgIntf.h"
 #include "WindowIntf.h"
 #include "LayerIntf.h"
-//#include "WindowFormUnit.h"
+#if 0
+#include "WindowFormUnit.h"
+#endif
 #include "SysInitIntf.h"
 #include "tjsHashSearch.h"
 #include "StorageIntf.h"
@@ -31,8 +35,10 @@
 #include "Application.h"
 #include "TVPScreen.h"
 #include "tjsDictionary.h"
-//#include "VSyncTimingThread.h"
-//#include "MouseCursor.h"
+#if 0
+#include "VSyncTimingThread.h"
+#include "MouseCursor.h"
+#endif
 
 iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w);
 #define MK_SHIFT 4
@@ -77,11 +83,12 @@ tjs_int TVPGetCursor(const ttstr & name)
 	// search in cache
 	tjs_int * in_hash = TVPCursorTable.Find(place);
 	if(in_hash) return *in_hash;
+
 #if 0
 	// not found
 	tTVPLocalTempStorageHolder file(place);
 
-	HCURSOR handle = ::LoadCursorFromFile(file.GetLocalName().c_str());
+	HCURSOR handle = ::LoadCursorFromFile( file.GetLocalName().c_str() );
 
 	if(!handle) TVPThrowExceptionMessage(TVPCannotLoadCursor, place);
 
@@ -94,6 +101,7 @@ tjs_int TVPGetCursor(const ttstr & name)
 	return 0;
 }
 //---------------------------------------------------------------------------
+
 
 
 
@@ -325,8 +333,8 @@ void TVPDumpDirect3DDriverInformation()
 
 					// driver version(reported)
 					log = infostart + TJS_W("Driver version (reported) : ");
-					wchar_t tmp[256];
-					TJS_snprintf( tmp, 256, L"%d.%02d.%02d.%04d ",
+					tjs_char tmp[256];
+					TJS_snprintf( tmp, 256, TJS_W("%d.%02d.%02d.%04d "),
 							  HIWORD( D3DID.DriverVersion.HighPart ),
 							  LOWORD( D3DID.DriverVersion.HighPart ),
 							  HIWORD( D3DID.DriverVersion.LowPart  ),
@@ -335,33 +343,33 @@ void TVPDumpDirect3DDriverInformation()
 					TVPAddImportantLog(log);
 
 					// driver version(actual)
-					std::wstring driverName = ttstr(D3DID.Driver).AsStdString();
-					wchar_t driverpath[1024];
-					wchar_t *driverpath_filename = NULL;
-					bool success = 0!=SearchPath(NULL, driverName.c_str(), NULL, 1023, driverpath, &driverpath_filename);
+					tjs_string driverName = ttstr(D3DID.Driver).AsStdString();
+					tjs_char driverpath[1024];
+					tjs_char *driverpath_filename = nullptr;
+					bool success = 0!=SearchPath( nullptr, driverName.c_str(), nullptr, 1023, driverpath, &driverpath_filename );
 
 					if(!success)
 					{
-						wchar_t syspath[1024];
-						GetSystemDirectory(syspath, 1023);
-						TJS_strcat(syspath, L"\\drivers"); // SystemDir\drivers
-						success = 0!=SearchPath(syspath, driverName.c_str(), NULL, 1023, driverpath, &driverpath_filename);
+						tjs_char syspath[1024];
+						GetSystemDirectory( syspath, 1023);
+						TJS_strcat(syspath, TJS_W("\\drivers")); // SystemDir\drivers
+						success = 0!=SearchPath( syspath, driverName.c_str(), nullptr, 1023, driverpath, &driverpath_filename );
 					}
 
 					if(!success)
 					{
-						wchar_t syspath[1024];
-						GetWindowsDirectory(syspath, 1023);
-						TJS_strcat(syspath, L"\\system32"); // WinDir\system32
-						success = 0!=SearchPath(syspath, driverName.c_str(), NULL, 1023, driverpath, &driverpath_filename);
+						tjs_char syspath[1024];
+						GetWindowsDirectory( syspath, 1023);
+						TJS_strcat(syspath, TJS_W("\\system32")); // WinDir\system32
+						success = 0!=SearchPath( syspath, driverName.c_str(), nullptr, 1023, driverpath, &driverpath_filename );
 					}
 
 					if(!success)
 					{
-						wchar_t syspath[1024];
-						GetWindowsDirectory(syspath, 1023);
-						TJS_strcat(syspath, L"\\system32\\drivers"); // WinDir\system32\drivers
-						success = 0!=SearchPath(syspath, driverName.c_str(), NULL, 1023, driverpath, &driverpath_filename);
+						tjs_char syspath[1024];
+						GetWindowsDirectory( syspath, 1023);
+						TJS_strcat(syspath, TJS_W("\\system32\\drivers")); // WinDir\system32\drivers
+						success = 0!=SearchPath( syspath, driverName.c_str(), nullptr, 1023, driverpath, &driverpath_filename );
 					}
 
 					if(success)
@@ -370,7 +378,7 @@ void TVPDumpDirect3DDriverInformation()
 						tjs_int major, minor, release, build;
 						if(TVPGetFileVersionOf(driverpath, major, minor, release, build))
 						{
-							TJS_snprintf(tmp, 256, L"%d.%d.%d.%d", (int)major, (int)minor, (int)release, (int)build);
+							TJS_snprintf(tmp, 256, TJS_W("%d.%d.%d.%d"), (int)major, (int)minor, (int)release, (int)build);
 							log += tmp;
 						}
 						else
@@ -386,14 +394,14 @@ void TVPDumpDirect3DDriverInformation()
 					TVPAddImportantLog(log);
 
 					// device id
-					TJS_snprintf(tmp, 256, L"VendorId:%08X  DeviceId:%08X  SubSysId:%08X  Revision:%08X",
+					TJS_snprintf(tmp, 256, TJS_W("VendorId:%08X  DeviceId:%08X  SubSysId:%08X  Revision:%08X"),
 						D3DID.VendorId, D3DID.DeviceId, D3DID.SubSysId, D3DID.Revision);
 					log = infostart + TJS_W("Device ids : ") + tmp;
 					TVPAddImportantLog(log);
 
 					// Device GUID
 					GUID *pguid = &D3DID.DeviceIdentifier;
-					TJS_snprintf( tmp, 256, L"%08X-%04X-%04X-%02X%02X%02X%02X%02X%02X%02X%02X",
+					TJS_snprintf( tmp, 256, TJS_W("%08X-%04X-%04X-%02X%02X%02X%02X%02X%02X%02X%02X"),
 							  pguid->Data1,
 							  pguid->Data2,
 							  pguid->Data3,
@@ -403,7 +411,7 @@ void TVPDumpDirect3DDriverInformation()
 					TVPAddImportantLog(log);
 
 					// WHQL level
-					TJS_snprintf(tmp, 256, L"%08x", D3DID.WHQLLevel);
+					TJS_snprintf(tmp, 256, TJS_W("%08x"), D3DID.WHQLLevel);
 					log = infostart + TJS_W("WHQL level : ")  + tmp;
 					TVPAddImportantLog(log);
 				} else {
@@ -425,7 +433,7 @@ static void TVPInitDirect3D()
 	{
 		// load d3d9.dll
 		TVPAddLog( (const tjs_char*)TVPInfoDirect3D );
-		TVPDirect3DDLLHandle = ::LoadLibrary( L"d3d9.dll" );
+		TVPDirect3DDLLHandle = ::LoadLibrary( TJS_W("d3d9.dll") );
 		if(!TVPDirect3DDLLHandle)
 			TVPThrowExceptionMessage(TVPCannotInitDirect3D, (const tjs_char*)TVPCannotLoadD3DDLL );
 	}
@@ -1098,13 +1106,16 @@ HWND TVPGetModalWindowOwnerHandle()
 #endif
 
 
+
 //---------------------------------------------------------------------------
 // tTJSNI_Window
 //---------------------------------------------------------------------------
 tTJSNI_Window::tTJSNI_Window()
 {
 	//TVPEnsureVSyncTimingThread();
-//	VSyncTimingThread = NULL;
+#if 0
+	VSyncTimingThread = NULL;
+#endif
 	Form = NULL;
 }
 //---------------------------------------------------------------------------
@@ -1318,7 +1329,9 @@ void TJS_INTF_METHOD tTJSNI_Window::SetCursorPos(tjs_int x, tjs_int y)
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTJSNI_Window::WindowReleaseCapture()
 {
-	//::ReleaseCapture(); // Windows API
+#if 0
+	::ReleaseCapture(); // Windows API
+#endif
 }
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTJSNI_Window::SetHintText(iTJSDispatch2* sender, const ttstr & text)
@@ -1827,7 +1840,9 @@ void tTJSNI_Window::SetMaskRegion(tjs_int threshold)
 	if(!DrawDevice) TVPThrowExceptionMessage(TVPWindowHasNoLayer);
 	tTJSNI_BaseLayer *lay = DrawDevice->GetPrimaryLayer();
 	if(!lay) TVPThrowExceptionMessage(TVPWindowHasNoLayer);
-//	Form->SetMaskRegion( ((tTJSNI_Layer*)lay)->CreateMaskRgn((tjs_uint)threshold) );
+#if 0
+	Form->SetMaskRegion( ((tTJSNI_Layer*)lay)->CreateMaskRgn((tjs_uint)threshold) );
+#endif
 }
 //---------------------------------------------------------------------------
 void tTJSNI_Window::RemoveMaskRegion()
@@ -2129,6 +2144,7 @@ tTJSNativeClass * TVPCreateNativeClass_Window()
 TJS_BEGIN_NATIVE_METHOD_DECL(findFullScreenCandidates)
 {
 	if(numparams < 5) return TJS_E_BADPARAMCOUNT;
+
 #if 0
 	std::vector<tTVPScreenModeCandidate> candidates;
 
@@ -2142,6 +2158,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(findFullScreenCandidates)
 	TVPMakeFullScreenModeCandidates(preferred, (tTVPFullScreenResolutionMode)mode,
 		(tTVPFullScreenUsingEngineZoomMode)zoom_mode, candidates);
 #endif
+
 
 	return TJS_S_OK;
 }
@@ -2425,7 +2442,9 @@ TJS_BEGIN_NATIVE_PROP_DECL(displayRotate)
 TJS_END_NATIVE_PROP_DECL_OUTER(cls, displayRotate)
 //---------------------------------------------------------------------------
 
-	// TVPGetDisplayColorFormat(); // this will be ran only once here
+#if 0
+	TVPGetDisplayColorFormat(); // this will be ran only once here
+#endif
 
 	return cls;
 }

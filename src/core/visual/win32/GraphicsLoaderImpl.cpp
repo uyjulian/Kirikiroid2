@@ -27,6 +27,7 @@ void tTVPGraphicHandlerType::Load( void* formatdata, void *callbackdata, tTVPGra
 	tTVPMetaInfoPushCallback metainfopushcallback, tTJSBinaryStream *src, tjs_int32 keyidx, tTVPGraphicLoadMode mode)
 {
 	if( LoadHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, TJS_W("unknown"));
+
 #if 0
 	if( IsPlugin )
 	{
@@ -55,7 +56,7 @@ void tTVPGraphicHandlerType::Save( const ttstr & storagename, const ttstr & mode
 
 	tTJSBinaryStream *stream = TVPCreateStream(TVPNormalizeStorageName(storagename), TJS_BS_WRITE);
 #if 0
-	if (IsPlugin)
+	if( IsPlugin )
 	{
 		tTVPIStreamAdapter *istream = new tTVPIStreamAdapter(stream);
 		try {
@@ -83,6 +84,7 @@ void tTVPGraphicHandlerType::Save( const ttstr & storagename, const ttstr & mode
 void tTVPGraphicHandlerType::Header( tTJSBinaryStream *src, iTJSDispatch2** dic )
 {
 	if( HeaderHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, TJS_W("unknown") );
+
 #if 0
 	if( IsPlugin )
 	{
@@ -103,10 +105,11 @@ void tTVPGraphicHandlerType::Header( tTJSBinaryStream *src, iTJSDispatch2** dic 
 		HeaderHandler( FormatData, src, dic );
 	}
 }
+#if 0
 /*
 	support of SPI for archive files is in StorageImpl.cpp
 */
-#if 0
+
 //---------------------------------------------------------------------------
 // tTVPSusiePlugin
 //---------------------------------------------------------------------------
@@ -405,3 +408,4 @@ void TVPUnloadPictureSPI(HINSTANCE inst)
 }
 //---------------------------------------------------------------------------
 #endif
+

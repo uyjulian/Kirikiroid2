@@ -35,7 +35,6 @@ tjs_error TJS_INTF_METHOD
 void TJS_INTF_METHOD tTJSNI_Rect::Invalidate() {
 }
 
-
 tjs_uint32 tTJSNC_Rect::ClassID = -1;
 tTJSNC_Rect::tTJSNC_Rect() : inherited(TJS_W("Rect") ) {
 	// registration of native members
@@ -178,7 +177,10 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/includedPos)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Rect);
 	if(numparams < 2) return TJS_E_BADPARAMCOUNT;
-	tjs_int ret = _this->Included( *param[0], *param[1] ) ? 1 : 0;
+	tjs_int ret = 0;
+	if( numparams < 3 ) {
+		ret = _this->Included( *param[0], *param[1] ) ? 1 : 0;
+	}
 	if(result) *result = ret;
 	return TJS_S_OK;
 }

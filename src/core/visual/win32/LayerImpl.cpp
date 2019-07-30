@@ -183,6 +183,7 @@ HRGN tTJSNI_Layer::CreateMaskRgn(tjs_uint threshold)
 
 
 
+
 //---------------------------------------------------------------------------
 // tTJSNC_Layer::CreateNativeInstance : returns proper instance object
 //---------------------------------------------------------------------------

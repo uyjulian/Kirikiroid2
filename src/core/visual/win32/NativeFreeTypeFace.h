@@ -34,22 +34,26 @@
 class tNativeFreeTypeFace : public tBaseFreeTypeFace
 {
 protected:
-	std::wstring FaceName;	//!< Face名 = フォント名
+	tjs_string FaceName;	//!< Face名 = フォント名
 	FT_Face Face;	//!< FreeType face オブジェクト
 
 private:
-// 	HDC DC;			//!< デバイスコンテキスト
-// 	HFONT OldFont;	//!< デバイスコンテキストに元々登録されていた古いフォント
+#if 0
+	HDC DC;			//!< デバイスコンテキスト
+	HFONT OldFont;	//!< デバイスコンテキストに元々登録されていた古いフォント
+#endif
 	bool IsTTC;		//!< TTC(TrueTypeCollection)ファイルを扱っている場合に真
 	FT_StreamRec Stream;
-//	TEXTMETRIC TextMetric;
+#if 0
+	TEXTMETRIC TextMetric;
+#endif
 
 public:
-	tNativeFreeTypeFace(const std::wstring &fontname, tjs_uint32 options);
+	tNativeFreeTypeFace(const tjs_stringg &fontname, tjs_uint32 options);
 	virtual ~tNativeFreeTypeFace();
 
 	virtual FT_Face GetFTFace() const;
-	virtual void GetFaceNameList(std::vector<std::wstring> & dest) const; 
+	virtual void GetFaceNameList(std::vector<tjs_string> & dest) const; 
 
 	bool GetIsTTC() const { return IsTTC; }
 	tjs_char GetDefaultChar() const;

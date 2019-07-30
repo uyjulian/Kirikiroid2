@@ -45,6 +45,7 @@ CFLAGS += -Isrc/core/tjs2
 CFLAGS += -Isrc/core/utils
 CFLAGS += -Isrc/core/utils/win32
 CFLAGS += -Isrc/core/visual
+CFLAGS += -Isrc/core/visual/gl
 CFLAGS += -Isrc/core/visual/win32
 CFLAGS += -Isrc/plugins
 

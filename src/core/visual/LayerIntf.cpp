@@ -33,12 +33,17 @@
 #include "BitmapIntf.h"
 
 #include "TVPColor.h"
-//#include "TVPSysFont.h"
+#ifdef _WIN32
+#include "TVPSysFont.h"
+#endif
 #include "FontRasterizer.h"
 #include "RectItf.h"
 #include "FontSystem.h"
 #include "tjsDictionary.h"
-//#include "ConfigManager/IndividualConfigManager.h"
+
+#ifdef __ANDROID__
+#include "VirtualKey.h"
+#endif
 #include "vkdefine.h"
 #include "RenderManager.h"
 #include <cstdlib>
@@ -444,8 +449,7 @@ tTJSNI_BaseLayer::Construct(tjs_int numparams, tTJSVariant **param,
 
 	// get the window native instance
 	tTJSVariantClosure clo = param[0]->AsObjectClosureNoAddRef();
-	//if(clo.Object == NULL) TVPThrowExceptionMessage(TVPSpecifyWindow);
-	if(clo.Object == NULL) TVPThrowExceptionMessage(TJS_W("Please specify layerTreeOwnerInterface object"));
+	if(clo.Object == NULL) TVPThrowExceptionMessage( TVPRequireLayerTreeOwnerInterfaceInterface );
 
 	class iTVPLayerTreeOwner* lto = NULL;
 	tTJSVariant iface_v;
@@ -3875,8 +3879,6 @@ bool tTJSNI_BaseLayer::GetBltMethodFromOperationModeAndDrawFace(
 		else if(DrawFace == dfOpaque)
 						{	met_set = true; met = bmCopy; break;				}
 		break;
-	case dfAuto:
-		break;
 	}
 
 	result = met;
@@ -4028,9 +4030,6 @@ void tTJSNI_BaseLayer::ColorRect(const tTVPRect &rect, tjs_uint32 color, tjs_int
 				}
 			}
 		}
-		break;
-
-	case dfAuto:
 		break;
 	}
 
@@ -4231,8 +4230,6 @@ void tTJSNI_BaseLayer::CopyRect(tjs_int dx, tjs_int dy, iTVPBaseBitmap *src, iTV
 			// then copy
 			ImageModified = ProvinceImage->CopyRect(dx, dy, provincesrc, rect) || ImageModified;
 		}
-		break;
-	case dfAuto:
 		break;
 	}
 
@@ -5219,19 +5216,6 @@ void tTJSNI_BaseLayer::GetFontGlyphDrawRect( const ttstr & text, tTVPRect& area 
 
 	MainImage->GetFontGlyphDrawRect(text,area);
 }
-//---------------------------------------------------------------------------
-#if 0
-bool tTJSNI_BaseLayer::DoUserFontSelect(tjs_uint32 flags, const ttstr &caption,
-		const ttstr &prompt, const ttstr &samplestring)
-{
-	ApplyFont();
-
-	bool b = MainImage->SelectFont(flags, caption, prompt, samplestring,
-		Font.Face);
-	if(b) FontChanged = true;
-	return b;
-}
-#endif
 //---------------------------------------------------------------------------
 void tTJSNI_BaseLayer::GetFontList(tjs_uint32 flags, std::vector<ttstr> & list)
 {
@@ -6550,7 +6534,7 @@ tTVPBaseTexture * tTJSNI_BaseLayer::GetDrawTargetBitmap(const tTVPRect &rect,
 	tTVPRect &cliprect)
 {
 	// called from children to get the image buffer drawn to.
-	if(DisplayType == ltBinder || (MainImage == NULL && DirectTransferToParent))
+	if(DisplayType == ltBinder || MainImage == NULL && DirectTransferToParent)
 	{
 		tTVPRect _rect(rect);
 		_rect.add_offsets(Rect.left, Rect.top);
@@ -6560,7 +6544,7 @@ tTVPBaseTexture * tTJSNI_BaseLayer::GetDrawTargetBitmap(const tTVPRect &rect,
 	tjs_int w = rect.get_width();
 	tjs_int h = rect.get_height();
 	if(UpdateRectForChild.get_width() < w || UpdateRectForChild.get_height() < h)
-		TVPThrowExceptionMessage(TVPInternalError);
+		TVPInternalError;
 	cliprect = UpdateRectForChild;
 	cliprect.add_offsets(rect.left - UpdateRectForChildOfsX,
 		rect.top - UpdateRectForChildOfsY);
@@ -6599,7 +6583,7 @@ void tTJSNI_BaseLayer::DrawCompleted(const tTVPRect &destrect,
 			tTVPComplexRect nr; // new region
 			nr.Or(destrect);
 			nr.Sub(DrawnRegion);
-			tTVPComplexRect opr; // operation region
+			tTVPComplexRect orcr; // operation region
 			// now nr is a client region which is not overlapped by children
 			// at this time
 			if(DisplayType == type && opacity == 255)
@@ -6621,8 +6605,8 @@ void tTJSNI_BaseLayer::DrawCompleted(const tTVPRect &destrect,
 						bmp, sr);
 				}
 				// calculate operation region
-				opr.Or(destrect);
-				opr.Sub(nr);
+				orcr.Or(destrect);
+				orcr.Sub(nr);
 			}
 			else
 			{
@@ -6639,11 +6623,11 @@ void tTJSNI_BaseLayer::DrawCompleted(const tTVPRect &destrect,
 							// CopySelf of MainImage == NULL actually
 							// fills target rectangle with full transparency
 				}
-				opr.Or(destrect);
+				orcr.Or(destrect);
 			}
 
 			// operate r
-			tTVPComplexRect::tIterator it = opr.GetIterator();
+			tTVPComplexRect::tIterator it = orcr.GetIterator();
 			while(it.Step())
 			{
 				tTVPRect r(*it);
@@ -6704,11 +6688,11 @@ void tTJSNI_BaseLayer::InternalComplete2(tTVPComplexRect & updateregion,
 			{
 				// split
 				tjs_int rw = r.get_width();
-				if(rw < 40) oh = 256;
-				else if(rw < 80) oh = 128;
-				else if(rw < 160) oh = 64;
-				else if(rw < 320) oh = 32;
-				else oh = 16; // 2 lines per core in modern 8 cores cpu
+				if(rw < 40) oh = 128;
+				else if(rw < 80) oh = 64;
+				else if(rw < 160) oh = 32;
+				else if(rw < 320) oh = 16;
+				else oh = 8;
 			}
 			else
 			{
@@ -6718,27 +6702,27 @@ void tTJSNI_BaseLayer::InternalComplete2(tTVPComplexRect & updateregion,
 
 			// split to some stripes
 			tjs_int y;
-			tTVPRect opr;
-			opr.left = r.left;
-			opr.right = r.right;
+			tTVPRect orr;
+			orr.left = r.left;
+			orr.right = r.right;
 			if(TVPGraphicSplitOperationType == gsotInterlace)
 			{
 				// interlaced split
 				for(y = r.top; y < r.bottom; y+= oh*2)
 				{
-					opr.top = y;
-					opr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
+					orr.top = y;
+					orr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
 
 					// call "Draw" to draw to the window
-					Draw(drawable, opr, false);
+					Draw(drawable, orr, false);
 				}
 				for(y = r.top + oh; y < r.bottom; y+= oh*2)
 				{
-					opr.top = y;
-					opr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
+					orr.top = y;
+					orr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
 
 					// call "Draw" to draw to the window
-					Draw(drawable, opr, false);
+					Draw(drawable, orr, false);
 				}
 			}
 			else if(TVPGraphicSplitOperationType == gsotSimple)
@@ -6746,11 +6730,11 @@ void tTJSNI_BaseLayer::InternalComplete2(tTVPComplexRect & updateregion,
 				// non-interlaced
 				for(y = r.top; y < r.bottom; y+=oh)
 				{
-					opr.top = y;
-					opr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
+					orr.top = y;
+					orr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
 
 					// call "Draw" to draw to the window
-					Draw(drawable, opr, false);
+					Draw(drawable, orr, false);
 				}
 			}
 			else if(TVPGraphicSplitOperationType == gsotBiDirection)
@@ -6761,11 +6745,11 @@ void tTJSNI_BaseLayer::InternalComplete2(tTVPComplexRect & updateregion,
 				{
 					for(y = r.top; y < r.bottom; y+=oh)
 					{
-						opr.top = y;
-						opr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
+						orr.top = y;
+						orr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
 
 						// call "Draw" to draw to the window
-						Draw(drawable, opr, false);
+						Draw(drawable, orr, false);
 					}
 				}
 				else
@@ -6774,13 +6758,13 @@ void tTJSNI_BaseLayer::InternalComplete2(tTVPComplexRect & updateregion,
 					if(y < r.top) y = r.top;
 					while(1)
 					{
-						opr.top = (y < r.top ? r.top : y);
-						opr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
+						orr.top = (y < r.top ? r.top : y);
+						orr.bottom = (y+oh < r.bottom) ? y+oh: r.bottom;
 
-						if(opr.bottom <= r.top) break;
+						if(orr.bottom <= r.top) break;
 
 						// call "Draw" to draw to the window
-						Draw(drawable, opr, false);
+						Draw(drawable, orr, false);
 
 						y-=oh;
 					}
@@ -8622,19 +8606,19 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/adjustGamma)
 	memcpy(&data, &TVPIntactGammaAdjustData, sizeof(data));
 
 	if(numparams >= 1 && param[0]->Type() != tvtVoid)
-		data.RGamma = param[0]->AsReal();
+		data.RGamma = static_cast<float>((double)*param[0]);
 	if(numparams >= 2 && param[1]->Type() != tvtVoid)
 		data.RFloor = *param[1];
 	if(numparams >= 3 && param[2]->Type() != tvtVoid)
 		data.RCeil  = *param[2];
 	if(numparams >= 4 && param[3]->Type() != tvtVoid)
-		data.GGamma = param[3]->AsReal();
+		data.GGamma = static_cast<float>((double)*param[3]);
 	if(numparams >= 5 && param[4]->Type() != tvtVoid)
 		data.GFloor = *param[4];
 	if(numparams >= 6 && param[5]->Type() != tvtVoid)
 		data.GCeil  = *param[5];
 	if(numparams >= 7 && param[6]->Type() != tvtVoid)
-		data.BGamma = param[6]->AsReal();
+		data.BGamma = static_cast<float>((double)*param[6]);
 	if(numparams >= 8 && param[7]->Type() != tvtVoid)
 		data.BFloor = *param[7];
 	if(numparams >= 9 && param[8]->Type() != tvtVoid)
@@ -11052,31 +11036,6 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/getGlyphDrawRect)
 }
 TJS_END_NATIVE_METHOD_DECL(/*func. name*/getGlyphDrawRect)
 //----------------------------------------------------------------------
-TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/doUserSelect)
-{
-	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Font);
-
-	if(numparams < 4) return TJS_E_BADPARAMCOUNT;
-
-	tjs_uint32 flags = (tjs_int64)*param[0];
-	ttstr caption = *param[1];
-	ttstr prompt = *param[2];
-	ttstr samplestring = *param[3];
-
-	tjs_int ret = // TODO: implement it ?
-#if 0
-		(tjs_int)_this->GetLayer()->DoUserFontSelect(flags, caption,
-		prompt, samplestring);
-#else
-		0;
-#endif
-
-	if(result) *result = ret;
-
-	return TJS_S_OK;
-}
-TJS_END_NATIVE_METHOD_DECL(/*func. name*/doUserSelect)
-//----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/getList)
 {
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Font);
@@ -11128,6 +11087,39 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/unmapPrerenderedFont)
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_METHOD_DECL(/*func. name*/unmapPrerenderedFont)
+//----------------------------------------------------------------------
+#if 0
+TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/addFont)
+{
+	if(numparams < 1) return TJS_E_BADPARAMCOUNT;
+
+	if(result)
+	{
+		std::vector<ttstr> faces;
+		ttstr fontname = *param[0];
+		TVPFontSystem->AddExtraFont( fontname.AsStdString(), &faces );
+
+		iTJSDispatch2 *dsp;
+		dsp = TJSCreateArrayObject();
+		tTJSVariant tmp(dsp, dsp);
+		*result = tmp;
+		dsp->Release();
+		for(tjs_uint i = 0; i < faces.size(); i++)
+		{
+			tmp = ttstr(faces[i]);
+			dsp->PropSetByNum(TJS_MEMBERENSURE, i, &tmp, dsp);
+		}
+	}
+	else
+	{
+		ttstr fontname = *param[0];
+		TVPFontSystem->AddExtraFont( fontname.AsStdString(), nullptr );
+	}
+
+	return TJS_S_OK;
+}
+TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/addFont)
+#endif
 //----------------------------------------------------------------------
 
 //-- properties
@@ -11316,8 +11308,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(defaultFaceName)
 {
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
-		*result = TVPGetDefaultFontName();
-		// *result = ttstr(TVPFontSystem->GetDefaultFontName());
+		*result = ttstr(TVPFontSystem->GetDefaultFontName());
 		return TJS_S_OK;
 	}
 	TJS_END_NATIVE_PROP_GETTER
@@ -11325,8 +11316,7 @@ TJS_BEGIN_NATIVE_PROP_DECL(defaultFaceName)
 	TJS_BEGIN_NATIVE_PROP_SETTER
 	{
 		ttstr name( *param );
-		// don't override, specified by preference
-		// TVPFontSystem->SetDefaultFontName( name.c_str() );
+		TVPFontSystem->SetDefaultFontName( name.c_str() );
 		return TJS_S_OK;
 	}
 	TJS_END_NATIVE_PROP_SETTER
@@ -11354,8 +11344,12 @@ struct tFontClassHolder {
 	~tFontClassHolder() { if( Obj ) Obj->Release(), Obj = NULL; }
 } static fontclassholder;
 //---------------------------------------------------------------------------
+extern void TVPInializeFontRasterizers();
 tTJSNativeClass * TVPCreateNativeClass_Font()
 {
+#if 0
+	TVPInializeFontRasterizers();
+#endif
 	if( fontclassholder.Obj ) {
 		tTJSNativeClass* fontclass = fontclassholder.Obj;
 		fontclass->AddRef();

@@ -32,6 +32,19 @@ enum tTVPPeriodEventReason
 
 /*]*/
 
+enum class tTVPVideoOverlayStatus : int
+{
+	Unload, // data is not specified
+	Stop,
+	Play,
+	Pause,
+	Ready,
+	Idle,
+	Buffering,
+	LoadError,
+	PlayerError
+};
+
 
 //---------------------------------------------------------------------------
 // tTJSNI_BaseVideoOverlay
@@ -52,12 +65,12 @@ protected:
 	iTJSDispatch2 *Owner;
 	bool CanDeliverEvents;
 	tTJSNI_Window * Window;
-	TJS::tTJSVariantClosure ActionOwner;
-	tTVPSoundStatus Status; // status
+	tTJSVariantClosure ActionOwner;
+	tTVPVideoOverlayStatus Status; // status
 
 	ttstr GetStatusString() const;
-	void SetStatus(tTVPSoundStatus s);
-	void SetStatusAsync(tTVPSoundStatus s);
+	void SetStatus(tTVPVideoOverlayStatus s);
+	void SetStatusAsync(tTVPVideoOverlayStatus s);
 	void FireCallbackCommand(const ttstr & command, const ttstr & argument);
 	void FirePeriodEvent(tTVPPeriodEventReason reason);
 	void FireFrameUpdateEvent( tjs_int frame );
@@ -67,7 +80,6 @@ public:
 	virtual void Disconnect() = 0; // called from Window object's invalidation
 	virtual bool GetVisible() const = 0;
 	virtual const tTVPRect &GetBounds() const = 0;
-	virtual tTVPVideoOverlayMode GetMode() const = 0;
 	virtual bool GetVideoSize(tjs_int &w, tjs_int &h) const = 0;
 
 	tTJSVariantClosure GetActionOwnerNoAddRef() const { return ActionOwner; }

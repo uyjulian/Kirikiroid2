@@ -104,7 +104,8 @@ tTVPBaseTexture * tTVPLayerManager::GetDrawTargetBitmap(const tTVPRect &rect,
     } else {
 		tjs_int bw = DrawBuffer->GetWidth();
 		tjs_int bh = DrawBuffer->GetHeight();
-		if(bw < w || bh  < h) {
+		if(bw < w || bh  < h)
+		{
 			// insufficient size; resize the draw buffer
 			tjs_uint neww = bw > w ? bw:w, newh = bh > h ? bh : h;
 			neww += (neww & 1); // align to even
@@ -127,12 +128,11 @@ void tTVPLayerManager::DrawCompleted(const tTVPRect &destrect,
 		tTVPLayerType type, tjs_int opacity)
 {
 #if 0
-	if (!LayerTreeOwner) return;
-	LayerTreeOwner->NotifyBitmapCompleted(this, destrect.left, destrect.top, bmp, cliprect, type, opacity);
+	LayerTreeOwner->NotifyBitmapCompleted(this, destrect.left, destrect.top,
+		bmp->GetBitmap()->GetBits(), bmp->GetBitmap()->GetBitmapInfomation(), cliprect, type, opacity);
 #else
     tjs_int w, h;
 	if(!/*LayerTreeOwner->*/GetPrimaryLayerSize(w, h)) return;
-    //Window->GetDrawDevice()->GetSrcSize(w, h);
     if (!DrawBuffer) {
         // create draw buffer
 		DrawBuffer = new tTVPDestTexture(w, h);
@@ -344,7 +344,6 @@ void tTVPLayerManager::NotifyWindowInvalidation()
 	if(!LayerTreeOwner) return;
 
 	LayerTreeOwner->NotifyLayerImageChange(this);
-	// TODO atlernative of LayerTreeOwner->RequestUpdate();
 }
 //---------------------------------------------------------------------------
 void tTVPLayerManager::SetLayerTreeOwner(class iTVPLayerTreeOwner* owner)
@@ -1143,6 +1142,7 @@ void TJS_INTF_METHOD tTVPLayerManager::DumpLayerStructure()
 	if(Primary) Primary->DumpStructure();
 }
 //---------------------------------------------------------------------------
+
 
 bool tTVPDestTexture::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref, tTVPRect refrect, tjs_int plane /*= (TVP_BB_COPY_MAIN | TVP_BB_COPY_MASK)*/)
 {

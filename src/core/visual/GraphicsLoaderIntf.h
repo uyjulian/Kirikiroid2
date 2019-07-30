@@ -17,8 +17,8 @@
 
 class tTVPBaseBitmap;
 namespace TJS {
-    class tTJSBinaryStream;
-}
+class tTJSBinaryStream;
+};
 
 enum tTVPGraphicPixelFormat
 {
@@ -315,6 +315,7 @@ extern void TVPTouchImages(const std::vector<ttstr> & storages, tjs_int64 limit,
 
 
 
+
 class iTVPBaseBitmap;
 //---------------------------------------------------------------------------
 // TVPLoadGraphic
@@ -340,7 +341,9 @@ extern void TVPLoadGraphicProvince(tTVPBaseBitmap *dest, const ttstr &name, tjs_
 	#define BI_BITFIELDS	3
 #endif
 
+#ifdef __WIN32__
 #pragma pack(push, 1)
+#endif
 struct TVP_WIN_BITMAPFILEHEADER
 {
 	tjs_uint16	bfType;
@@ -363,7 +366,9 @@ struct TVP_WIN_BITMAPINFOHEADER
 	tjs_uint32	biClrUsed;
 	tjs_uint32	biClrImportant;
 };
+#ifdef __WIN32__
 #pragma pack(pop)
+#endif
 
 enum tTVPBMPAlphaType
 {

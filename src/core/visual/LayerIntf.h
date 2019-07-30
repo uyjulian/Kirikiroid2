@@ -184,6 +184,7 @@ class tTJSNI_BaseLayer :
 {
 	friend class tTVPLayerManager;
 	friend iTJSDispatch2 * TVPGetObjectFrom_NI_BaseLayer(tTJSNI_BaseLayer * layer);
+
 protected:
 	iTJSDispatch2 *Owner;
 	tTJSVariantClosure ActionOwner;
@@ -668,7 +669,9 @@ public:
 	//--------------------------------------------------- cache management --
 private:
 	tTVPBaseTexture *CacheBitmap;
-	//tTVPComplexRect CachedRegion;
+#if 0
+	tTVPComplexRect CachedRegion;
+#endif
 
 	void AllocateCache();
 	void ResizeCache();
@@ -853,8 +856,6 @@ public:
 	double GetEscHeightX(const ttstr & text);
 	double GetEscHeightY(const ttstr & text);
 	void GetFontGlyphDrawRect( const ttstr & text, tTVPRect& area );
-// 	bool DoUserFontSelect(tjs_uint32 flags, const ttstr &caption,
-// 		const ttstr &prompt, const ttstr &samplestring);
 
 	void GetFontList(tjs_uint32 flags, std::vector<ttstr> & list);
 
@@ -903,7 +904,6 @@ public:
 	void SetCallOnPaint(bool b) { CallOnPaint = b; }
 	bool GetCallOnPaint() const { return CallOnPaint; }
 
-    //void InternalDrawNoCache_GPU(tTVPDrawable *target, const tTVPRect &rect);
     void InternalDrawNoCache_CPU(tTVPDrawable *target, const tTVPRect &rect);
 	virtual void Draw_GPU(tTVPDrawable *target, int x, int y, const tTVPRect &r, bool visiblecheck = true);
 

@@ -13,11 +13,12 @@
 #ifndef __KRMOVIE_H__
 #define __KRMOVIE_H__
 
-//#include "typedefine.h"
+
 
 //---------------------------------------------------------------------------
 enum tTVPVideoStatus { vsStopped, vsPlaying, vsPaused, vsProcessing, vsEnded, vsReady };
 //---------------------------------------------------------------------------
+
 #define __stdcall
 class tTVPBaseTexture;
 //---------------------------------------------------------------------------
@@ -39,10 +40,12 @@ public:
 	virtual void __stdcall SetPosition(uint64_t tick) = 0;
 	virtual void __stdcall GetPosition(uint64_t *tick) = 0;
 	virtual void __stdcall GetStatus(tTVPVideoStatus *status) = 0;
-// 	virtual void __stdcall GetEvent(long *evcode, LONG_PTR *param1,
-// 			LONG_PTR *param2, bool *got) = 0;
+#if 0
+	virtual void __stdcall GetEvent(long *evcode, LONG_PTR *param1,
+			LONG_PTR *param2, bool *got) = 0;
 
-//	virtual void __stdcall FreeEventParams(long evcode, LONG_PTR param1, LONG_PTR param2) = 0;
+	virtual void __stdcall FreeEventParams(long evcode, LONG_PTR param1, LONG_PTR param2) = 0;
+#endif
 
 	virtual void __stdcall Rewind() = 0;
 	virtual void __stdcall SetFrame( int f ) = 0;

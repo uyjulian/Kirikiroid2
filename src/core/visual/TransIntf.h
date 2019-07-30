@@ -64,12 +64,14 @@ public:
 //---------------------------------------------------------------------------
 extern tTVPSimpleImageProvider TVPSimpleImageProvider;
 //---------------------------------------------------------------------------
+
 #if 0
 //---------------------------------------------------------------------------
 TJS_EXP_FUNC_DEF(iTVPScanLineProvider *, TVPSLPLoadImage, (const ttstr &name, tjs_int bpp,
 	tjs_uint32 key, tjs_uint w, tjs_uint h));
 //---------------------------------------------------------------------------
 #endif
+
 
 
 

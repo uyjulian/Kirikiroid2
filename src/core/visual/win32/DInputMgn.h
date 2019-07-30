@@ -14,7 +14,10 @@
 #define __DINPUTMGN_H__
 
 #define DIRECTINPUT_VERSION 0x0500
-//#include <dinput.h>
+#if 0
+#include <dinput.h>
+#endif
+
 #ifndef CALLBACK
 #define CALLBACK
 typedef const void  *LPCDIDEVICEINSTANCE;

@@ -11,7 +11,9 @@
 #include "tjsCommHead.h"
 
 #include <algorithm>
-//#include "WindowFormUnit.h"
+#if 0
+#include "WindowFormUnit.h"
+#endif
 #include "WindowImpl.h"
 #include "EventIntf.h"
 #include "MsgIntf.h"
@@ -37,8 +39,10 @@ tTVPWheelDetectionType TVPWheelDetectionType = wdtWindowMessage/*wdtDirectInput*
 tTVPJoyPadDetectionType TVPJoyPadDetectionType = jdtNone/*jdtDirectInput*/;
 static bool TVPDirectInputInit = false;
 static tjs_int TVPDirectInputLibRefCount = 0;
-//static HMODULE TVPDirectInputLibHandle = NULL; // module handle for dinput.dll
-//static IDirectInput *TVPDirectInput = NULL; // DirectInput object
+#if 0
+static HMODULE TVPDirectInputLibHandle = NULL; // module handle for dinput.dll
+static IDirectInput *TVPDirectInput = NULL; // DirectInput object
+#endif
 //---------------------------------------------------------------------------
 #if 0
 struct tTVPDIWheelData { LONG delta; }; // data structure for DirectInput(Mouse)
@@ -50,6 +54,7 @@ static DIDATAFORMAT TVPWheelDIDF =
 	sizeof(tTVPDIWheelData), 1, TVPWheelDIODF
 };
 #endif
+
 // Joystick (pad) related codes are contributed by Mr. Kiyobee @ TYPE-MOON.
 // Say thanks to him.
 
@@ -57,50 +62,50 @@ static DIDATAFORMAT TVPWheelDIDF =
 const static tjs_uint32 q = 0x80000000;
 #if 0
 static DIOBJECTDATAFORMAT _c_rgodf[ ] = {
-	{ &GUID_XAxis, FIELD_OFFSET(DIJOYSTATE, lX), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_YAxis, FIELD_OFFSET(DIJOYSTATE, lY), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_ZAxis, FIELD_OFFSET(DIJOYSTATE, lZ), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_RxAxis, FIELD_OFFSET(DIJOYSTATE, lRx), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_RyAxis, FIELD_OFFSET(DIJOYSTATE, lRy), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_RzAxis, FIELD_OFFSET(DIJOYSTATE, lRz), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_Slider, FIELD_OFFSET(DIJOYSTATE, rglSlider[0]), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_Slider, FIELD_OFFSET(DIJOYSTATE, rglSlider[1]), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
-	{ &GUID_POV, FIELD_OFFSET(DIJOYSTATE, rgdwPOV[0]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
-	{ &GUID_POV, FIELD_OFFSET(DIJOYSTATE, rgdwPOV[1]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
-	{ &GUID_POV, FIELD_OFFSET(DIJOYSTATE, rgdwPOV[2]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
-	{ &GUID_POV, FIELD_OFFSET(DIJOYSTATE, rgdwPOV[3]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[0]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[1]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[2]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[3]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[4]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[5]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[6]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[7]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[8]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[9]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[10]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[11]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[12]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[13]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[14]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[15]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[16]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[17]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[18]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[19]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[20]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[21]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[22]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[23]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[24]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[25]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[26]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[27]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[28]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[29]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[30]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
-	{ 0, FIELD_OFFSET(DIJOYSTATE, rgbButtons[31]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ &GUID_XAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lX), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_YAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lY), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_ZAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lZ), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_RxAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lRx), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_RyAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lRy), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_RzAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lRz), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_Slider, (DWORD)FIELD_OFFSET(DIJOYSTATE, rglSlider[0]), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_Slider, (DWORD)FIELD_OFFSET(DIJOYSTATE, rglSlider[1]), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
+	{ &GUID_POV, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgdwPOV[0]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
+	{ &GUID_POV, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgdwPOV[1]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
+	{ &GUID_POV, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgdwPOV[2]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
+	{ &GUID_POV, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgdwPOV[3]), q | DIDFT_POV | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[0]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[1]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[2]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[3]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[4]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[5]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[6]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[7]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[8]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[9]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[10]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[11]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[12]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[13]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[14]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[15]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[16]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[17]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[18]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[19]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[20]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[21]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[22]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[23]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[24]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[25]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[26]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[27]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[28]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[29]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[30]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
+	{ 0, (DWORD)FIELD_OFFSET(DIJOYSTATE, rgbButtons[31]), q | DIDFT_BUTTON | DIDFT_ANYINSTANCE, 0, },
 };
 #define numObjects (sizeof(_c_rgodf) / sizeof(_c_rgodf[0]))
 static DIDATAFORMAT c_dfPad =
@@ -118,7 +123,9 @@ static const tjs_int   PadAxisMin = -32768;
 static const tjs_int   PadAxisThreshold   = 95; // Assumes 95% value can turn input on. 95%の入力でOK
 static const tjs_int   PadAxisUpperThreshold  = PadAxisMax * PadAxisThreshold / 100;
 static const tjs_int   PadAxisLowerThreshold  = PadAxisMin * PadAxisThreshold / 100;
-//static bool CALLBACK EnumJoySticksCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
+#if 0
+static bool CALLBACK EnumJoySticksCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
+#endif
 static tjs_uint32	PadLastTrigger;
 static tjs_uint32 /*__fastcall*/ PadState();
 
@@ -172,6 +179,7 @@ static tTVPPadKeyFlag TVPVirtualKeyToPadCode(WORD vk)
 }
 //---------------------------------------------------------------------------
 #endif
+
 
 
 
@@ -247,6 +255,7 @@ tjs_int tTVPKeyRepeatEmulator::GetRepeatCount()
 
 
 
+
 #if 0
 //---------------------------------------------------------------------------
 // DirectInput management
@@ -264,7 +273,7 @@ IDirectInput * TVPAddRefDirectInput()
 
 	TVPDirectInputInit = true;
 
-	TVPDirectInputLibHandle = ::LoadLibrary(TJS_W("dinput.dll"));
+	TVPDirectInputLibHandle = ::LoadLibrary( TJS_W("dinput.dll") );
 	if(!TVPDirectInputLibHandle) return NULL; // load error; is not a fatal error
 
 	HRESULT (WINAPI *procDirectInputCreateW)
@@ -760,3 +769,4 @@ bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 }
 //---------------------------------------------------------------------------
 #endif
+

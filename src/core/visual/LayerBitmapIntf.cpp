@@ -20,7 +20,7 @@
 #include "argb.h"
 #include "tjsUtils.h"
 #include "ThreadIntf.h"
-#include "gl/ResampleImage.h"
+#include "ResampleImage.h"
 #include "RenderManager.h"
 #include <assert.h>
 
@@ -44,7 +44,7 @@ iTVPRenderManager *TVPGetSoftwareRenderManager();
 tTVPGLGammaAdjustData TVPIntactGammaAdjustData =
 { 1.0, 0, 255, 1.0, 0, 255, 1.0, 0, 255 };
 //---------------------------------------------------------------------------
-const static float sBmFactor[] =
+static float sBmFactor[] =
 {
   59, // bmCopy,
   59, // bmCopyOnAlpha,
@@ -108,8 +108,8 @@ static tjs_int GetAdaptiveThreadNum(tjs_int pixelNum, float factor)
 // tTVPBaseBitmap
 //---------------------------------------------------------------------------
 #if 0
-tTVPBaseBitmap::tTVPBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp) :
-		tTVPNativeBaseBitmap(w, h, bpp)
+tTVPBaseBitmap::tTVPBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding) :
+		tTVPNativeBaseBitmap(w, h, bpp, unpadding)
 {
 }
 //---------------------------------------------------------------------------
@@ -194,6 +194,7 @@ bool iTVPBaseBitmap::SetPoint(tjs_int x, tjs_int y, tjs_uint32 value)
 	else
 		*( (tjs_uint8*)GetScanLine(y) + x) = value; // 8bpp
 #endif
+
 	return true;
 }
 //---------------------------------------------------------------------------
@@ -206,6 +207,11 @@ bool iTVPBaseBitmap::SetPointMain(tjs_int x, tjs_int y, tjs_uint32 color)
 	if(x < 0 || y < 0 || x >= (tjs_int)GetWidth() || y >= (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPOutOfRectangle);
 
+#if 0
+	tjs_uint32 *addr = (tjs_uint32*)GetScanLineForWrite(y) + x;
+	*addr &= 0xff000000;
+	*addr += color & 0xffffff;
+#endif
 	tjs_uint32 clr = Bitmap->GetPoint(x, y);
 	clr &= 0xff000000;
 	clr += TVP_REVRGB(color) & 0xffffff;
@@ -223,6 +229,11 @@ bool iTVPBaseBitmap::SetPointMask(tjs_int x, tjs_int y, tjs_int mask)
 	if(x < 0 || y < 0 || x >= (tjs_int)GetWidth() || y >= (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPOutOfRectangle);
 
+#if 0
+	tjs_uint32 *addr = (tjs_uint32*)GetScanLineForWrite(y) + x;
+	*addr &= 0x00ffffff;
+	*addr += (mask & 0xff) << 24;
+#endif
 	tjs_uint32 clr = Bitmap->GetPoint(x, y);
 	clr &= 0x00ffffff;
 	clr += (mask & 0xff) << 24;
@@ -239,7 +250,7 @@ bool tTVPBaseBitmap::Fill(tTVPRect rect, tjs_uint32 value)
 	BOUND_CHECK(false);
 
 	if (Is32BPP()) value = TVP_REVRGB(value);
-#if 0 // use GetTextureForRender instead
+#if 0
 	if(!IsIndependent())
 	{
 		if(rect.left == 0 && rect.top == 0 &&
@@ -425,8 +436,10 @@ bool iTVPBaseBitmap::FillColor(tTVPRect rect, tjs_uint32 color, tjs_int opa)
         }
         TVPEndThreadTask();
 #endif
+
         return true;
 }
+
 #if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialFillColorEntry(void *v)
 {
@@ -548,8 +561,10 @@ bool iTVPBaseBitmap::BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa,
         }
         TVPEndThreadTask();
 #endif
+
         return true;
 }
+
 #if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialBlendColorEntry(void *v)
 {
@@ -667,8 +682,10 @@ bool iTVPBaseBitmap::RemoveConstOpacity(tTVPRect rect, tjs_int level)
         }
         TVPEndThreadTask();
 #endif
+
         return true;
 }
+
 #if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialRemoveConstOpacityEntry(void *v)
 {
@@ -747,8 +764,10 @@ bool iTVPBaseBitmap::FillMask(tTVPRect rect, tjs_int value)
         }
         TVPEndThreadTask();
 #endif
+
         return true;
 }
+
 #if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialFillMaskEntry(void *v)
 {
@@ -774,7 +793,6 @@ void tTVPBaseBitmap::PartialFillMask(const PartialFillMaskParam *param)
 }
 #endif
 //---------------------------------------------------------------------------
-
 bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 	tTVPRect refrect, tjs_int plane)
 {
@@ -784,13 +802,13 @@ bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 	// "plane" is ignored if the bitmap is 8bpp
 	// the source rectangle is ( "refrect" ) and the destination upper-left corner
 	// is (x, y).
-	if (!Is32BPP()) plane = (TVP_BB_COPY_MASK | TVP_BB_COPY_MAIN);
-	if (x == 0 && y == 0 && refrect.left == 0 && refrect.top == 0 &&
+	if(!Is32BPP()) plane = (TVP_BB_COPY_MASK|TVP_BB_COPY_MAIN);
+	if(x == 0 && y == 0 && refrect.left == 0 && refrect.top == 0 &&
 		refrect.right == (tjs_int)ref->GetWidth() &&
 		refrect.bottom == (tjs_int)ref->GetHeight() &&
 		(tjs_int)GetWidth() == refrect.right &&
 		(tjs_int)GetHeight() == refrect.bottom &&
-		plane == (TVP_BB_COPY_MASK | TVP_BB_COPY_MAIN) &&
+		plane == (TVP_BB_COPY_MASK|TVP_BB_COPY_MAIN) &&
 		(bool)!Is32BPP() == (bool)!ref->Is32BPP())
 	{
 		// entire area of both bitmaps
@@ -804,19 +822,19 @@ bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 	bmpw = ref->GetWidth();
 	bmph = ref->GetHeight();
 
-	if (refrect.left < 0)
+	if(refrect.left < 0)
 		x -= refrect.left, refrect.left = 0;
-	if (refrect.right > bmpw)
+	if(refrect.right > bmpw)
 		refrect.right = bmpw;
 
-	if (refrect.left >= refrect.right) return false;
+	if(refrect.left >= refrect.right) return false;
 
-	if (refrect.top < 0)
+	if(refrect.top < 0)
 		y -= refrect.top, refrect.top = 0;
-	if (refrect.bottom > bmph)
+	if(refrect.bottom > bmph)
 		refrect.bottom = bmph;
 
-	if (refrect.top >= refrect.bottom) return false;
+	if(refrect.top >= refrect.bottom) return false;
 
 	bmpw = GetWidth();
 	bmph = GetHeight();
@@ -827,33 +845,33 @@ bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 	rect.right = rect.left + refrect.get_width();
 	rect.bottom = rect.top + refrect.get_height();
 
-	if (rect.left < 0)
+	if(rect.left < 0)
 	{
 		refrect.left += -rect.left;
 		rect.left = 0;
 	}
 
-	if (rect.right > bmpw)
+	if(rect.right > bmpw)
 	{
 		refrect.right -= (rect.right - bmpw);
 		rect.right = bmpw;
 	}
 
-	if (refrect.left >= refrect.right) return false; // not drawable
+	if(refrect.left >= refrect.right) return false; // not drawable
 
-	if (rect.top < 0)
+	if(rect.top < 0)
 	{
 		refrect.top += -rect.top;
 		rect.top = 0;
 	}
 
-	if (rect.bottom > bmph)
+	if(rect.bottom > bmph)
 	{
 		refrect.bottom -= (rect.bottom - bmph);
 		rect.bottom = bmph;
 	}
 
-	if (refrect.top >= refrect.bottom) return false; // not drawable
+	if(refrect.top >= refrect.bottom) return false; // not drawable
 
 #if 0
         // transfer
@@ -1223,6 +1241,14 @@ bool iTVPBaseBitmap::Copy9Patch( const iTVPBaseBitmap *ref, tTVPRect& margin )
 
 		if( scale.right != -1 && margin.right != -1 ) break;
 	}
+#if 0
+	if( scale.left != -1 && scale.right == -1 ) {
+		scale.right = w - 1;
+	}
+	if( margin.left != -1 && margin.right == -1 ) {
+		margin.right = 0;
+	}
+#endif
 
 	for( tjs_int y = 1; y < (h-1); y++ )
 	{
@@ -1247,10 +1273,23 @@ bool iTVPBaseBitmap::Copy9Patch( const iTVPBaseBitmap *ref, tTVPRect& margin )
 
 		if( scale.bottom != -1 && margin.bottom != -1 ) break;
 	}
+#if 0
+	if( scale.top != -1 && scale.bottom == -1 ) {
+		scale.bottom = h - 1;
+	}
+	if( margin.top != -1 && margin.bottom == -1 ) {
+		margin.bottom = 0;
+	}
+#endif
 	// スケール用の領域が見付からない時はコピーできない
 	if( scale.left == -1 || scale.right == -1 || scale.top == -1 || scale.bottom == -1 )
 		return false;
-	
+
+#if 0
+	const tjs_uint32 *src = (const tjs_uint32*)ref->GetScanLine( 0 );
+	const tjs_int pitch = ref->GetPitchBytes() / sizeof( tjs_uint32 );
+#endif
+
 	const tjs_int src_left_width = scale.left - 1;
 	const tjs_int src_right_width = w - 1 - scale.right;
 	const tjs_int dst_center_width = dw - src_left_width - src_right_width;
@@ -1500,8 +1539,10 @@ bool iTVPBaseBitmap::Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
         }
         TVPEndThreadTask();
 #endif
+
         return true;
 }
+
 
 #if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialBltEntry(void *v)
@@ -1811,6 +1852,58 @@ void tTVPBaseBitmap::PartialBlt(const PartialBltParam *param)
 }
 #endif
 //---------------------------------------------------------------------------
+// SIMD で高速化することも出来るけど、頻繁に呼び出すものでもないので単純実装。
+#if 0
+template <typename tFuncExtractColor>
+bool tTVPBaseBitmap::CopyWithDifferentBitWidth( tTVPBaseBitmap *dstbmp, const tTVPBaseBitmap *srcbmp, const tFuncExtractColor& func ) {
+	if( !srcbmp || !dstbmp ) return false;
+	if( dstbmp->Is32BPP() == srcbmp->Is32BPP() ) return false; // 同じなのでコピーしない
+	if( dstbmp->GetWidth() < srcbmp->GetWidth() ) return false;	// 小さいのでコピーしない
+	if( dstbmp->GetHeight() < srcbmp->GetHeight() ) return false;	// 小さいのでコピーしない
+	if( dstbmp->Is8BPP() ) {
+		// 32 -> 8
+		tjs_uint8* dst = (tjs_uint8*)dstbmp->GetScanLineForWrite(0);
+		tjs_int dpitch = dstbmp->GetPitchBytes();
+		const tjs_uint8* src = (const tjs_uint8*)srcbmp->GetScanLine(0);
+		tjs_int spitch = srcbmp->GetPitchBytes();
+		tjs_uint w = srcbmp->GetWidth();
+		tjs_uint h = srcbmp->GetHeight();
+		for( tjs_uint y = 0; y < h; y++ ) {
+			tjs_uint8* d = dst;
+			const tjs_uint32* s = (const tjs_uint32*)src;
+			for( tjs_uint x = 0; x < w; x++ ) {
+				*d = func( *s );
+				d++;
+				s++;
+			}
+			dst += dpitch;
+			src += spitch;
+		}
+	} else {
+		// 8 -> 32
+		tjs_uint8* dst = (tjs_uint8*)dstbmp->GetScanLineForWrite(0);
+		tjs_int dpitch = dstbmp->GetPitchBytes();
+		const tjs_uint8* src = ( const tjs_uint8*)srcbmp->GetScanLine(0);
+		tjs_int spitch = srcbmp->GetPitchBytes();
+		tjs_uint w = srcbmp->GetWidth();
+		tjs_uint h = srcbmp->GetHeight();
+		for( tjs_uint y = 0; y < h; y++ ) {
+			tjs_uint32* d = (tjs_uint32*)dst;
+			const tjs_uint8* s = src;
+			for( tjs_uint x = 0; x < w; x++ ) {
+				*d = func( *s );
+				d++;
+				s++;
+			}
+			dst += dpitch;
+			src += spitch;
+		}
+	}
+	return true;
+}
+template bool tTVPBaseBitmap::CopyWithDifferentBitWidth<tTVPBaseBitmap::GrayToAlphaFunctor>( tTVPBaseBitmap *dstbmp, const tTVPBaseBitmap *srcbmp, const tTVPBaseBitmap::GrayToAlphaFunctor& func );
+template bool tTVPBaseBitmap::CopyWithDifferentBitWidth<tTVPBaseBitmap::GrayToColorFunctor>( tTVPBaseBitmap *dstbmp, const tTVPBaseBitmap *srcbmp, const tTVPBaseBitmap::GrayToColorFunctor& func );
+#endif
 bool iTVPBaseBitmap::Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 	const tTVPRect &refrect, tTVPLayerType type, tjs_int opa, bool hda) {
 
@@ -2261,6 +2354,7 @@ void tTVPBaseBitmap::TVPDoBiLinearStretchLoop(
 	}
 }
 #endif
+
 //---------------------------------------------------------------------------
 bool iTVPBaseBitmap::StretchBlt(tTVPRect cliprect,
 		tTVPRect destrect, const iTVPBaseBitmap *ref,
@@ -4003,7 +4097,7 @@ bool iTVPBaseBitmap::AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
 	if (updaterect) *updaterect = destrect;
 	return true;
 #if 0
-	if (0 == InternalAffineBlt(destrect, ref, refrect, points_in, method, opa, updaterect, hda,
+	if(0 == InternalAffineBlt(destrect, ref, refrect, points_in, method, opa, updaterect, hda,
 		mode, clear, clearcolor))
 	{
 		if(clear)
@@ -4132,7 +4226,7 @@ void tTVPBaseBitmap::DoBoxBlurLoop(const tTVPRect &rect, const tTVPRect & area)
 	// Box-Blur template function used by tTVPBaseBitmap::DoBoxBlur family.
 	// Based on contributed blur code by yun, say thanks to him.
 
-	typedef tARGB::base_int_type base_type;
+	typedef typename tARGB::base_int_type base_type;
 
 	tjs_int width = GetWidth();
 	tjs_int height = GetHeight();
@@ -4393,6 +4487,7 @@ bool iTVPBaseBitmap::InternalDoBoxBlur(tTVPRect rect, tTVPRect area, bool hasalp
 	if(area.left > 0 || area.right < 0 || area.top > 0 || area.bottom < 0)
 		TVPThrowExceptionMessage(TVPBoxBlurAreaMustContainCenterPixel);
 
+
 #if 0
 	tjs_uint64 area_size = (tjs_uint64)
 		(area.right - area.left + 1) * (area.bottom - area.top + 1);
@@ -4472,8 +4567,8 @@ void tTVPBaseBitmap::UDFlip(const tTVPRect &rect)
 {
 	// up-down flip for given rectangle
 
-	if (rect.left < 0 || rect.top < 0 || rect.right >(tjs_int)GetWidth() ||
-		rect.bottom >(tjs_int)GetHeight())
+	if(rect.left < 0 || rect.top < 0 || rect.right > (tjs_int)GetWidth() ||
+		rect.bottom > (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
 
 	tjs_int h = (rect.bottom - rect.top) /2;
@@ -4529,8 +4624,8 @@ void iTVPBaseBitmap::UDFlip(const tTVPRect &rect)
 void tTVPBaseBitmap::LRFlip(const tTVPRect &rect)
 {
 	// left-right flip
-	if (rect.left < 0 || rect.top < 0 || rect.right >(tjs_int)GetWidth() ||
-		rect.bottom >(tjs_int)GetHeight())
+	if(rect.left < 0 || rect.top < 0 || rect.right > (tjs_int)GetWidth() ||
+		rect.bottom > (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
 
 	tjs_int h = rect.bottom - rect.top;
@@ -4582,6 +4677,7 @@ void iTVPBaseBitmap::DoGrayScale(tTVPRect rect)
 	if(!Is32BPP()) return;  // 8bpp is always grayscaled bitmap
 
 	BOUND_CHECK(RET_VOID);
+
 #if 0
 	tjs_int h = rect.bottom - rect.top;
 	tjs_int w = rect.right - rect.left;
@@ -4597,6 +4693,7 @@ void iTVPBaseBitmap::DoGrayScale(tTVPRect rect)
 		line += pitch;
 	}
 #endif
+
 	static iTVPRenderMethod* method = TVPGetRenderManager()->GetRenderMethod("DoGrayScale");
 	iTVPTexture2D *reftex = GetTexture();
 	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
@@ -4611,6 +4708,7 @@ void iTVPBaseBitmap::AdjustGamma(tTVPRect rect, const tTVPGLGammaAdjustData & da
 
 	if(!memcmp(&data, &TVPIntactGammaAdjustData, sizeof(tTVPGLGammaAdjustData)))
 		return;
+
 #if 0
 	tTVPGLGammaAdjustTempData temp;
 	TVPInitGammaAdjustTempData(&temp, &data);
@@ -4656,6 +4754,7 @@ void iTVPBaseBitmap::AdjustGammaForAdditiveAlpha(tTVPRect rect, const tTVPGLGamm
 
 	if(!memcmp(&data, &TVPIntactGammaAdjustData, sizeof(tTVPGLGammaAdjustData)))
 		return;
+
 #if 0
 	tTVPGLGammaAdjustTempData temp;
 	TVPInitGammaAdjustTempData(&temp, &data);

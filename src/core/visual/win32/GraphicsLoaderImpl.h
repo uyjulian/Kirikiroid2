@@ -13,6 +13,7 @@
 #define GraphicsLoaderImplH
 
 #include "GraphicsLoaderIntf.h"
+
 #if 0
 //---------------------------------------------------------------------------
 // tTVPSusiePlugin
@@ -56,4 +57,5 @@ extern void TVPLoadPictureSPI(HINSTANCE inst, tTVPBMPAlphaType alphatype = batMu
 extern void TVPUnloadPictureSPI(HINSTANCE inst);
 //---------------------------------------------------------------------------
 #endif
+
 #endif

@@ -13,10 +13,10 @@ public:
 	BasicAllocator() {
 		TVPAddLog( TJS_W("(info) Use malloc for Bitmap") );
 	}
-	void* allocate( size_t size ) { return malloc(size); }
+	void* allocate( size_t size ) { return malloc(size); } // Windowsでは ::HeapAlloc( _get_heap_handle(), 0, size ); と同じはず
 	void free( void* mem ) { ::free( mem ); }
 };
-#if 0
+#ifdef WIN32
 class GlobalAllocAllocator : public iTVPMemoryAllocator
 {
 public:
@@ -52,23 +52,16 @@ public:
 				MEMORYSTATUSEX status = { sizeof(MEMORYSTATUSEX) };
 				::GlobalMemoryStatusEx(&status);
 				size = status.ullAvailVirtual;
-				if( size > (512LL*1024*1024) ) {
-					size -= (128LL*1024*1024);
+				if( status.ullAvailVirtual < status.ullTotalPhys ) {
+					size = status.ullAvailVirtual / 2;
 				} else {
-					size /= 2;
-				}
-				if( size > (512LL*1024*1024) ) {
-					size = (512LL*1024*1024); // 512MB�ɐ���
+					size = status.ullTotalPhys / 2;
 				}
 			}
 			while( HeapHandle == NULL && size > (1024*1024) ) {
 				HeapHandle = ::HeapCreate( HeapFlag, (SIZE_T)size, 0 );
 				if( HeapHandle == NULL ) {
-					if( size > (128LL*1024*1024) ) {
-						size -= (128LL*1024*1024);
-					} else {
-						size /= 2;
-					}
+					size /= 2;
 				}
 			} 
 		}
@@ -99,6 +92,24 @@ public:
 		}
 	}
 };
+class ProcessHeapAllocAllocator : public iTVPMemoryAllocator
+{
+public:
+	ProcessHeapAllocAllocator() {
+		TVPAddLog( TJS_W("(info) Use Process HeadAlloc allocater for Bitmap") );
+	}
+	void* allocate( size_t size ) {
+		void* result = ::HeapAlloc( ::GetProcessHeap(), 0, size );
+		if( result == NULL ) {
+			::HeapCompact( ::GetProcessHeap(), 0 );	// try compact
+			result = ::HeapAlloc( ::GetProcessHeap(), 0, size ); // retry
+		}
+		return result;
+	}
+	void free( void* mem ) {
+		::HeapFree(::GetProcessHeap(), 0, mem);
+	}
+};
 #endif
 
 iTVPMemoryAllocator* tTVPBitmapBitsAlloc::Allocator = NULL;
@@ -108,18 +119,25 @@ void tTVPBitmapBitsAlloc::InitializeAllocator() {
 	if( Allocator == NULL ) {
 #if 0
 		tTJSVariant val;
-		if (TVPGetCommandLine(TJS_W("-bitmapallocator"), &val)) {
+		if(TVPGetCommandLine(TJS_W("-bitmapallocator"), &val)) {
 			ttstr str(val);
 			if(str == TJS_W("globalalloc"))
 				Allocator = new GlobalAllocAllocator();
 			else if(str == TJS_W("separateheap"))
 				Allocator = new HeapAllocAllocator();
+			else if(str == TJS_W("processheap"))
+				Allocator = new ProcessHeapAllocAllocator();
 			else    // malloc
 #endif
 				Allocator = new BasicAllocator();
 #if 0
 		} else {
-			Allocator = new GlobalAllocAllocator();
+#ifdef WIN32
+			//Allocator = new GlobalAllocAllocator();
+			Allocator = new ProcessHeapAllocAllocator();
+#else
+			Allocator = new BasicAllocator();
+#endif
 		}
 #endif
 	}
@@ -131,6 +149,9 @@ void tTVPBitmapBitsAlloc::FreeAllocator() {
 static tTVPAtExit
 	TVPUninitMessageLoad(TVP_ATEXIT_PRI_CLEANUP, tTVPBitmapBitsAlloc::FreeAllocator);
 
+#if 0
+extern void TVPHeapDump();
+#endif
 void* tTVPBitmapBitsAlloc::Alloc( tjs_uint size, tjs_uint width, tjs_uint height ) {
 	if(size == 0) return NULL;
 	tTJSCriticalSectionHolder Lock(AllocCS);	// Lock
@@ -140,9 +161,30 @@ void* tTVPBitmapBitsAlloc::Alloc( tjs_uint size, tjs_uint width, tjs_uint height
 	tjs_uint allocbytes = 16 + size + sizeof(tTVPLayerBitmapMemoryRecord) + sizeof(tjs_uint32)*2;
 
 	ptr = ptrorg = (tjs_uint8*)Allocator->allocate(allocbytes);
-	if(!ptr) TVPThrowExceptionMessage(TVPCannotAllocateBitmapBits,
-		TJS_W("at TVPAllocBitmapBits"), ttstr((tjs_int)allocbytes) + TJS_W("(") +
-			ttstr((int)width) + TJS_W("x") + ttstr((int)height) + TJS_W(")"));
+	if(!ptr) {
+		// Do GC
+		TVPDeliverCompactEvent(TVP_COMPACT_LEVEL_MAX);
+#ifdef WIN32
+		// Do compact CRT and Global Heap
+		HANDLE hHeap = ::GetProcessHeap();
+		if( hHeap ) {
+			::HeapCompact( hHeap, 0 );
+		}
+		HANDLE hCrtHeap = (HANDLE)_get_heap_handle();
+		if( hCrtHeap && hCrtHeap != hHeap ) {
+			::HeapCompact( hCrtHeap, 0 );
+		}
+#endif
+		ptr = ptrorg = (tjs_uint8*)Allocator->allocate(allocbytes);
+		if(!ptr) {
+#if 0
+			TVPHeapDump();
+#endif
+			TVPThrowExceptionMessage(TVPCannotAllocateBitmapBits,
+				TJS_W("at TVPAllocBitmapBits"), ttstr((tjs_int)allocbytes) + TJS_W("(") +
+					ttstr((int)width) + TJS_W("x") + ttstr((int)height) + TJS_W(")"));
+		}
+	}
 	// align to a paragraph ( 16-bytes )
 	ptr += 16 + sizeof(tTVPLayerBitmapMemoryRecord);
 	*reinterpret_cast<tTJSPointerSizedInteger*>(&ptr) >>= 4;

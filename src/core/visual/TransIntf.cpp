@@ -22,6 +22,7 @@
 #include "RenderManager.h"
 #include "Platform.h"
 
+
 // #define TVP_TRANS_SHOW_FPS
 
 //---------------------------------------------------------------------------
@@ -166,6 +167,7 @@ tTVPSimpleImageProvider TVPSimpleImageProvider;
 //---------------------------------------------------------------------------
 
 
+
 #if 0
 //---------------------------------------------------------------------------
 // Image Provider Service for other plug-ins
@@ -194,6 +196,7 @@ iTVPScanLineProvider * TVPSLPLoadImage(const ttstr &name, tjs_int bpp,
 }
 //---------------------------------------------------------------------------
 #endif
+
 
 
 
@@ -742,9 +745,13 @@ class tTVPUniversalTransHandler : public tTVPCrossFadeTransHandler
 
 	tjs_int Vague;
 	iTVPScanLineProvider * Rule;
-	//tjs_uint32 BlendTable[256];
+#if 0
+	tjs_uint32 BlendTable[256];
+#endif
 	iTVPRenderMethod *Method;
 	tjs_int MethodPhaseID, MethodVagueID;
+
+
 public:
 	tTVPUniversalTransHandler(
 		iTVPSimpleOptionProvider *options,
@@ -859,6 +866,7 @@ tjs_error TJS_INTF_METHOD tTVPUniversalTransHandler::StartProcess(
 
 	// start one frame of the transition
 	Method->SetParameterInt(MethodPhaseID, Phase);
+
 #if 0
 	// create blend table
 	if(TVPIsTypeUsingAlpha(DestLayerType))
@@ -868,6 +876,7 @@ tjs_error TJS_INTF_METHOD tTVPUniversalTransHandler::StartProcess(
 	else
 		TVPInitUnivTransBlendTable(BlendTable, Phase, Vague);
 #endif
+
 	return er;
 }
 //---------------------------------------------------------------------------
@@ -974,6 +983,7 @@ void tTVPUniversalTransHandler::Blend(tTVPDivisibleData *data)
 		}
 	}
 #endif
+
 	tRenderTexRectArray::Element src_tex[] = {
 		tRenderTexRectArray::Element(data->Src1->GetTexture(), tTVPRect(data->Src1Left, data->Src1Top, data->Src1Left + data->Width, data->Src1Top + data->Height)),
 		tRenderTexRectArray::Element(data->Src2->GetTexture(), tTVPRect(data->Src2Left, data->Src2Top, data->Src2Left + data->Width, data->Src2Top + data->Height)),
@@ -997,6 +1007,7 @@ static void TVPSLPCopyRect(iTVPScanLineProvider *destimg, tjs_int x, tjs_int y,
 	// this function does not matter if the src==dest and copying area is
 	// overlapped.
 	// destimg and srcimg must be 32bpp bitmap.
+
 #if 0
 	tjs_uint8 *dest;
 	const tjs_uint8 *src;

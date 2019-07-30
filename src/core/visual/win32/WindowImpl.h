@@ -14,13 +14,14 @@
 #define WindowImplH
 
 #include "WindowIntf.h"
-#include "win32/TVPWindow.h"
+#include "TVPWindow.h"
 
 /*[*/
 //---------------------------------------------------------------------------
 // window message receivers
 //---------------------------------------------------------------------------
 #if 0
+enum tTVPWMRRegMode { wrmRegister=0, wrmUnregister=1 };
 #pragma pack(push, 4)
 struct tTVPWindowMessage
 {
@@ -38,6 +39,7 @@ typedef bool (__stdcall * tTVPWindowMessageReceiver)
 #define TVP_WM_FULLSCREEN_CHANGING (WM_USER+108)  // before full-screen or window changing
 #define TVP_WM_FULLSCREEN_CHANGED  (WM_USER+109)  // after full-screen or window changing
 #endif
+
 
 /*]*/
 //---------------------------------------------------------------------------
@@ -200,6 +202,7 @@ struct tTVPScreenModeCandidate : tTVPScreenMode
 		return false;
 	}
 };
+
 struct IDirect3D9;
 extern void TVPTestDisplayMode(tjs_int w, tjs_int h, tjs_int & bpp);
 extern void TVPSwitchToFullScreen(HWND window, tjs_int w, tjs_int h, class iTVPDrawDevice* drawdevice);
@@ -241,7 +244,9 @@ class tTJSNI_BaseLayer;
 class tTJSNI_Window : public tTJSNI_BaseWindow
 {
 	TTVPWindowForm *Form;
-//	class tTVPVSyncTimingThread *VSyncTimingThread;
+#if 0
+	class tTVPVSyncTimingThread *VSyncTimingThread;
+#endif
 
 public:
 	tTJSNI_Window();
@@ -254,8 +259,9 @@ public:
 	bool CanDeliverEvents() const; // tTJSNI_BaseWindow::CanDeliverEvents override
 
 public:
-	TTVPWindowForm * GetForm() const override { return Form; }
+	TTVPWindowForm * GetForm() const { return Form; }
 	void NotifyWindowClose();
+
 	void SendCloseMessage();
 	void TickBeat();
 

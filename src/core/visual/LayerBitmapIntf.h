@@ -152,7 +152,9 @@ class iTVPBaseBitmap : public tTVPNativeBaseBitmap
 {
 public:
 
-	//void operator =(const iTVPBaseBitmap & rhs) { Assign(rhs); }
+#if 0
+	void operator =(const iTVPBaseBitmap & rhs) { Assign(rhs); }
+#endif
 
 	// metrics
 	void SetSizeWithFill(tjs_uint w, tjs_uint h, tjs_uint32 fillvalue);
@@ -170,6 +172,7 @@ public:
 
 private:
 	bool BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa, bool additive);
+
 #if 0
         struct PartialFillParam {
           iTVPBaseBitmap *self;
@@ -278,6 +281,7 @@ private:
         static void TJS_USERENTRY PartialBltEntry(void *param);
         void PartialBlt(const PartialBltParam *param);
 #endif
+
 public:
 	bool FillColorOnAlpha(tTVPRect rect, tjs_uint32 color, tjs_int opa)
 	{
@@ -309,6 +313,18 @@ public:
 		const tTVPRect &refrect, tTVPLayerType type, tjs_int opa, bool hda = true);
 
 #if 0
+	// sの最下位8ビットをそのまま出力。DoGrayScaleされた画像を8bit化することを想定
+	struct GrayToAlphaFunctor { inline tjs_uint8 operator()( tjs_uint32 s ) const { return (tjs_uint8)(s&0xff); } };
+	// sをRGB各要素にコピーし、alphaに0xffを入れる
+	struct GrayToColorFunctor { inline tjs_uint32 operator()( tjs_uint8 s ) const { return (tjs_uint32)((s<<16)|(s<<8)|s|0xff000000); } };
+	/**
+	 * 8bpp -> 32bpp か 32bpp -> 8bpp のコピーを行う。
+	 * コピー時にどのように取り扱うかはfuncに従う
+	 * refの幅と高さより、thisは同じか大きい必要がある。
+	 */
+	template <typename tFuncExtractColor>
+	static bool CopyWithDifferentBitWidth( tTVPBaseBitmap *dstbmp, const tTVPBaseBitmap *srcbmp, const tFuncExtractColor& func );
+
 private:
 	template <typename tFunc>
 	static void TVPDoStretchLoop(tFunc func,
@@ -332,10 +348,12 @@ private:
 			tjs_int x_step, tjs_int y_step,
 			const tjs_uint8 * refp, tjs_int refpitch);
 #endif
+
 public:
 	bool StretchBlt(tTVPRect cliprect, tTVPRect destrect, const iTVPBaseBitmap *ref,
 		tTVPRect refrect, tTVPBBBltMethod method, tjs_int opa,
 			bool hda = true, tTVPBBStretchType type = stNearest, tjs_real typeopt=0.0);
+
 #if 0
 private:
 	template <typename tFuncStretch, typename tFuncAffine>
@@ -410,6 +428,7 @@ private:
 			bool hda = true, tTVPBBStretchType mode = stNearest, bool clear = false,
 				tjs_uint32 clearcolor = 0);
 #endif
+
 public:
 	bool AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
 		tTVPRect refrect, const tTVPPointD * points,
@@ -426,6 +445,11 @@ public:
 				tjs_uint32 clearcolor = 0);
 
 private:
+#if 0
+	template <typename tARGB>
+	void DoBoxBlurLoop(const tTVPRect &rect, const tTVPRect & area);
+#endif
+
 	bool InternalDoBoxBlur(tTVPRect rect, tTVPRect area, bool hasalpha);
 
 public:
@@ -445,6 +469,7 @@ public:
 	void ConvertAlphaToAddAlpha();
 
 	// font and text related functions are implemented in each platform.
+
 };
 //---------------------------------------------------------------------------
 class iTVPRenderManager;
@@ -462,6 +487,10 @@ public:
 	void LRFlip(const tTVPRect &rect);
 };
 //---------------------------------------------------------------------------
+
+
+
+
 class tTVPBaseTexture : public iTVPBaseBitmap
 {
 public:

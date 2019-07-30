@@ -17,24 +17,19 @@
 #include <cmath>
 #include <vector>
 
-//#include "tvpgl_ia32_intf.h"
-//#include "DetectCPU.h"
+#if 0
+#include "DetectCPU.h"
+#endif
 #include "LayerBitmapIntf.h"
 #include "LayerBitmapImpl.h"
 #include "WeightFunctor.h"
 #include "ThreadIntf.h"
 
-// #include "aligned_allocator.h"
+#if 0
+#include "aligned_allocator.h"
+#endif
 #include "ResampleImageInternal.h"
 
-
-extern void TVPResampleImageAVX2( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc,
-	iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect,
-	tTVPBBStretchType type, tjs_real typeopt );
-
-extern void TVPResampleImageSSE2( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc,
-	iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect,
-	tTVPBBStretchType type, tjs_real typeopt );
 
 void tTVPBlendParameter::setFunctionFromParam() {
 #define TVP_BLEND_4(basename) /* blend for 4 types (normal, opacity, HDA, HDA opacity) */ \
@@ -514,7 +509,9 @@ public:
 		int offset = clip.offsety_;
 		const int height = clip.getDestHeight();
 
-//		TVPBeginThreadTask(threadNum);
+#if 0
+		TVPBeginThreadTask(threadNum);
+#endif
 		std::vector<ThreadParameter> params(threadNum);
 		for( int i = 0; i < threadNum; i++ ) {
 			ThreadParameter* param = &params[i];
@@ -531,7 +528,9 @@ public:
 			param->blendfunc_ = blendfunc;
 			int top = param->start_;
 			int bottom = param->end_;
-		//	TVPExecThreadTask(&ResamplerFunc, TVP_THREAD_PARAM(param));
+#if 0
+			TVPExecThreadTask(&ResamplerFunc, TVP_THREAD_PARAM(param));
+#endif
 			if( i < (threadNum-1) ) {
 				for( int y = top; y < bottom; y++ ) {
 					int len = paramy_.length_[y];
@@ -539,7 +538,9 @@ public:
 				}
 			}
 		}
-		//		TVPEndThreadTask();
+#if 0
+		TVPEndThreadTask();
+#endif
 		TVPExecThreadTask(threadNum, [&](int i){
 			ResamplerFunc(&params[i]);
 		});
@@ -702,15 +703,10 @@ void TVPResampleImage( const tTVPRect &cliprect, iTVPBaseBitmap *dest, const tTV
 		}
 	}
 
-	try {
 #if 0
-		tjs_uint32 CpuFeature = TVPGetCPUType();
-		if( (CpuFeature & TVP_CPU_HAS_AVX2) ) {
-			TVPResampleImageAVX2( clip, func, dest, destrect, src, srcrect, type, typeopt );
-		} else if( (CpuFeature & TVP_CPU_HAS_SSE2) ) {
-			TVPResampleImageSSE2( clip, func, dest, destrect, src, srcrect, type, typeopt );
-		} else
+	tjs_uint32 CpuFeature = TVPGetCPUType();
 #endif
+	try {
 		{
 			 // Cバージョンは固定小数点版なし。遅くなる。
 			switch( type ) {
@@ -769,7 +765,7 @@ void TVPResampleImage( const tTVPRect &cliprect, iTVPBaseBitmap *dest, const tTV
 				TVPWeightResample<BlackmanSincWeight>(clip, func, dest, destrect, src, srcrect );
 				break;
 			default:
-				throw L"Not supported yet.";
+				throw TJS_W("Not supported yet.");
 				break;
 			}
 		}

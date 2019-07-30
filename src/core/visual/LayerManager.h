@@ -274,6 +274,7 @@ class tTVPLayerManager : public iTVPLayerManager, public tTVPDrawable
 	bool ReleaseCaptureCalled;
 
 	bool InNotifyingHintOrCursorChange;
+
 	bool HoldAlpha = true;
 public:
 	tTVPLayerManager(class iTVPLayerTreeOwner *owner);

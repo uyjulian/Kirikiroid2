@@ -23,7 +23,9 @@
 #include "krmovie.h"
 #include "PluginImpl.h"
 #include "WaveImpl.h"  // for DirectSound attenuate <-> TVP volume
-//#include <evcode.h>
+#if 0
+#include <evcode.h>
+#endif
 
 #include "Application.h"
 #include "combase.h"
@@ -88,7 +90,9 @@ tTJSNI_VideoOverlay::tTJSNI_VideoOverlay()
 	Rect.right = 320;
 	Rect.bottom = 240;
 	Visible = false;
-//	OwnerWindow = NULL;
+#if 0
+	OwnerWindow = NULL;
+#endif
 	LocalTempStorageHolder = NULL;
 
 	EventQueue.Allocate();
@@ -122,6 +126,7 @@ void TJS_INTF_METHOD tTJSNI_VideoOverlay::Invalidate()
 	inherited::Invalidate();
 
 	Close();
+
 	if (CachedOverlay) {
 		CachedOverlay->Release();
 		CachedOverlay = nullptr;
@@ -131,6 +136,7 @@ void TJS_INTF_METHOD tTJSNI_VideoOverlay::Invalidate()
 //---------------------------------------------------------------------------
 void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 {
+#if 0
 	// open
 
 	// first, close
@@ -153,7 +159,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 		param = param_pos;
 		name = ttstr(name, param_pos_ind);
 	}
-#if 0
+
 	IStream *istream = NULL;
 	long size;
 	ttstr ext = TVPExtractStorageExt(name).c_str();
@@ -173,7 +179,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 			throw;
 		}
 
-		istream = TVPCreateIStream(stream0);
+		istream = new tTVPIStreamAdapter(stream0);
 	}
 
 	// 'istream' is an IStream instance at this point
@@ -181,16 +187,8 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 	// create video overlay object
 	try
 	{
-		if (CachedOverlay && CachedOverlayMode == Mode && CachedPlayingFile == _name) {
-			VideoOverlay = CachedOverlay;
-			CachedOverlay = nullptr;
-			VideoOverlay->Rewind();
-		} else {
-			if (CachedOverlay) {
-				CachedOverlay->Release();
-				CachedOverlay = nullptr;
-			}
-			if (Mode == vomLayer)
+		{
+			if(Mode == vomLayer)
 				GetVideoLayerObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
 			else if(Mode == vomMixer)
 				GetMixingVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
@@ -199,6 +197,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 			else
 				GetVideoOverlayObject(EventQueue.GetOwner(), istream, name.c_str(), ext.c_str(), size, &VideoOverlay);
 		}
+
 		if( (Mode == vomOverlay) || (Mode == vomMixer) || (Mode == vomMFEVR) )
 		{
 			ResetOverlayParams();
@@ -219,10 +218,11 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 				delete Bitmap[1];
 			Bitmap[0] = new tTVPBaseTexture(width, height, 32);
 			Bitmap[1] = new tTVPBaseTexture(width, height, 32);
-#if 0
 			BmpBits[0] = static_cast<BYTE*>(Bitmap[0]->GetBitmap()->GetScanLine( Bitmap[0]->GetBitmap()->GetHeight()-1 ));
 			BmpBits[1] = static_cast<BYTE*>(Bitmap[1]->GetBitmap()->GetScanLine( Bitmap[1]->GetBitmap()->GetHeight()-1 ));
-#endif
+			//BmpBits[0] = static_cast<BYTE*>(Bitmap[0]->GetBitmap()->GetScanLine( 0 ));
+			//BmpBits[1] = static_cast<BYTE*>(Bitmap[1]->GetBitmap()->GetScanLine( 0 ));
+
 			VideoOverlay->SetVideoBuffer(Bitmap[0], Bitmap[1], size);
 		}
 	}
@@ -237,7 +237,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 
 	// set Status
 	ClearWndProcMessages();
-	SetStatus(ssStop);
+	SetStatus(tTVPVideoOverlayStatus::Stop);
 	CachedPlayingFile = _name;
 	CachedOverlayMode = Mode;
 	if (Loop) VideoOverlay->SetLoopSegement(0, -1);
@@ -246,6 +246,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 //---------------------------------------------------------------------------
 void tTJSNI_VideoOverlay::Close()
 {
+#if 0
 	// close
 	// release VideoOverlay object
 	if(VideoOverlay)
@@ -257,13 +258,13 @@ void tTJSNI_VideoOverlay::Close()
 		VideoOverlay->SetVisible(false);
 		VideoOverlay->Pause();
 		CachedOverlay = VideoOverlay;
-		VideoOverlay = NULL;
-//		::SetFocus(Window->GetWindowHandle());
+		VideoOverlay->Release(), VideoOverlay = NULL;
+		::SetFocus(Window->GetWindowHandle());
 	}
 	if(LocalTempStorageHolder)
 		delete LocalTempStorageHolder, LocalTempStorageHolder = NULL;
 	ClearWndProcMessages();
-	SetStatus(ssUnload);
+	SetStatus(tTVPVideoOverlayStatus::Unload);
 
 	if( Bitmap[0] )
 		delete Bitmap[0];
@@ -272,15 +273,17 @@ void tTJSNI_VideoOverlay::Close()
 
 	Bitmap[0] = Bitmap[1] = NULL;
 	BmpBits[0] = BmpBits[1] = NULL;
+#endif
 }
 //---------------------------------------------------------------------------
 void tTJSNI_VideoOverlay::Shutdown()
 {
+#if 0
 	// shutdown the system
 	// this functions closes the overlay object, but must not fire any events.
 	bool c = CanDeliverEvents;
 	ClearWndProcMessages();
-	SetStatus(ssUnload);
+	SetStatus(tTVPVideoOverlayStatus::Unload);
 	try
 	{
 		if (VideoOverlay) {
@@ -300,6 +303,7 @@ void tTJSNI_VideoOverlay::Shutdown()
 		throw;
 	}
 	CanDeliverEvents = c;
+#endif
 }
 //---------------------------------------------------------------------------
 void tTJSNI_VideoOverlay::Disconnect()
@@ -317,7 +321,7 @@ void tTJSNI_VideoOverlay::Play()
 	{
 		VideoOverlay->Play();
 		ClearWndProcMessages();
-		if( Mode != vomMFEVR ) SetStatus(ssPlay);
+		if( Mode != vomMFEVR ) SetStatus(tTVPVideoOverlayStatus::Play);
 	}
 }
 //---------------------------------------------------------------------------
@@ -328,7 +332,7 @@ void tTJSNI_VideoOverlay::Stop()
 	{
 		VideoOverlay->Stop();
 		ClearWndProcMessages();
-		if( Mode != vomMFEVR ) SetStatus(ssStop);
+		if( Mode != vomMFEVR ) SetStatus(tTVPVideoOverlayStatus::Stop);
 	}
 }
 //---------------------------------------------------------------------------
@@ -339,7 +343,7 @@ void tTJSNI_VideoOverlay::Pause()
 	{
 		VideoOverlay->Pause();
 //		ClearWndProcMessages();
-		if( Mode != vomMFEVR ) SetStatus(ssPause);
+		if( Mode != vomMFEVR ) SetStatus(tTVPVideoOverlayStatus::Pause);
 	}
 }
 void tTJSNI_VideoOverlay::Rewind()
@@ -348,7 +352,7 @@ void tTJSNI_VideoOverlay::Rewind()
 	if(VideoOverlay)
 	{
 		VideoOverlay->Rewind();
-		if (Status == ssPlay)
+		if (Status == tTVPVideoOverlayStatus::Play)
 			VideoOverlay->Play();
 		ClearWndProcMessages();
 
@@ -398,7 +402,9 @@ void tTJSNI_VideoOverlay::SetRectangleToVideoOverlay()
 		Window->ZoomRectangle(l, t, r, b);
 		TVPAddLog(TJS_W("(") + ttstr(l) + TJS_W(",") + ttstr(t) + TJS_W(")-(") +
 			ttstr(r) + TJS_W(",") + ttstr(b) + TJS_W(")"));
-	//	RECT rect = {l + ofsx, t + ofsy, r + ofsx, b + ofsy};
+#if 0
+		RECT rect = {l + ofsx, t + ofsy, r + ofsx, b + ofsy};
+#endif
 		VideoOverlay->SetRect(l + ofsx, t + ofsy, r + ofsx, b + ofsy);
 	}
 }
@@ -501,10 +507,14 @@ void tTJSNI_VideoOverlay::ResetOverlayParams()
 	// also sets rectangle and visible state.
 	if(VideoOverlay && Window && (Mode == vomOverlay || Mode == vomMixer || Mode == vomMFEVR) )
 	{
-//		OwnerWindow = Window->GetWindowHandle();
+#if 0
+		OwnerWindow = Window->GetWindowHandle();
+#endif
 		VideoOverlay->SetWindow(Window);
 
-//		VideoOverlay->SetMessageDrainWindow(Window->GetSurfaceWindowHandle());
+#if 0
+		VideoOverlay->SetMessageDrainWindow(Window->GetSurfaceWindowHandle());
+#endif
 
 		// set Rectangle
 		SetRectangleToVideoOverlay();
@@ -528,8 +538,10 @@ void tTJSNI_VideoOverlay::SetRectOffset(tjs_int ofsx, tjs_int ofsy)
 {
 	if(VideoOverlay)
 	{
-// 		RECT r = {Rect.left + ofsx, Rect.top + ofsy,
-// 			Rect.right + ofsx, Rect.bottom + ofsy};
+#if 0
+		RECT r = {Rect.left + ofsx, Rect.top + ofsy,
+			Rect.right + ofsx, Rect.bottom + ofsy};
+#endif
 		VideoOverlay->SetRect(Rect.left + ofsx, Rect.top + ofsy,
 			Rect.right + ofsx, Rect.bottom + ofsy);
 	}
@@ -545,7 +557,9 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 		case WM_GRAPHNOTIFY:
 		{
 			long evcode;
-//			LONG_PTR p1, p2;
+#if 0
+			LONG_PTR p1, p2;
+#endif
 			bool got = false;
 			do {
 #if 0
@@ -553,11 +567,12 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 				if( got == false)
 					return;
 #endif
+
 				evcode = ev.WParam;
 				switch( evcode )
 				{
 					case EC_COMPLETE:
-						if( Status == ssPlay )
+						if( Status == tTVPVideoOverlayStatus::Play )
 						{
 							if( Loop )
 							{
@@ -573,12 +588,12 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 								// be unstable).
 								// We manually stop the manager anyway.
 								VideoOverlay->Stop();
-								SetStatusAsync(ssStop); // All data has been rendered
+								SetStatusAsync(tTVPVideoOverlayStatus::Stop); // All data has been rendered
 							}
 						}
 						break;
 					case EC_UPDATE:
-						if( Mode == vomLayer && Status == ssPlay )
+						if( Mode == vomLayer && Status == tTVPVideoOverlayStatus::Play )
 						{
 							int		curFrame = (int)ev.LParam;
 							if( Layer1 == NULL && Layer2 == NULL )	// nothing to do.
@@ -650,7 +665,7 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 								IsPrepare = false;
 							}
 						}
-						else if( Mode == vomMixer && Status == ssPlay )
+						else if( Mode == vomMixer && Status == tTVPVideoOverlayStatus::Play )
 						{
 							int frame = GetFrame();
 							if( (!IsPrepare) && (SegLoopEndFrame > 0) && (frame >= SegLoopEndFrame) ) {
@@ -669,7 +684,9 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 						}
 						break;
 				}
-//				VideoOverlay->FreeEventParams( evcode, p1, p2 );
+#if 0
+				VideoOverlay->FreeEventParams( evcode, p1, p2 );
+#endif
 			} while( got );
 			return;
 		}
@@ -684,19 +701,19 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 			{
 				switch( ev.WParam ) {
 				case vsStopped:
-					SetStatusAsync( ssStop );
+					SetStatusAsync( tTVPVideoOverlayStatus::Stop );
 					break;
 				case vsPlaying:
-					SetStatusAsync( ssPlay );
+					SetStatusAsync( tTVPVideoOverlayStatus::Play );
 					break;
 				case vsPaused:
-					SetStatusAsync( ssPause );
+					SetStatusAsync( tTVPVideoOverlayStatus::Pause );
 					break;
 				case vsReady:
-					SetStatusAsync( ssReady );
+					SetStatusAsync( tTVPVideoOverlayStatus::Ready );
 					break;
 				case vsEnded:
-					if( Status == ssPlay )
+					if( Status == tTVPVideoOverlayStatus::Play )
 					{
 						if( Loop )
 						{
@@ -706,7 +723,7 @@ void tTJSNI_VideoOverlay::WndProc( NativeEvent& ev )
 						else
 						{
 							VideoOverlay->Stop();
-							SetStatusAsync(ssStop); // All data has been rendered
+							SetStatusAsync(tTVPVideoOverlayStatus::Stop); // All data has been rendered
 						}
 					}
 					break;
@@ -1264,7 +1281,7 @@ void tTJSNI_VideoOverlay::ClearWndProcMessages()
 	// clear WndProc's message queue
 	EventQueue.Clear(WM_GRAPHNOTIFY);
 	EventQueue.Clear(WM_CALLBACKCMD);
-#if 0 // only valuable for DirectShow
+#if 0
 	MSG msg;
 	while(PeekMessage(&msg, EventQueue.GetOwner(), WM_GRAPHNOTIFY, WM_GRAPHNOTIFY+2, PM_REMOVE))
 	{
