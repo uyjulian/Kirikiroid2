@@ -391,8 +391,11 @@ tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 opt
 		} 
 
 		// ファイルを開く
-		// File = TVPCreateBinaryStreamForRead(fontname,TJS_W("") );
+#if 0
+		File = TVPCreateBinaryStreamForRead(fontname,TJS_W("") );
+#else
 		File = TVPCreateFontStream(fontname);
+#endif
 		if( File == NULL ) {
 			TVPThrowExceptionMessage( TVPCannotOpenFontFile, fontname );
 		}

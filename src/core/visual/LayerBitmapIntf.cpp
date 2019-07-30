@@ -103,7 +103,6 @@ static tjs_int GetAdaptiveThreadNum(tjs_int pixelNum, float factor)
 		return x; \
 }
 
-
 //---------------------------------------------------------------------------
 // tTVPBaseBitmap
 //---------------------------------------------------------------------------
@@ -503,6 +502,7 @@ bool iTVPBaseBitmap::BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa,
                 IndependNoCopy(); // indepent with no-copy
               }
           }
+
 	color = TVP_REVRGB(color);
 	iTVPRenderMethod *method;
 	if (opa == 255) {
@@ -872,6 +872,7 @@ bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 	}
 
 	if(refrect.top >= refrect.bottom) return false; // not drawable
+
 
 #if 0
         // transfer

@@ -16,6 +16,7 @@
 #include "WindowIntf.h"
 #include "TVPWindow.h"
 
+
 /*[*/
 //---------------------------------------------------------------------------
 // window message receivers

@@ -18,6 +18,49 @@
 #include "LayerManager.h"
 #include "WindowIntf.h"
 #include "DebugIntf.h"
+#if 1
+#include "BasicDrawDevice.h"
+#endif
+#include "NullDrawDevice.h"
+#include "SysInitIntf.h"
+
+//---------------------------------------------------------------------------
+// オプション
+//---------------------------------------------------------------------------
+static bool TVPDrawDeviceOptionInit = false;
+static bool TVPEnableDrawDevice = true;
+//---------------------------------------------------------------------------
+static void TVPInitDrawDeviceOptions()
+{
+	if( TVPDrawDeviceOptionInit ) return;
+
+	tTJSVariant val;
+	if(TVPGetCommandLine(TJS_W("-graphicsystem"), &val))
+	{
+		ttstr str(val);
+		if(str == TJS_W("drawdevice"))
+			TVPEnableDrawDevice = true;
+		else
+			TVPEnableDrawDevice = false;
+	}
+
+	TVPDrawDeviceOptionInit = true;
+}
+//---------------------------------------------------------------------------
+tTJSNativeClass* TVPCreateDefaultDrawDevice() {
+	TVPInitDrawDeviceOptions();
+#if 1
+	if( TVPEnableDrawDevice )
+		return new tTJSNC_BasicDrawDevice();
+	else
+#endif
+		return new tTJSNC_NullDrawDevice();
+}
+//---------------------------------------------------------------------------
+bool TVPIsEnableDrawDevice() {
+	TVPInitDrawDeviceOptions();
+	return TVPEnableDrawDevice;
+}
 
 //---------------------------------------------------------------------------
 tTVPDrawDevice::tTVPDrawDevice()
@@ -52,8 +95,8 @@ bool tTVPDrawDevice::TransformToPrimaryLayerManager(tjs_int &x, tjs_int &y)
 {
 	iTVPLayerManager * manager = GetLayerManagerAt(PrimaryLayerManagerIndex);
 	if(!manager) return false;
-	return true;
 
+#if 0
 	// プライマリレイヤマネージャのプライマリレイヤのサイズを得る
 	tjs_int pl_w = LockedWidth, pl_h = LockedHeight;
 	if(pl_w <= 0 && pl_h <= 0 && !manager->GetPrimaryLayerSize(pl_w, pl_h)) return false;
@@ -64,6 +107,7 @@ bool tTVPDrawDevice::TransformToPrimaryLayerManager(tjs_int &x, tjs_int &y)
 	tjs_int h = DestRect.get_height();
 	x = w ? ((x - DestRect.left) * pl_w / w) : 0;
 	y = h ? ((y - DestRect.top) * pl_h / h) : 0;
+#endif
 
 	return true;
 }
@@ -169,6 +213,7 @@ void TJS_INTF_METHOD tTVPDrawDevice::SetClipRectangle(const tTVPRect & rect)
 	ClipRect = rect;
 }
 //---------------------------------------------------------------------------
+
 
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPDrawDevice::GetSrcSize(tjs_int &w, tjs_int &h)
@@ -654,6 +699,7 @@ bool TJS_INTF_METHOD tTVPDrawDevice::SwitchToFullScreen( int window, tjs_uint w,
 #if 0
 	// ChangeDisplaySettings を使用したフルスクリーン化
 	bool success = false;
+#ifdef WIN32
 	DEVMODE dm;
 	ZeroMemory(&dm, sizeof(DEVMODE));
 	dm.dmSize = sizeof(DEVMODE);
@@ -690,13 +736,16 @@ bool TJS_INTF_METHOD tTVPDrawDevice::SwitchToFullScreen( int window, tjs_uint w,
 		TVPAddLog( TVPFormatMessage(TVPChangeDisplaySettingsFailedUnknownReason,ttstr((tjs_int)ret)) );
 		break;
 	}
+#endif
 	return success;
 #endif
 }
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPDrawDevice::RevertFromFullScreen(int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color)
 {
+#ifdef _WIN32
 	// ChangeDisplaySettings を使用したフルスクリーン解除
-//	::ChangeDisplaySettings(NULL, 0);
+	::ChangeDisplaySettings(NULL, 0);
+#endif
 }
 //---------------------------------------------------------------------------

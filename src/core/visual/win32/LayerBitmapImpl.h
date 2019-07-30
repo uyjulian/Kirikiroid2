@@ -44,16 +44,16 @@ private:
 	tjs_uint* Palette;
 
 public:
-	tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp);
+	tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp, bool unpadding=false);
 	// for async load
-	// @param bits : tTVPBitmapBitsAlloc::Allocで確保したものを使用すること
+	// @param bits : tTVPBitmapBitsAlloc::Alloc縺ｧ遒ｺ菫昴＠縺溘ｂ縺ｮ繧剃ｽｿ逕ｨ縺吶ｋ縺薙→
 	tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp, void* bits);
 
 	tTVPBitmap(const tTVPBitmap & r);
 
 	~tTVPBitmap();
 
-	void Allocate(tjs_uint width, tjs_uint height, tjs_uint bpp);
+	void Allocate(tjs_uint width, tjs_uint height, tjs_uint bpp, bool unpadding=false);
 
 	void AddRef(void)
 	{
@@ -112,7 +112,7 @@ class tTVPPrerenderedFont;
 class tTVPNativeBaseBitmap
 {
 public:
-	tTVPNativeBaseBitmap(/*tjs_uint w, tjs_uint h, tjs_uint bpp*/);
+	tTVPNativeBaseBitmap(/*tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding=false*/);
 	tTVPNativeBaseBitmap(const tTVPNativeBaseBitmap & r);
 	virtual ~tTVPNativeBaseBitmap();
 
@@ -124,7 +124,7 @@ public:
 
 	void SetSize(tjs_uint w, tjs_uint h, bool keepimage = true);
 	// for async load
-	// @param bits : tTVPBitmapBitsAlloc::Allocで確保したものを使用すること
+	// @param bits : tTVPBitmapBitsAlloc::Alloc縺ｧ遒ｺ菫昴＠縺溘ｂ縺ｮ繧剃ｽｿ逕ｨ縺吶ｋ縺薙→
 	void SetSizeAndImageBuffer(tTVPBitmap* bmp);
 
 	/* color depth */
@@ -149,7 +149,7 @@ public:
 	void Independ();
 	void IndependNoCopy();
 	void Recreate();
-	void Recreate(tjs_uint w, tjs_uint h, tjs_uint bpp);
+	void Recreate(tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding=false);
 
 	bool IsIndependent() const;
 
@@ -160,6 +160,7 @@ public:
 	tjs_uint GetPalette( tjs_uint index ) const;
 	void SetPalette( tjs_uint index, tjs_uint color );
 #endif
+
 	/* font and text functions */
 private:
 	tTVPFont Font;
@@ -253,7 +254,9 @@ public:
 	void GetFontGlyphDrawRect( const ttstr & text, struct tTVPRect& area );
 
 protected:
-	//tTVPBitmap *Bitmap;
+#if 0
+	tTVPBitmap *Bitmap;
+#endif
 	iTVPTexture2D *Bitmap;
 public:
 	void operator =(const tTVPNativeBaseBitmap &rhs) { Assign(rhs); }

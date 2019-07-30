@@ -51,7 +51,6 @@ public:
 			if( size == 0 ) {
 				MEMORYSTATUSEX status = { sizeof(MEMORYSTATUSEX) };
 				::GlobalMemoryStatusEx(&status);
-				size = status.ullAvailVirtual;
 				if( status.ullAvailVirtual < status.ullTotalPhys ) {
 					size = status.ullAvailVirtual / 2;
 				} else {
@@ -121,6 +120,7 @@ void tTVPBitmapBitsAlloc::InitializeAllocator() {
 		tTJSVariant val;
 		if(TVPGetCommandLine(TJS_W("-bitmapallocator"), &val)) {
 			ttstr str(val);
+#ifdef WIN32
 			if(str == TJS_W("globalalloc"))
 				Allocator = new GlobalAllocAllocator();
 			else if(str == TJS_W("separateheap"))
@@ -128,6 +128,7 @@ void tTVPBitmapBitsAlloc::InitializeAllocator() {
 			else if(str == TJS_W("processheap"))
 				Allocator = new ProcessHeapAllocAllocator();
 			else    // malloc
+#endif
 #endif
 				Allocator = new BasicAllocator();
 #if 0

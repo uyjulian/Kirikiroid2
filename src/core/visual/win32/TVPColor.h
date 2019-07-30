@@ -40,7 +40,76 @@ enum {
 	clMenuBar = 0x8000001e,
 };
 
-unsigned long ColorToRGB(unsigned int col);
+inline unsigned long ColorToRGB( unsigned long col ) {
+#ifdef _WIN32
+	if( ((int)col) < 0 ) {
+		return ::GetSysColor( (int)(col&0xff) );
+	}
+	return col;
+#else
+	switch( col ) {
+		case clScrollBar:
+			return 0xffc8c8c8;
+		case clBackground:
+			return 0xff000000;
+		case clActiveCaption:
+			return 0xff99b4d1;
+		case clInactiveCaption:
+			return 0xffbfcddb;
+		case clMenu:
+			return 0xfff0f0f0;
+		case clWindow:
+			return 0xffffffff;
+		case clWindowFrame:
+			return 0xff646464;
+		case clMenuText:
+			return 0xff000000;
+		case clWindowText:
+			return 0xff000000;
+		case clCaptionText:
+			return 0xff000000;
+		case clActiveBorder:
+			return 0xffb4b4b4;
+		case clInactiveBorder:
+			return 0xfff4f7fc;
+		case clAppWorkSpace:
+			return 0xffababab;
+		case clHighlight:
+			return 0xff3399ff;
+		case clHighlightText:
+			return 0xffffffff;
+		case clBtnFace:
+			return 0xfff0f0f0;
+		case clBtnShadow:
+			return 0xffa0a0a0;
+		case clGrayText:
+			return 0xff6d6d6d;
+		case clBtnText:
+			return 0xff000000;
+		case clInactiveCaptionText:
+			return 0xff434e54;
+		case clBtnHighlight:
+			return 0xffffffff;
+		case cl3DDkShadow:
+			return 0xff696969;
+		case cl3DLight:
+			return 0xffe3e3e3;
+		case clInfoText:
+			return 0xff000000;
+		case clInfoBk:
+			return 0xffffffe1;
+		case clNone: // black for WinNT
+			return 0xff000000;
+		case clAdapt:
+			return clAdapt;
+		case clPalIdx:
+			return clPalIdx;
+		case clAlphaMat:
+			return clAlphaMat;
+	}
+	return col; // unknown, passthru
+#endif
+}
 
 #endif
 

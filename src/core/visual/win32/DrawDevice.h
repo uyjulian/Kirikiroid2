@@ -18,6 +18,13 @@
 class iTVPWindow;
 class tTJSNI_BaseLayer;
 
+#if 0
+#ifndef _WIN32
+typedef void* HWND;
+struct BITMAPINFO;
+#endif
+#endif
+
 /*[*/
 //---------------------------------------------------------------------------
 //! @brief		描画デバイスインターフェース
@@ -67,7 +74,9 @@ public:
 	//!				されたあと、再び有効なウィンドウハンドルを伴ってこのメソッドが呼ばれる。
 	//!				このメソッドは、ウィンドウが作成された直後に呼ばれる保証はない。
 	//!				たいてい、一番最初にウィンドウが表示された直後に呼ばれる。
-//	virtual void TJS_INTF_METHOD SetTargetWindow(int wnd, bool is_main) = 0;
+#if 0
+	virtual void TJS_INTF_METHOD SetTargetWindow(HWND wnd, bool is_main) = 0;
+#endif
 
 	//! @brief		(Window->DrawDevice) 描画矩形の設定
 	//! @note		ウィンドウから、描画先となる矩形を設定するために呼ばれる。
@@ -540,4 +549,10 @@ public:
 // ほかのメソッドについては実装しない
 };
 //---------------------------------------------------------------------------
+
+
+
+extern tTJSNativeClass* TVPCreateDefaultDrawDevice();
+extern bool TVPIsEnableDrawDevice();
+
 #endif

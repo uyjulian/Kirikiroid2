@@ -23,7 +23,6 @@
 #include "LayerManager.h"
 #include "VideoOvlIntf.h"
 #include "DrawDevice.h"
-#include "BasicDrawDevice.h"
 
 #include "Application.h"
 
@@ -169,11 +168,7 @@ tTJSNI_BaseWindow::Construct(tjs_int numparams, tTJSVariant **param,
 		iTJSDispatch2 * newobj = NULL;
 		try
 		{
-#if 0
 			cls = TVPCreateDefaultDrawDevice();
-#else
-			cls = new tTJSNC_BasicDrawDevice();
-#endif
 			if(TJS_FAILED(cls->CreateNew(0, NULL, NULL, &newobj, 0, NULL, cls)))
 				TVPThrowExceptionMessage(TVPInternalError,
 					TJS_W("tTJSNI_Window::Construct"));

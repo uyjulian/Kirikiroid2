@@ -10900,15 +10900,15 @@ void tTJSNI_Font::GetFontGlyphDrawRect( const ttstr & text, tTVPRect& area )
 	}
 }
 //---------------------------------------------------------------------------
-extern void TVPGetAllFontList(std::vector<ttstr>& list);
+extern void TVPGetAllFontList(std::vector<tjs_string>& list);
 void tTJSNI_Font::GetFontList(tjs_uint32 flags, std::vector<ttstr> & list)
 {
 	if( Layer ) Layer->GetFontList(flags,list);
 	else
 	{
-		std::vector<ttstr> ansilist;
+		std::vector<tjs_string> ansilist;
 		TVPGetAllFontList(ansilist);
-		for(std::vector<ttstr>::iterator i = ansilist.begin(); i != ansilist.end(); i++)
+		for(std::vector<tjs_string>::iterator i = ansilist.begin(); i != ansilist.end(); i++)
 			list.push_back(i->c_str());
 	}
 }
@@ -11267,7 +11267,7 @@ TJS_END_NATIVE_PROP_DECL(angle)
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_PROP_DECL(faceIsFileName)
 {
-	// Face名をファイル名として開く、FreeTypeでのみ有効。ただし、そのレイヤーでIMEを有効した場合動作は不定
+	// Face名をファイル名として開く、FreeTypeでのみ有効。ただし、そのレイヤーでIMEを有効した場合動作は DEFAULT_GUI_FONT が使われる
 	TJS_BEGIN_NATIVE_PROP_GETTER
 	{
 		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Font);

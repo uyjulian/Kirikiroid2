@@ -49,7 +49,7 @@ private:
 #endif
 
 public:
-	tNativeFreeTypeFace(const tjs_stringg &fontname, tjs_uint32 options);
+	tNativeFreeTypeFace(const tjs_string &fontname, tjs_uint32 options);
 	virtual ~tNativeFreeTypeFace();
 
 	virtual FT_Face GetFTFace() const;

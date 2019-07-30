@@ -20,7 +20,7 @@
 #include "DrawDevice.h"
 #include "LayerTreeOwner.h"
 
-#define USE_OBSOLETE_FUNCTIONS
+#include <memory>
 
 //---------------------------------------------------------------------------
 // Window List Management
@@ -131,7 +131,6 @@ public:
 	//! @brief		WindowのiTJSDispatch2インターフェースを取得する
 	virtual iTJSDispatch2 * GetWindowDispatch() = 0;
 
-	// add by ZeaS
 	virtual iWindowLayer* GetForm() const = 0;
 };
 //---------------------------------------------------------------------------

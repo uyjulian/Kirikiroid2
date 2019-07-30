@@ -25,22 +25,28 @@
 #include "SysInitImpl.h"
 #include "StorageIntf.h"
 #include "DebugIntf.h"
-//#include "WindowFormUnit.h"
-void TVPInitWindowOptions();
+#ifdef _WIN32
+#include "WindowFormUnit.h"
+#endif
 #include "UtilStreams.h"
-// #include "ConfigManager/IndividualConfigManager.h"
 
 //#include "FontSelectFormUnit.h"
 
 #include "StringUtil.h"
-//#include "TVPSysFont.h"
 #include "CharacterData.h"
 #include "PrerenderedFont.h"
 #include "FontSystem.h"
-#include "visual/FreeType.h"
+#include "FreeType.h"
 #include "FreeTypeFontRasterizer.h"
-//#include "GDIFontRasterizer.h"
+#ifdef _WIN32
+#include "TVPSysFont.h"
+#include "GDIFontRasterizer.h"
+#endif
 #include "BitmapBitsAlloc.h"
+
+#ifdef __ANDROID__
+#include "VirtualKey.h"
+#endif
 #include "RenderManager.h"
 
 //---------------------------------------------------------------------------
@@ -60,17 +66,21 @@ static tjs_int TVPGlobalFontStateMagic = 0;
 
 enum {
 	FONT_RASTER_FREE_TYPE,
-//	FONT_RASTER_GDI,
+#ifdef _WIN32
+	FONT_RASTER_GDI,
+#endif
 	FONT_RASTER_EOT
 };
 static FontRasterizer* TVPFontRasterizers[FONT_RASTER_EOT];
 static bool TVPFontRasterizersInit = false;
 static tjs_int TVPCurrentFontRasterizers = FONT_RASTER_FREE_TYPE;
-//static tjs_int TVPCurrentFontRasterizers = FONT_RASTER_GDI;
+
 void TVPInializeFontRasterizers() {
 	if( TVPFontRasterizersInit == false ) {
 		TVPFontRasterizers[FONT_RASTER_FREE_TYPE] = new FreeTypeFontRasterizer();
-//		TVPFontRasterizers[FONT_RASTER_GDI] = new GDIFontRasterizer();
+#ifdef _WIN32
+		TVPFontRasterizers[FONT_RASTER_GDI] = new GDIFontRasterizer();
+#endif
 
 		TVPFontSystem = new FontSystem();
 		TVPFontRasterizersInit = true;
@@ -331,6 +341,7 @@ static tTVPCharacterData * TVPGetCharacter(const tTVPFontAndCharacterData & font
 				data->Alloc(newpitch * data->BlackBoxY);
 
 				pfont->Retrieve(pitem, data->GetData(), newpitch);
+
 				data->Gray = 256;
 				// apply blur
 				if(font.Blured) data->Blur(); // nasty ...
@@ -369,21 +380,25 @@ static tTVPCharacterData * TVPGetCharacter(const tTVPFontAndCharacterData & font
 	Note that each lines must be started at tjs_uint32 ( 4bytes ) aligned address.
 	This is the default Windows bitmap allocate behavior.
 */
-tTVPBitmap::tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp)
+tTVPBitmap::tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp, bool unpadding)
 {
 	// tTVPBitmap constructor
 
+#ifdef _WIN32
 	TVPInitWindowOptions(); // ensure window/bitmap usage options are initialized
+#endif
 
 	RefCount = 1;
 
-	Allocate(width, height, bpp); // allocate initial bitmap
+	Allocate(width, height, bpp, unpadding); // allocate initial bitmap
 }
 //---------------------------------------------------------------------------
 tTVPBitmap::tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp, void* bits)
 {
 	// tTVPBitmap constructor
+#ifdef _WIN32
 	TVPInitWindowOptions(); // ensure window/bitmap usage options are initialized
+#endif
 
 	RefCount = 1;
 
@@ -423,7 +438,9 @@ tTVPBitmap::~tTVPBitmap()
 tTVPBitmap::tTVPBitmap(const tTVPBitmap & r)
 {
 	// constructor for cloning bitmap
+#ifdef _WIN32
 	TVPInitWindowOptions(); // ensure window/bitmap usage options are initialized
+#endif
 
 	RefCount = 1;
 
@@ -445,13 +462,13 @@ tTVPBitmap::tTVPBitmap(const tTVPBitmap & r)
 	PitchStep = r.PitchStep;
 }
 //---------------------------------------------------------------------------
-void tTVPBitmap::Allocate(tjs_uint width, tjs_uint height, tjs_uint bpp)
+void tTVPBitmap::Allocate(tjs_uint width, tjs_uint height, tjs_uint bpp, bool unpadding)
 {
 	// allocate bitmap bits
 	// bpp must be 8 or 32
 
 	// create BITMAPINFO
-	BitmapInfo = new BitmapInfomation( width, height, bpp );
+	BitmapInfo = new BitmapInfomation( width, height, bpp, unpadding );
 
 	Width = width;
 	Height = height;
@@ -501,19 +518,19 @@ void tTVPBitmap::SetPaletteCount( tjs_uint count ) {
 //---------------------------------------------------------------------------
 // tTVPNativeBaseBitmap
 //---------------------------------------------------------------------------
-tTVPNativeBaseBitmap::tTVPNativeBaseBitmap(/*tjs_uint w, tjs_uint h, tjs_uint bpp*/)
+tTVPNativeBaseBitmap::tTVPNativeBaseBitmap(/*tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding*/)
 {
 	TVPInializeFontRasterizers();
 	// TVPFontRasterizer->AddRef(); TODO
 
-	// TVPConstructDefaultFont();
 	Font = TVPFontSystem->GetDefaultFont();
 	PrerenderedFont = NULL;
-	//LogFont = TVPDefaultLOGFONT;
 	FontChanged = true;
 	GlobalFontState = -1;
 	TextWidth = TextHeight = 0;
-	//Bitmap = new tTVPBitmap(w, h, bpp);
+#if 0
+	Bitmap = new tTVPBitmap(w, h, bpp, unpadding);
+#endif
 }
 //---------------------------------------------------------------------------
 tTVPNativeBaseBitmap::tTVPNativeBaseBitmap(const tTVPNativeBaseBitmap & r)
@@ -526,7 +543,6 @@ tTVPNativeBaseBitmap::tTVPNativeBaseBitmap(const tTVPNativeBaseBitmap & r)
 
 	Font = r.Font;
 	PrerenderedFont = NULL;
-	//LogFont = TVPDefaultLOGFONT;
 	FontChanged = true;
 	TextWidth = TextHeight = 0;
 }
@@ -594,6 +610,7 @@ void tTVPNativeBaseBitmap::SetSize(tjs_uint w, tjs_uint h, bool keepimage)
 				memcpy(newbitmap->GetPalette(), Bitmap->GetPalette(), sizeof(tjs_uint)*tTVPBitmap::DEFAULT_PALETTE_COUNT);
 		}
 #endif
+
 		Bitmap->Release();
 		Bitmap = newbitmap;
 
@@ -727,7 +744,7 @@ void tTVPNativeBaseBitmap::Recreate()
 	Recreate(Bitmap->GetWidth(), Bitmap->GetHeight(), Bitmap->GetFormat() == TVPTextureFormat::Gray ? 8 : 32);
 }
 //---------------------------------------------------------------------------
-void tTVPNativeBaseBitmap::Recreate(tjs_uint w, tjs_uint h, tjs_uint bpp)
+void tTVPNativeBaseBitmap::Recreate(tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding)
 {
 	Bitmap->Release();
 	Bitmap = GetRenderManager()->CreateTexture2D(nullptr, 0, w, h, bpp == 8 ? TVPTextureFormat::Gray : TVPTextureFormat::RGBA);
@@ -796,13 +813,13 @@ void tTVPNativeBaseBitmap::SetFont(const tTVPFont &font)
 	FontChanged = true;
 }
 //---------------------------------------------------------------------------
-extern void TVPGetAllFontList(std::vector<ttstr>& list);
+extern void TVPGetAllFontList(std::vector<tjs_string>& list);
 void tTVPNativeBaseBitmap::GetFontList(tjs_uint32 flags, std::vector<ttstr> &list)
 {
 	ApplyFont();
-	std::vector<ttstr> ansilist;
+	std::vector<tjs_string> ansilist;
 	TVPGetAllFontList(ansilist);
-	for(std::vector<ttstr>::iterator i = ansilist.begin(); i != ansilist.end(); i++)
+	for(std::vector<tjs_string>::iterator i = ansilist.begin(); i != ansilist.end(); i++)
 		list.push_back(*i);
 }
 //---------------------------------------------------------------------------
@@ -1163,7 +1180,7 @@ void tTVPNativeBaseBitmap::DrawTextSingle(const tTVPRect &destrect,
 {
 	// text drawing function for single character
 
-	if(!Is32BPP()) TVPThrowExceptionMessage(TVPInvalidOperationFor8BPP);
+	// if(!Is32BPP()) TVPThrowExceptionMessage(TVPInvalidOperationFor8BPP);
 
 	if(bltmode == bmAlphaOnAlpha)
 	{
@@ -1345,7 +1362,7 @@ void tTVPNativeBaseBitmap::DrawTextMultiple(const tTVPRect &destrect,
 {
 	// text drawing function for multiple characters
 
-	if(!Is32BPP()) TVPThrowExceptionMessage(TVPInvalidOperationFor8BPP);
+	// if(!Is32BPP()) TVPThrowExceptionMessage(TVPInvalidOperationFor8BPP);
 
 	if(bltmode == bmAlphaOnAlpha)
 	{
@@ -1605,3 +1622,4 @@ iTVPTexture2D * tTVPNativeBaseBitmap::GetTextureForRender(bool isBlendTarget, co
 	return GetTexture();
 }
 //---------------------------------------------------------------------------
+

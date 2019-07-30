@@ -28,6 +28,9 @@
 #endif
 
 #include "Application.h"
+#if 0
+#include "TVPVideoOverlay.h"
+#endif
 #include "combase.h"
 
 extern void GetVideoOverlayObject(
@@ -185,6 +188,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 	// 'istream' is an IStream instance at this point
 
 	// create video overlay object
+#if 0
 	try
 	{
 		{
@@ -234,7 +238,7 @@ void tTJSNI_VideoOverlay::Open(const ttstr &_name)
 	}
 	if(istream) istream->Release();
 
-
+#endif
 	// set Status
 	ClearWndProcMessages();
 	SetStatus(tTVPVideoOverlayStatus::Stop);
