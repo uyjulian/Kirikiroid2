@@ -30,10 +30,10 @@ void TVPGetVersion(void)
 	{
 		DoGet = false;
 
-		TVPVersionMajor = 2;
-		TVPVersionMinor = 32;
-		TVPVersionRelease = 2;
-		TVPVersionBuild = 426;
+		TVPVersionMajor = 0;
+		TVPVersionMinor = 0;
+		TVPVersionRelease = 0;
+		TVPVersionBuild = 0;
 #if 0
 		TVPGetFileVersionOf(ExePath().c_str(), TVPVersionMajor, TVPVersionMinor,
 			TVPVersionRelease, TVPVersionBuild);

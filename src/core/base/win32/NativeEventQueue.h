@@ -54,7 +54,7 @@ public:
 #endif
 
 	// デフォルトハンドラ
-	void HandlerDefault(NativeEvent& event) {}
+	void HandlerDefault( NativeEvent& event ) {}
 
 	// Queue の生成
 	void Allocate() {}

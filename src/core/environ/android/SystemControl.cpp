@@ -21,7 +21,7 @@
 #endif
 #include "DebugIntf.h"
 #if 0
-//#include "WaveImpl.h"
+#include "WaveImpl.h"
 #endif
 #include "SystemImpl.h"
 #include "UserEvent.h"

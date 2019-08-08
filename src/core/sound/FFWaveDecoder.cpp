@@ -19,6 +19,7 @@ extern "C" {
 #include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
+#include "libavfilter/avfilter.h"
 };
 
 class FFWaveDecoder : public tTVPWaveDecoder // decoder interface 
@@ -97,7 +98,22 @@ static int64_t AVSeekFunc(void *opaque, int64_t offset, int whence)
         return stream->Seek(offset, whence & 0xFF);
     }
 }
-void TVPInitLibAVCodec();
+
+static bool FFInitilalized = false;
+void TVPInitLibAVCodec() {
+    if (!FFInitilalized) {
+        AVFilter *prev = NULL, *p;
+        void *i = 0;
+        while ((p = (AVFilter*)av_filter_iterate(&i))) {
+            if (prev)
+                prev->next = p;
+            prev = p;
+        }
+        avformat_network_init();
+        FFInitilalized = true;
+    }
+}
+
 tTVPWaveDecoder * FFWaveDecoderCreator::Create(const ttstr & storagename, const ttstr & extension) {
 	TVPInitLibAVCodec();
 

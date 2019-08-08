@@ -1,6 +1,36 @@
 
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 #include "GetLocalFileListAt.h"
 #include "CharacterSet.h"
+
+#undef st_atime
+#undef st_ctime
+#undef st_mtime
+
+struct tTVP_stat {
+	uint16_t st_mode;
+	uint64_t st_size;
+	uint64_t st_atime;
+	uint64_t st_mtime;
+	uint64_t st_ctime;
+};
+
+static bool TVP_stat(const char *name, tTVP_stat &s) {
+	struct stat t;
+	// static_assert(sizeof(t.st_size) == 4, "");
+	// static_assert(sizeof(t.st_size) == 8, "");
+	bool ret = !stat(name, &t);
+	s.st_mode = t.st_mode;
+	s.st_size = t.st_size;
+	s.st_atime = t.st_atimespec.tv_sec;
+	s.st_mtime = t.st_mtimespec.tv_sec;
+	s.st_ctime = t.st_ctimespec.tv_sec;
+	return ret;
+}
+
 void TVPGetLocalFileListAt(const ttstr &name, const std::function<void(const ttstr&, tTVPLocalFileInfo*)>& cb) {
 	DIR *dirp;
 	struct dirent *direntp;

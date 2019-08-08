@@ -14,8 +14,7 @@
 
 #include <stdint.h>
 
-#if 0
-#ifdef HAVE_CONFIG_H
+#if 0 && defined(HAVE_CONFIG_H)
  #include "config.h"
 
  #ifndef HAVE_STRINGIZE
@@ -26,7 +25,6 @@
  # error "sizeof(int) must be larger than or equal to 4."
  #endif
 #endif /* end of HAVE_CONFIG_H */
-#endif
 
 
 

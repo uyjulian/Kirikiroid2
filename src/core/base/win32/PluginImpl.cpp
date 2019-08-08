@@ -452,8 +452,7 @@ extern std::set<ttstr> TVPRegisteredPlugins;
 static bool TVPPluginLoading = false;
 void TVPLoadPlugin(const ttstr & name)
 {
-	bool success = TVPLoadInternalPlugin(name);
-    return; // seal all plugins
+	TVPLoadInternalPlugin(name);
 #if 0
 	// load plugin
 	if(TVPPluginLoading)

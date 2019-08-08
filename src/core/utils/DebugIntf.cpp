@@ -445,8 +445,7 @@ void TVPAddLog(const ttstr &line, bool appendtoimportant)
 
 	if(TVPLoggingToFile) TVPLogStreamHolder.Log(buf);
 #endif
-	Application->PrintConsole( line.c_str(), appendtoimportant );
-	Application->PrintConsole( "\n", appendtoimportant );
+	Application->PrintConsole( line.c_str(), line.length(), appendtoimportant );
 }
 //---------------------------------------------------------------------------
 void TVPAddLog(const ttstr &line)

@@ -16,6 +16,5 @@ TJS_EXP_FUNC_DEF(bool, TVPGetAsyncKeyState, (tjs_uint keycode, bool getcurrent =
 extern void TVPPostApplicationActivateEvent();
 extern void TVPPostApplicationDeactivateEvent();
 extern bool TVPShellExecute(const ttstr &target, const ttstr &param);
-extern void TVPDoSaveSystemVariables();
 //---------------------------------------------------------------------------
 #endif

@@ -40,36 +40,8 @@
 #include "MouseCursor.h"
 #endif
 
-iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w);
-#define MK_SHIFT 4
-#define MK_CONTROL 8
-#define MK_ALT (0x20)
-tjs_uint32 TVP_TShiftState_To_uint32(tjs_uint32 state) {
-	tjs_uint32 result = 0;
-	if (state & MK_SHIFT) {
-		result |= ssShift;
-	}
-	if (state & MK_CONTROL) {
-		result |= ssCtrl;
-	}
-	if (state & MK_ALT) {
-		result |= ssAlt;
-	}
-	return result;
-}
-tjs_uint32 TVP_TShiftState_From_uint32(tjs_uint32 state){
-	tjs_uint32 result = 0;
-	if (state & ssShift) {
-		result |= MK_SHIFT;
-	}
-	if (state & ssCtrl) {
-		result |= MK_CONTROL;
-	}
-	if (state & ssAlt) {
-		result |= MK_ALT;
-	}
-	return result;
-}
+TTVPWindowForm *TVPCreateAndAddWindow(tTJSNI_Window *w);
+
 
 //---------------------------------------------------------------------------
 // Mouse Cursor management
@@ -1503,8 +1475,10 @@ HWND tTJSNI_Window::GetWindowHandleForPlugin()
 void tTJSNI_Window::RegisterWindowMessageReceiver(tTVPWMRRegMode mode,
 		void * proc, const void *userdata)
 {
+#if 0
 	if(!Form) return;
 	Form->RegisterWindowMessageReceiver(mode, proc, userdata);
+#endif
 }
 //---------------------------------------------------------------------------
 void tTJSNI_Window::Close()

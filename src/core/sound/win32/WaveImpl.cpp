@@ -27,7 +27,6 @@
 #include "Random.h"
 #include "UtilStreams.h"
 #include "TickCount.h"
-#include "WaveMixer.h"
 #include "Platform.h"
 
 #define DWORD uint32_t
@@ -49,6 +48,7 @@
 #include "Application.h"
 #include "UserEvent.h"
 #include "NativeEventQueue.h"
+
 
 //---------------------------------------------------------------------------
 // static function for TJS WaveSoundBuffer class
@@ -631,6 +631,7 @@ static bool TVPDeferedSettingAvailable = false;
 static void TVPEnsurePrimaryBufferPlay()
 {
 	if(!TVPControlPrimaryBufferRun) return;
+
 	TVPInitDirectSound();
 	if(!TVPPrimaryBufferPlayingByProgram) {
 		TVPPrimaryBufferPlayingByProgram = true;
@@ -1521,8 +1522,8 @@ class tTVPWaveSoundBufferThread : public tTVPThread
 	tTVPThreadEvent Event;
 #if 0
 	std::mutex SuspendMutex;
-	bool SuspendThread;
 #endif
+	bool SuspendThread;
 
 	bool PendingLabelEventExists;
 	bool WndProcToBeCalled;
@@ -1572,8 +1573,7 @@ void TVPUnlockSoundMixer() {
 //---------------------------------------------------------------------------
 tTVPWaveSoundBufferThread::tTVPWaveSoundBufferThread()
 	: EventQueue(this,&tTVPWaveSoundBufferThread::UtilWndProc),
-	// SuspendThread( false ), 
-	PendingLabelEventExists( false ),
+	SuspendThread( false ), PendingLabelEventExists( false ),
 	NextLabelEventTick( 0 ), LastFilledTick( 0 ), WndProcToBeCalled( false )
 {
 	EventQueue.Allocate();
@@ -1585,7 +1585,9 @@ tTVPWaveSoundBufferThread::~tTVPWaveSoundBufferThread()
 {
 	SetPriority(ttpNormal);
 	Terminate();
-	// ResetSuspend();
+#if 0
+	ResetSuspend();
+#endif
 	Event.Set();
 	WaitFor();
 	EventQueue.Deallocate();
@@ -2719,6 +2721,7 @@ bool tTJSNI_WaveSoundBuffer::FillBuffer(bool firstwrite, bool allowpause)
 
 	// check buffer playing position
 	tjs_int writepos;
+
 #if 0
 	DWORD pp = 0, wp = 0; // write pos and read pos
 	if(FAILED(SoundBuffer->GetCurrentPosition(&pp, &wp))) return true;
@@ -2749,6 +2752,7 @@ bool tTJSNI_WaveSoundBuffer::FillBuffer(bool firstwrite, bool allowpause)
 	else
 	{
 		ResetLastCheckedDecodePos(/*pp*/);
+
 #if 0
 		if(PlayStopPos != -1)
 		{
@@ -2802,20 +2806,11 @@ bool tTJSNI_WaveSoundBuffer::FillBuffer(bool firstwrite, bool allowpause)
 			return true;
 		}
 #endif
+
 		writepos = SoundBufferWritePos * AccessUnitBytes;
 		if (SoundBuffer->GetRemainBuffers() >= TVPAL_BUFFER_COUNT)
 		{
-#if 0
-			if (!SoundBuffer->IsPlaying()) { // run out of buffer
-				SoundBuffer->Play();
-				// reset offset
-				SoundBuffer->SetSampleOffset(writepos / InputFormat.BytesPerSample / InputFormat.Channels);
-			}
-			else
-#endif
-			{
-				return true;
-			}
+			return true;
 		}
 
 		segment = L1BufferSegmentQueues + SoundBufferWritePos;
@@ -3284,7 +3279,7 @@ void tTJSNI_WaveSoundBuffer::SetVolumeToSoundBuffer()
 				GlobalFocusMode > TVPSoundGlobalFocusModeByOption ?
 				GlobalFocusMode : TVPSoundGlobalFocusModeByOption;
 
-#if 0 // useless on mobile device
+#if 0
 			switch(mode)
 			{
 			case sgfmNeverMute:
@@ -3512,7 +3507,7 @@ tjs_int tTJSNI_WaveSoundBuffer::GetVisBuffer(tjs_int16 *dest, tjs_int numsamples
 	if(!SoundBuffer) return 0;
 	if(!DSBufferPlaying || !BufferPlaying) return 0;
 
-	if (channels != InputFormat.Channels && channels != 1) return 0;
+	if(channels != InputFormat.Channels && channels != 1) return 0;
 
 	// retrieve current playing position
 

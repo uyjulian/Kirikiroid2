@@ -51,12 +51,7 @@
 #if 0
 #include "resource.h"
 #endif
-
 #include "TickCount.h"
-#ifdef IID
-#undef IID
-#endif
-#include "Platform.h"
 
 //---------------------------------------------------------------------------
 // global data
@@ -160,6 +155,8 @@ static void RegisterDllLoadHook(void)
 	if(flag) __pfnDliNotifyHook = DllLoadHook;
 }
 //---------------------------------------------------------------------------
+#endif
+#if 0
 
 
 
@@ -993,7 +990,6 @@ void TVPBeforeSystemInit()
 #endif
 		}
 	}
-
 #ifdef TVP_REPORT_HW_EXCEPTION
 	// __dee_hacked_set_getExceptionObjectHook(TVP__dee_hacked_getExceptionObjectHook);
 		// register hook function for hardware exceptions
@@ -1268,7 +1264,6 @@ void TVPBeforeSystemInit()
 static void TVPDumpOptions();
 //---------------------------------------------------------------------------
 extern void TVPAddGlobalHeapCompactCallback();
-extern bool TVPAutoSaveBookMark;
 static bool TVPHighTimerPeriod = false;
 static uint32_t TVPTimeBeginPeriodRes = 0;
 //---------------------------------------------------------------------------
@@ -1340,13 +1335,6 @@ void TVPAfterSystemInit()
 //	TVPGraphicCacheSystemLimit = 1*1024*1024; // DEBUG 
 
 
-	if(TVPGetCommandLine(TJS_W("-autosave"), &opt))
-	{
-		ttstr str(opt);
-		if(str == TJS_W("yes")) {
-			TVPAutoSaveBookMark = true;
-		}
-	}
 	// check TVPGraphicSplitOperation option
 	if(TVPGetCommandLine(TJS_W("-gsplit"), &opt))
 	{
@@ -1497,7 +1485,7 @@ void TVPTerminateSync(int code)
 {
 	// do synchronous temination of application (never return)
 	TVPSystemUninit();
-	TVPExitApplication(code);
+	exit(code);
 }
 //---------------------------------------------------------------------------
 void TVPMainWindowClosed()

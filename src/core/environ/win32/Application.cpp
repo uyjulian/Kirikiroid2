@@ -63,7 +63,6 @@ kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32
 #endif
 
 tTVPApplication* Application;
-tTJS *TVPAppScriptEngine;
 
 #if 0
 #ifdef TJS_64BIT_OS
@@ -227,7 +226,7 @@ int APIENTRY wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstanc
 
 		MouseCursor::Initialize();
 		Application = new tTVPApplication();
-		Application->StartApplication( __argc, __argv );
+		Application->StartApplication( __argc, __wargv );
 	
 		// delete application and exit forcely
 		// this prevents ugly exception message on exit
@@ -245,13 +244,13 @@ int APIENTRY wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstanc
 }
 #endif
 tTVPApplication::tTVPApplication() : is_attach_console_(false), tarminate_(false), application_activating_(true)
-	 , image_load_thread_(NULL), has_map_report_process_(false)
+	 , image_load_thread_(NULL), has_map_report_process_(false), console_cache_(1024)
 {
 }
 tTVPApplication::~tTVPApplication() {
 #if 0
 	while( windows_list_.size() ) {
-		std::vector<TTVPWindowForm*>::iterator i = windows_list_.begin();
+		std::vector<class TTVPWindowForm*>::iterator i = windows_list_.begin();
 		delete (*i);
 		// TTVPWindowForm のデストラクタ内でリストから削除されるはず
 	}
@@ -339,7 +338,6 @@ const tjs_char* SECodeToMessage( unsigned int code ) {
 }
 
 #endif
-extern void TVPLoadPluigins(void);
 bool tTVPApplication::StartApplication( int argc, tjs_char* argv[] ) {
 	//	_set_se_translator(se_translator_function);
 
@@ -512,9 +510,18 @@ void tTVPApplication::CloseConsole() {
 	}
 #endif
 }
-void TVPConsoleLog(const ttstr &mes, bool important);
-void tTVPApplication::PrintConsole(const ttstr &mes, bool important) {
-	TVPConsoleLog(mes, important);
+
+void tTVPApplication::PrintConsole( const tjs_char* mes, unsigned long len, bool iserror ) {
+	if( console_cache_.size() < (len*3+1) ) {
+		console_cache_.resize(len*3+1);
+	}
+	tjs_int u8len = TVPWideCharToUtf8String( mes, &(console_cache_[0]) );
+	console_cache_[u8len] = '\0';
+	if( iserror ) {
+		fprintf(stderr, "%s\n", &(console_cache_[0]) );
+	} else {
+		fprintf(stderr, "%s\n", &(console_cache_[0]) );
+	}
 }
 #if 0
 HWND tTVPApplication::GetHandle() {
@@ -549,14 +556,26 @@ void tTVPApplication::BringToFront() {
 }
 #endif
 void tTVPApplication::ShowException( const tjs_char* e ) {
+#if 0
+	::MessageBox( NULL, e, TVPFatalError, MB_OK );
+#endif
 	TVPAddLog(ttstr(TVPScriptExceptionRaised) + TJS_W("\n") + e);
-	TVPExitApplication(0);
+	exit(1);
 }
 void tTVPApplication::Run() {
+#if 0
+	TVPTerminateCode = 0;
+
+	// メイン メッセージ ループ:
+	while( tarminate_ == false ) {
+		HandleMessage();
+	}
+	tarminate_ = true;
+#endif
 	try {
-		if (TVPTerminated) {
+		if (tarminate_) {
 			TVPSystemUninit();
-			TVPExitApplication(TVPTerminateCode);
+			exit(1);
 		}
 		ProcessMessages();
 		if (TVPSystemControl) TVPSystemControl->SystemWatchTimerTimer();
@@ -652,12 +671,6 @@ void tTVPApplication::SetTitle( const tjs_string& caption ) {
 #endif
 }
 
-void tTVPApplication::Terminate()
-{
-	//::PostQuitMessage(0);
-	tarminate_ = true;
-	TVPTerminated = true;
-}
 #if 0
 HWND tTVPApplication::GetMainWindowHandle() const {
 	if( windows_list_.size() > 0 ) {
@@ -779,6 +792,9 @@ void tTVPApplication::FilterUserMessage(const std::function<void(std::vector<std
 	}
 }
 
+#if 0
+void tTVPApplication::OnActivate( HWND hWnd )
+#endif
 void tTVPApplication::OnActivate()
 {
 	application_activating_ = true;
@@ -795,8 +811,16 @@ void tTVPApplication::OnActivate()
 		it.second(it.first, eTVPActiveEvent::onActive);
 	}
 }
+
+#if 0
+void tTVPApplication::OnDeactivate( HWND hWnd )
+#endif
 void tTVPApplication::OnDeactivate(  )
 {
+#if 0
+	if( hWnd != GetMainWindowHandle() ) return;
+#endif
+
 	application_activating_ = false;
 
 #if 0
@@ -815,16 +839,6 @@ void tTVPApplication::OnDeactivate(  )
 	for (auto & it : m_activeEvents) {
 		it.second(it.first, eTVPActiveEvent::onDeactive);
 	}
-}
-
-void tTVPApplication::OnExit()
-{
-	TVPUninitScriptEngine();
-
-	if (TVPSystemControl) delete TVPSystemControl;
-	TVPSystemControl = NULL;
-
-	CloseConsole();
 }
 
 bool tTVPApplication::GetNotMinimizing() const

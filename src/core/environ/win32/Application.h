@@ -86,10 +86,12 @@ class tTVPApplication {
 	bool has_map_report_process_;
 
 	class tTVPAsyncImageLoader* image_load_thread_;
+
 #if 0
 	std::stack<class tTVPWindow*> modal_window_stack_;
 #endif
 	std::vector<char> console_cache_;
+
 private:
 	void CheckConsole();
 	void CloseConsole();
@@ -104,7 +106,7 @@ public:
 	void Run();
 	void ProcessMessages();
 
-	static void PrintConsole(const ttstr &mes, bool important = false);
+	void PrintConsole( const tjs_char* mes, unsigned long len, bool iserror = false );
 	bool IsAttachConsole() { return is_attach_console_; }
 
 	bool IsTarminate() const { return tarminate_; }
@@ -141,14 +143,24 @@ public:
 	void HandleMessage();
 	void HandleIdle(MSG &msg);
 #endif
+
 	tjs_string GetTitle() const { return title_; }
 	void SetTitle( const tjs_string& caption );
+
 #if 0
 	static inline int MessageDlg( const tjs_string& string, const tjs_string& caption, int type, int button ) {
 		return ::MessageBox( nullptr, string.c_str(), caption.c_str(), type|button  );
 	}
+	void Terminate() {
+		::PostQuitMessage(0);
+	}
 #endif
-	void Terminate();
+	void Terminate() {
+#if 0
+		::PostQuitMessage(0);
+#endif
+		tarminate_ = true;
+	}
 	void SetHintHidePause( int v ) {}
 	void SetShowHint( bool b ) {}
 	void SetShowMainForm( bool b ) {}
@@ -183,8 +195,11 @@ public:
 #endif
 	void OnActivate(  );
 	void OnDeactivate(  );
-	void OnExit();
 
+#if 0
+	void OnActivate( HWND hWnd );
+	void OnDeactivate( HWND hWnd );
+#endif
 	bool GetActivating() const { return application_activating_; }
 	bool GetNotMinimizing() const;
 

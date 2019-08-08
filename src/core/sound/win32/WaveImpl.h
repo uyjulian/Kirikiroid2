@@ -22,6 +22,7 @@
 
 #include "WaveIntf.h"
 #include "WaveLoopManager.h"
+#include "WaveMixer.h"
 
 /*[*/
 //---------------------------------------------------------------------------
@@ -31,7 +32,6 @@
 struct IDirectSound;
 #endif
 
-class iTVPSoundBuffer;
 
 
 /*]*/

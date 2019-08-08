@@ -203,7 +203,6 @@ public:
 					TVPThrowExceptionMessage(TVPUnsupportedCipherMode, name);
 
 
-
 				if(CryptMode == 2)
 #ifdef TVP_COMPRESSION_ENABLE_ZLIB
 				{
@@ -509,7 +508,6 @@ public:
 			TVPThrowExceptionMessage(TVPUnsupportedModeString,
 				TJS_W("the program was not compiled with zlib support"));
 #endif
-
 		if(CryptMode != -1 && CryptMode != 1 && CryptMode != 2)
 			TVPThrowExceptionMessage(TVPUnsupportedModeString,
 				TJS_W("unsupported cipher mode"));

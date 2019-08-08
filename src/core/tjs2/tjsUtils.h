@@ -14,6 +14,17 @@
 #include "tjsVariant.h"
 #include "tjsString.h"
 
+#if 0
+#if 1
+#include <mutex>
+#else
+#ifdef __WIN32__
+#include <windows.h>
+#else
+#include <semaphore.h>
+#endif
+#endif
+#endif
 #include <SDL.h>
 
 namespace TJS
@@ -24,9 +35,19 @@ namespace TJS
 #if 1
 class tTJSCriticalSection
 {
+#if 0
+	std::recursive_mutex Mutex;
+#endif
 	SDL_mutex *Mutex;
 
 public:
+#if 0
+	tTJSCriticalSection() {}
+	~tTJSCriticalSection() {}
+ 
+	void Enter() { Mutex.lock(); }
+	void Leave() { Mutex.unlock(); }
+#endif
 	tTJSCriticalSection() { Mutex = SDL_CreateMutex(); }
 	~tTJSCriticalSection() { SDL_DestroyMutex(Mutex); }
 

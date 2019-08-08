@@ -19,25 +19,22 @@
 #include "DebugIntf.h"
 #include "WindowIntf.h"
 #include "LayerIntf.h"
-#include "CDDAIntf.h"
-#include "MIDIIntf.h"
 #include "WaveIntf.h"
 #include "TimerIntf.h"
 #include "EventIntf.h"
 #include "SystemIntf.h"
 #include "PluginIntf.h"
-#include "MenuItemIntf.h"
 #include "ClipboardIntf.h"
 #include "MsgIntf.h"
-#include "KAGParser.h"
 #include "VideoOvlIntf.h"
-#include "PadIntf.h"
 #include "TextStream.h"
 #include "Random.h"
 #include "tjsRandomGenerator.h"
 #include "SysInitIntf.h"
 #include "PhaseVocoderFilter.h"
+#if 1
 #include "BasicDrawDevice.h"
+#endif
 #include "BinaryStream.h"
 #include "SysInitImpl.h"
 #include "SystemControl.h"
@@ -53,7 +50,6 @@
 #include "SystemImpl.h"
 #include "BitmapLayerTreeOwner.h"
 #include "Extension.h"
-#include "Platform.h"
 
 //---------------------------------------------------------------------------
 // global variables
@@ -196,24 +192,18 @@ void TVPInitScriptEngine()
 	REGISTER_OBJECT(Debug, TVPCreateNativeClass_Debug());
 	REGISTER_OBJECT(Font, TVPCreateNativeClass_Font());
 	REGISTER_OBJECT(Layer, TVPCreateNativeClass_Layer());
-	REGISTER_OBJECT(CDDASoundBuffer, TVPCreateNativeClass_CDDASoundBuffer());
-	REGISTER_OBJECT(MIDISoundBuffer, TVPCreateNativeClass_MIDISoundBuffer());
 	REGISTER_OBJECT(Timer, TVPCreateNativeClass_Timer());
 	REGISTER_OBJECT(AsyncTrigger, TVPCreateNativeClass_AsyncTrigger());
 	REGISTER_OBJECT(System, TVPCreateNativeClass_System());
 	REGISTER_OBJECT(Storages, TVPCreateNativeClass_Storages());
 	REGISTER_OBJECT(Plugins, TVPCreateNativeClass_Plugins());
 	REGISTER_OBJECT(VideoOverlay, TVPCreateNativeClass_VideoOverlay());
-	REGISTER_OBJECT(Pad, TVPCreateNativeClass_Pad());
 	REGISTER_OBJECT(Clipboard, TVPCreateNativeClass_Clipboard());
 	REGISTER_OBJECT(Scripts, TVPCreateNativeClass_Scripts()); // declared in this file
 	REGISTER_OBJECT(Rect, TVPCreateNativeClass_Rect());
 	REGISTER_OBJECT(Bitmap, TVPCreateNativeClass_Bitmap());
 	REGISTER_OBJECT(ImageFunction, TVPCreateNativeClass_ImageFunction());
 	REGISTER_OBJECT(BitmapLayerTreeOwner, TVPCreateNativeClass_BitmapLayerTreeOwner());
-
-	/* KAG special support */
-	REGISTER_OBJECT(KAGParser, TVPCreateNativeClass_KAGParser());
 
 	/* WaveSoundBuffer and its filters */
 	iTJSDispatch2 * waveclass = NULL;
@@ -227,16 +217,13 @@ void TVPInitScriptEngine()
 	/* Window and its drawdevices */
 	iTJSDispatch2 * windowclass = NULL;
 	REGISTER_OBJECT(Window, (windowclass = TVPCreateNativeClass_Window()));
+#if 1
 	dsp = new tTJSNC_BasicDrawDevice();
 	val = tTJSVariant(dsp);
 	dsp->Release();
 	windowclass->PropSet(TJS_MEMBERENSURE|TJS_IGNOREPROP|TJS_STATICMEMBER,
 		TJS_W("BasicDrawDevice"), NULL, &val, windowclass);
-
-	windowclass->PropSet(TJS_MEMBERENSURE|TJS_IGNOREPROP|TJS_STATICMEMBER,
-		TJS_W("PassThroughDrawDevice"), NULL, &val, windowclass); // compatible for old version kr2
-	REGISTER_OBJECT(MenuItem, TVPCreateNativeClass_MenuItem()); // register "menu" to windowclass
-
+#endif
 	// Add Extension Classes
 	TVPCauseAtInstallExtensionClass( global );
 

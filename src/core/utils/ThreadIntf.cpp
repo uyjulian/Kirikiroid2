@@ -14,6 +14,18 @@
 #include "ThreadIntf.h"
 #include "MsgIntf.h"
 
+#if 0
+#ifdef _WIN32
+#include <process.h>
+#endif
+#include <algorithm>
+#include <assert.h>
+
+#ifdef ANDROID
+#include <pthread.h>
+#include <semaphore.h>
+#endif
+#endif
 #include <SDL.h>
 
 
@@ -30,6 +42,10 @@ tTVPThread::tTVPThread()
 tTVPThread::~tTVPThread()
 {
 	if( Thread != nullptr ) {
+#if 0
+		if( Thread->joinable() ) Thread->detach();
+		delete Thread;
+#endif
 		SDL_DetachThread(Thread);
 		Thread = nullptr;
 	}
@@ -37,8 +53,20 @@ tTVPThread::~tTVPThread()
 	SDL_DestroyMutex(Mtx);
 }
 //---------------------------------------------------------------------------
+#if 0
+void tTVPThread::StartProc()
+#endif
 int tTVPThread::StartProc(void * arg)
 {
+#if 0
+	{	// スレッドが開始されたのでフラグON
+		std::lock_guard<std::mutex> lock( Mtx );
+		ThreadStarting = true;
+	}
+	Cond.notify_all();
+	Execute();
+	// return 0;
+#endif
 	// スレッドが開始されたのでフラグON
 	tTVPThread* _this = (tTVPThread*)arg;
 	_this->ThreadId = SDL_ThreadID();
@@ -55,6 +83,17 @@ int tTVPThread::StartProc(void * arg)
 void tTVPThread::StartTread()
 {
 	if( Thread == nullptr ) {
+#if 0
+		try {
+			Thread = new std::thread( &tTVPThread::StartProc, this );
+
+			// スレッドが開始されるのを待つ
+			std::unique_lock<std::mutex> lock( Mtx );
+			Cond.wait( lock, [this] { return ThreadStarting; } );
+		} catch( std::system_error & ) {
+			TVPThrowInternalError;
+		}
+#endif
 		Thread = SDL_CreateThread(tTVPThread::StartProc, "tTVPThread", this);
 		if (Thread == nullptr) {
 			TVPThrowInternalError;
@@ -69,6 +108,58 @@ void tTVPThread::StartTread()
 //---------------------------------------------------------------------------
 tTVPThreadPriority tTVPThread::GetPriority()
 {
+#if 0
+#ifdef _WIN32
+	int n = ::GetThreadPriority( GetHandle());
+	switch(n)
+	{
+	case THREAD_PRIORITY_IDLE:			return ttpIdle;
+	case THREAD_PRIORITY_LOWEST:		return ttpLowest;
+	case THREAD_PRIORITY_BELOW_NORMAL:	return ttpLower;
+	case THREAD_PRIORITY_NORMAL:		return ttpNormal;
+	case THREAD_PRIORITY_ABOVE_NORMAL:	return ttpHigher;
+	case THREAD_PRIORITY_HIGHEST:		return ttpHighest;
+	case THREAD_PRIORITY_TIME_CRITICAL:	return ttpTimeCritical;
+	}
+
+	return ttpNormal;
+#else
+	int policy;
+	struct sched_param param;
+	int err = pthread_getschedparam( GetHandle(), &policy, &param );
+	int maxpri = sched_get_priority_max( policy );
+	int minpri = sched_get_priority_min( policy );
+	int range = (maxpri - minpri);
+	int half = range / 2;
+	int pri = param.sched_priority;
+	if( pri == minpri ) {
+		return ttpIdle;
+	} else if( pri == maxpri ) {
+		return ttpTimeCritical;
+	} else {
+		pri -= minpri;
+		if( pri == half ) {
+			return ttpNormal;
+		}
+		if( pri < half ) {
+			if( pri <= (half/3) ) {
+				return ttpLowest;
+			} else {
+				return ttpLower;
+			}
+		} else {
+			pri -= half;
+			if( pri <= (half/3) ) {
+				return ttpHigher;
+			} else {
+				return ttpHighest;
+			}
+		}
+	}
+	return ttpNormal;
+#endif
+#endif
+
 	switch(_Priority)
 	{
 	case SDL_THREAD_PRIORITY_LOW:			return ttpIdle;
@@ -81,6 +172,45 @@ tTVPThreadPriority tTVPThread::GetPriority()
 //---------------------------------------------------------------------------
 void tTVPThread::SetPriority(tTVPThreadPriority pri)
 {
+#if 0
+#ifdef _WIN32
+	int npri = THREAD_PRIORITY_NORMAL;
+	switch(pri)
+	{
+	case ttpIdle:			npri = THREAD_PRIORITY_IDLE;			break;
+	case ttpLowest:			npri = THREAD_PRIORITY_LOWEST;			break;
+	case ttpLower:			npri = THREAD_PRIORITY_BELOW_NORMAL;	break;
+	case ttpNormal:			npri = THREAD_PRIORITY_NORMAL;			break;
+	case ttpHigher:			npri = THREAD_PRIORITY_ABOVE_NORMAL;	break;
+	case ttpHighest:		npri = THREAD_PRIORITY_HIGHEST;			break;
+	case ttpTimeCritical:	npri = THREAD_PRIORITY_TIME_CRITICAL;	break;
+	}
+
+	::SetThreadPriority( GetHandle(), npri);
+#else
+	int policy;
+	struct sched_param param;
+	int err = pthread_getschedparam( GetHandle(), &policy, &param );
+	int maxpri = sched_get_priority_max( policy );
+	int minpri = sched_get_priority_min( policy );
+	int range = (maxpri - minpri);
+	int half = range / 2;
+
+	param.sched_priority = minpri + half;
+	switch(pri)
+	{
+	case ttpIdle:			param.sched_priority = minpri;						break;
+	case ttpLowest:			param.sched_priority = minpri + half/3;				break;
+	case ttpLower:			param.sched_priority = minpri + (half*2)/3;			break;
+	case ttpNormal:			param.sched_priority = minpri + half;				break;
+	case ttpHigher:			param.sched_priority = minpri + half + half/3;		break;
+	case ttpHighest:		param.sched_priority = minpri + half+ (half*2)/3;	break;
+	case ttpTimeCritical:	param.sched_priority = maxpri;						break;
+	}
+	err = pthread_setschedparam( GetHandle(), policy, &param );
+#endif
+#endif
+
 	SDL_ThreadPriority npri = SDL_THREAD_PRIORITY_NORMAL;
 	switch(pri)
 	{
@@ -105,6 +235,9 @@ tjs_int TVPDrawThreadNum = 1;
 //---------------------------------------------------------------------------
 tjs_int TVPGetProcessorNum( void )
 {
+#if 0
+	return std::thread::hardware_concurrency();
+#endif
 	return SDL_GetCPUCount();
 }
 //---------------------------------------------------------------------------

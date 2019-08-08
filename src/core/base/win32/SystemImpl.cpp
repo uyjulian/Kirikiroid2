@@ -511,8 +511,8 @@ static ttstr TVPGetSpecialFolderPath(int csidl)
 	return ttstr(path);
 }
 //---------------------------------------------------------------------------
-
 #endif
+
 
 
 
@@ -782,40 +782,6 @@ void TVPHeapDump()
 }
 //---------------------------------------------------------------------------
 #endif
-bool TVPAutoSaveBookMark = false;
-extern void TVPDoSaveSystemVariables()
-{
-	try {
-		// hack for save system variable
-		iTJSDispatch2* global = TVPGetScriptDispatch();
-		if (!global) return;
-		tTJSVariant var;
-		if (global->PropGet(0, TJS_W("kag"), nullptr, &var, global) == TJS_S_OK && var.Type() == tvtObject) {
-			iTJSDispatch2* kag = var.AsObjectNoAddRef();
-			if (kag->PropGet(0, TJS_W("saveSystemVariables"), nullptr, &var, kag) == TJS_S_OK) {
-				iTJSDispatch2* fn = var.AsObjectNoAddRef();
-				if (fn->IsInstanceOf(0, 0, 0, TJS_W("Function"), fn)) {
-					tTJSVariant *args = nullptr;
-					fn->FuncCall(0, nullptr, nullptr, nullptr, 0, &args, kag);
-				}
-			}
-			if(TVPAutoSaveBookMark
-				&& kag->PropGet(0, TJS_W("saveBookMark"), nullptr, &var, kag) == TJS_S_OK
-				&& var.Type() == tvtObject)
-			{
-				iTJSDispatch2* fn = var.AsObjectNoAddRef();
-				if (fn->IsInstanceOf(0, 0, 0, TJS_W("Function"), fn)) {
-					tTJSVariant num((tjs_int32)0);
-					tTJSVariant *args = &num;
-					fn->FuncCall(0, nullptr, nullptr, nullptr, 1, &args, kag);
-				}
-			}
-		}
-	} catch (...) {
-		;
-	}
-}
-//---------------------------------------------------------------------------
 struct tTVPGlobalHeapCompactCallback : public tTVPCompactEventCallbackIntf
 {
 	virtual void TJS_INTF_METHOD OnCompact(tjs_int level)

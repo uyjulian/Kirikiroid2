@@ -13,18 +13,14 @@
 #include "Platform.h"
 #include "Application.h"
 #include "ScriptMgnIntf.h"
+#include "WindowIntf.h"
 #include "TVPWindow.h"
 #include "VelocityTracker.h"
 #include "SystemImpl.h"
 #include "RenderManager.h"
 #include "VideoOvlIntf.h"
 #include "Exception.h"
-#include "MenuItemImpl.h"
-#include <sys/time.h>
-#include <time.h>
-#include <sys/stat.h>
 #include <SDL.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <limits.h>
 #include <wchar.h>
@@ -50,7 +46,7 @@ bool sdlProcessEventsForFrames(int frames);
 
 
 
-class TVPWindowLayer : public iWindowLayer {
+class TVPWindowLayer : public TTVPWindowForm {
 protected:
 	tTVPMouseCursorState MouseCursorState = mcsVisible;
 	tjs_int HintDelay = 500;
@@ -671,31 +667,6 @@ bool TVPGetKeyMouseAsyncState(tjs_uint keycode, bool getcurrent)
 	return false;
 }
 
-
-
-#undef st_atime
-#undef st_ctime
-#undef st_mtime
-
-bool TVP_stat(const char *name, tTVP_stat &s) {
-	struct stat t;
-	// static_assert(sizeof(t.st_size) == 4, "");
-	// static_assert(sizeof(t.st_size) == 8, "");
-	bool ret = !stat(name, &t);
-	s.st_mode = t.st_mode;
-	s.st_size = t.st_size;
-	s.st_atime = t.st_atimespec.tv_sec;
-	s.st_mtime = t.st_mtimespec.tv_sec;
-	s.st_ctime = t.st_ctimespec.tv_sec;
-	return ret;
-}
-
-
-bool TVP_stat(const tjs_char *name, tTVP_stat &s) {
-	tTJSNarrowStringHolder holder(name);
-	return TVP_stat(holder, s);
-}
-
 bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 {
 	// if (keycode >= sizeof(_scancode) / sizeof(_scancode[0])) return false;
@@ -704,18 +675,13 @@ bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 	return false;
 }
 
-void TVPExitApplication(int code) {
-	SDL_Quit();
-	exit(code);
-}
-
 void TVPRelinquishCPU() {
 	SDL_Delay(0);
 }
 
 #include <string.h>
 
-iWindowLayer *TVPCreateAndAddWindow(tTJSNI_Window *w) {
+TTVPWindowForm *TVPCreateAndAddWindow(tTJSNI_Window *w) {
 	TVPWindowLayer* ret = TVPWindowLayer::create(w);
 	return ret;
 }
@@ -761,4 +727,33 @@ ttstr TVPGetOSName()
 	return TVPGetPlatformName();
 }
 
-void TVPShowPopMenu(tTJSNI_MenuItem* menu) {};
+#define MK_SHIFT 4
+#define MK_CONTROL 8
+#define MK_ALT (0x20)
+tjs_uint32 TVP_TShiftState_To_uint32(TShiftState state) {
+	tjs_uint32 result = 0;
+	if (state & MK_SHIFT) {
+		result |= ssShift;
+	}
+	if (state & MK_CONTROL) {
+		result |= ssCtrl;
+	}
+	if (state & MK_ALT) {
+		result |= ssAlt;
+	}
+	return result;
+}
+TShiftState TVP_TShiftState_From_uint32(tjs_uint32 state){
+	TShiftState result = 0;
+	if (state & ssShift) {
+		result |= MK_SHIFT;
+	}
+	if (state & ssCtrl) {
+		result |= MK_CONTROL;
+	}
+	if (state & ssAlt) {
+		result |= MK_ALT;
+	}
+	return result;
+}
+

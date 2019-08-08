@@ -76,7 +76,7 @@ public:
 		datapath = ReplaceStringAll(datapath, TJS_W("$(exepath)"), exepath);
 		datapath = ReplaceStringAll(datapath, TJS_W("$(personalpath)"), personalpath);
 		datapath = ReplaceStringAll(datapath, TJS_W("$(appdatapath)"), appdatapath);
-		datapath = ReplaceStringAll(datapath, TJS_W("$(vistapath)"), vistapath);
+		datapath = ReplaceStringAll(datapath, TJS_W("$(vistapath)"), appdatapath);
 		datapath = ReplaceStringAll(datapath, TJS_W("$(savedgamespath)"), savedgamespath);
 		return IncludeTrailingBackslash(ExpandUNCFileName(datapath));
 #endif

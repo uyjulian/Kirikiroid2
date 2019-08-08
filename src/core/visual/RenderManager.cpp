@@ -26,7 +26,6 @@ extern "C" {
 #endif
 #include "Application.h"
 #include "Platform.h"
-// #include "ConfigManager/IndividualConfigManager.h"
 #ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
 #include <xxhash.h>
 #endif
@@ -2606,7 +2605,7 @@ public:
 	{
 		_createStaticTexture2D = tTVPSoftwareTexture2D::Create;
 #ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
-		std::string compTexMethod = "none";//IndividualConfigManager::GetInstance()->GetValue<std::string>("software_compress_tex", "none");
+		std::string compTexMethod = "none";
 		if (compTexMethod == "halfline") _createStaticTexture2D = tTVPSoftwareTexture2D_half::Create;
 		else if (compTexMethod == "lz4") _createStaticTexture2D = tTVPSoftwareTexture2D_lz4::Create;
 		else if (compTexMethod == "lz4+tlg5") _createStaticTexture2D = tTVPSoftwareTexture2D_lz4_tlg5::Create;
@@ -4379,7 +4378,7 @@ iTVPRenderManager * TVPGetRenderManager(const ttstr &name)
 iTVPRenderManager * TVPGetRenderManager() {
 	static iTVPRenderManager *_RenderManager;
 	if (!_RenderManager) {
-		ttstr str = "software";//IndividualConfigManager::GetInstance()->GetValue<std::string>("renderer", "software");
+		ttstr str = "software";
 		_RenderManager = TVPGetRenderManager(str);
 	}
 	return _RenderManager;

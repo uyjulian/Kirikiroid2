@@ -12,6 +12,12 @@
 #define ThreadIntfH
 #include "tjsNative.h"
 
+#if 0
+#include <thread>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
+#endif
 #include <functional>
 #include <SDL.h>
 
@@ -31,15 +37,25 @@ enum tTVPThreadPriority
 class tTVPThread
 {
 protected:
+#if 0
+	std::thread* Thread;
+#endif
 	SDL_Thread* Thread;
 	SDL_threadID ThreadId;
 private:
 	bool Terminated;
 
+#if 0
+	std::mutex Mtx;
+	std::condition_variable Cond;
+#endif
 	SDL_mutex *Mtx;
 	SDL_cond *Cond;
 	bool ThreadStarting;
 
+#if 0
+	void StartProc();
+#endif
 	static int StartProc(void * arg);
 
 public:
@@ -55,13 +71,19 @@ protected:
 
 public:
 	void StartTread();
-
+#if 0
+	void WaitFor() { if (Thread && Thread->joinable()) { Thread->join(); } }
+#endif
 	void WaitFor() { if (Thread) SDL_WaitThread(Thread, nullptr); Thread = nullptr; }
 
 	SDL_ThreadPriority _Priority;
 	tTVPThreadPriority GetPriority();
 	void SetPriority(tTVPThreadPriority pri);
 
+#if 0
+	std::thread::native_handle_type GetHandle() { if(Thread) return Thread->native_handle(); else return reinterpret_cast<std::thread::native_handle_type>(nullptr); }
+	std::thread::id GetThreadId() { if(Thread) return Thread->get_id(); else return std::thread::id(); }
+#endif
 	SDL_Thread* GetHandle() const { return Thread; } 	
 	SDL_threadID GetThreadId() const { if (ThreadId) return ThreadId; else return SDL_ThreadID(); }  
 };
@@ -73,22 +95,56 @@ public:
 //---------------------------------------------------------------------------
 class tTVPThreadEvent
 {
+#if 0
+	std::mutex Mtx;
+	std::condition_variable Cond;
+#endif
 	SDL_mutex *Mtx;
 	SDL_cond *Cond;
 	bool IsReady;
 
 public:
+#if 0
+	tTVPThreadEvent() : IsReady(false) {}
+	virtual ~tTVPThreadEvent() {}
+#endif
 	tTVPThreadEvent() : IsReady(false) { Mtx = SDL_CreateMutex(); Cond = SDL_CreateCond(); }
 	virtual ~tTVPThreadEvent() { SDL_DestroyCond(Cond); SDL_DestroyMutex(Mtx); }
 
 	void Set() {
+#if 0
+		{
+			std::lock_guard<std::mutex> lock(Mtx);
+			IsReady = true;
+		}
+		Cond.notify_all();
+#endif
 		SDL_LockMutex(Mtx);
 		IsReady = true;
 		SDL_CondBroadcast(Cond);
 		SDL_UnlockMutex(Mtx);
 	}
-
+	/*
+	void Reset() {
+		std::lock_guard<std::mutex> lock(Mtx);
+		IsReady = false;
+	}
+	*/
 	bool WaitFor( tjs_uint timeout ) {
+#if 0
+		std::unique_lock<std::mutex> lk( Mtx );
+		if( timeout == 0 ) {
+			Cond.wait( lk, [this]{ return IsReady;} );
+			IsReady = false;
+			return true;
+		} else {
+			//std::cv_status result = Cond.wait_for( lk, std::chrono::milliseconds( timeout ) );
+			//return result == std::cv_status::no_timeout;
+			bool result = Cond.wait_for( lk, std::chrono::milliseconds( timeout ), [this]{ return IsReady;} );
+			IsReady = false;
+			return result;
+		}
+#endif
 		SDL_LockMutex(Mtx);
 		if( timeout == 0 ) {
 			while (!IsReady) {

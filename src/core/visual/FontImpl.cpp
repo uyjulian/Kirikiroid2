@@ -11,7 +11,6 @@
 #include <math.h>
 #include "Application.h"
 #include "Platform.h"
-// #include "ConfigManager/IndividualConfigManager.h"
 #ifndef M_PI
 #define M_PI       3.14159265358979323846
 #endif
@@ -19,15 +18,14 @@
 #ifdef _MSC_VER
 #pragma comment(lib,"freetype.lib")
 #endif
-// #include "platform/CCFileUtils.h"
 #include "StorageImpl.h"
 #include "BinaryStream.h"
 
 tTJSHashTable<ttstr, TVPFontNamePathInfo, tTVPttstrHash>
     TVPFontNames;
-static ttstr TVPDefaultFontName;
+static ttstr TVPDefaultFontNameX;
 const tjs_char *TVPGetDefaultFontName() {
-	return ttstr(TVPDefaultFontName).AsStdString().c_str();
+	return ttstr(TVPDefaultFontNameX).AsStdString().c_str();
 }
 void TVPGetAllFontList(std::vector<tjs_string>& list) {
 	auto itend = TVPFontNames.GetLast();
@@ -172,7 +170,7 @@ tTJSBinaryStream* TVPCreateFontStream(const ttstr &fontname)
 
 	TVPFontNamePathInfo *info = TVPFindFont(fontname);
 	if (!info) {
-		info = TVPFontNames.Find(TVPDefaultFontName);
+		info = TVPFontNames.Find(TVPDefaultFontNameX);
 		if (!info) {
 			for (i = TVPFontNames.GetLast(); !i.IsNull(); i--) {
 				TVPFontNamePathInfo *iinfo = TVPFontNames.Find(i.GetKey());
@@ -208,7 +206,7 @@ void TVPInitFontNames()
 // 	std::vector<ttstr> pathlist = Android_GetExternalStoragePath();
 // #endif
 	do {
-		ttstr userFont = "";//IndividualConfigManager::GetInstance()->GetValue<std::string>("default_font", "");
+		ttstr userFont = "";
 		if (!userFont.IsEmpty() && TVPEnumFontsProc(userFont)) break;
 
 		if (TVPEnumFontsProc(TVPGetAppPath() + "default.ttf")) break;
@@ -261,10 +259,10 @@ void TVPInitFontNames()
 		if (!iinfo) {
 			break;
 		}
-		TVPDefaultFontName = i.GetKey();
+		TVPDefaultFontNameX = i.GetKey();
 	}
 
-	if (TVPDefaultFontName.IsEmpty()) {
+	if (TVPDefaultFontNameX.IsEmpty()) {
 		TVPAddLog(ttstr(TJS_W("WARNING: Can't find font")));
     }
 }

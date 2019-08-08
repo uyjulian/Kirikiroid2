@@ -21,8 +21,8 @@
 //---------------------------------------------------------------------------
 // window message receivers
 //---------------------------------------------------------------------------
-#if 0
 enum tTVPWMRRegMode { wrmRegister=0, wrmUnregister=1 };
+#if 0
 #pragma pack(push, 4)
 struct tTVPWindowMessage
 {
@@ -239,7 +239,7 @@ extern void TVPRestoreFullScreenWindowAtActivation();
 //---------------------------------------------------------------------------
 // tTJSNI_Window : Window Native Instance
 //---------------------------------------------------------------------------
-typedef iWindowLayer TTVPWindowForm;
+class TTVPWindowForm;
 class iTVPDrawDevice;
 class tTJSNI_BaseLayer;
 class tTJSNI_Window : public tTJSNI_BaseWindow

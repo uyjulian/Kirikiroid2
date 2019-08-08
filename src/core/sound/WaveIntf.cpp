@@ -41,7 +41,6 @@ static tjs_int (*TVPGetGlobalVolume)() = TVPSoundGetGlobalVolume;
 static void (*TVPSetGlobalFocusMode)(tTVPSoundGlobalFocusMode b) = TVPSoundSetGlobalFocusMode;
 static tTVPSoundGlobalFocusMode (*TVPGetGlobalFocusMode)() = TVPSoundGetGlobalFocusMode;
 
-
 //---------------------------------------------------------------------------
 // PCM related constants / definitions
 //---------------------------------------------------------------------------

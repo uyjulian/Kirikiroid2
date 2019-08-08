@@ -555,7 +555,7 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyLayerResize(iTVPLayerManager * m
 void TJS_INTF_METHOD tTVPBasicDrawDevice::Show()
 {
 	if (Window) {
-		iWindowLayer *form = Window->GetForm();
+		TTVPWindowForm *form = Window->GetForm();
 		if (form && !Managers.empty()) {
 			iTVPBaseBitmap *buf = Managers.back()->GetDrawBuffer();
 			if (buf);

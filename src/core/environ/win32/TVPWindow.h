@@ -28,6 +28,16 @@ enum {
 	 ssX2 = TVP_SS_X2,
 };
 
+enum {
+	orientUnknown,
+	orientPortrait,
+	orientLandscape,
+};
+
+typedef tjs_uint32 TShiftState;
+extern tjs_uint32 TVP_TShiftState_To_uint32(TShiftState state);
+extern TShiftState TVP_TShiftState_From_uint32(tjs_uint32 state);
+
 #if 0
 class tTVPWindow {
 	WNDCLASSEX	wc_;
@@ -312,14 +322,7 @@ public:
 };
 #endif
 
-enum tTVPWMRRegMode { wrmRegister = 0, wrmUnregister = 1 };
-enum {
-	orientUnknown,
-	orientPortrait,
-	orientLandscape,
-};
-
-class iWindowLayer {
+class TTVPWindowForm {
 protected:
 	tTVPMouseCursorState MouseCursorState = mcsVisible;
 	tjs_int HintDelay = 500;
@@ -383,7 +386,6 @@ public:
 	tjs_int GetZoomDenom() const { return ZoomDenom; }
 
 	// dummy function
-	void RegisterWindowMessageReceiver(tTVPWMRRegMode mode, void * proc, const void *userdata) {}
 	void SetLeft(tjs_int) {}
 	void SetTop(tjs_int) {}
 	void SetMinWidth(tjs_int) {}
