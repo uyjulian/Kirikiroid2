@@ -10375,82 +10375,6 @@ TVP_GL_FUNC_DECL(void, TVPConvert24BitTo32Bit_c, (tjs_uint32 *dest, const tjs_ui
 	}
 }
 
-TVP_GL_FUNC_DECL(void, TVPReverseRGB_c, (tjs_uint32 *dest, const tjs_uint32 *buf, tjs_int len))
-{
-    int ___index = 0; tjs_uint32 c;
-    len -= (8-1);
-
-    while(___index < len)
-    {
-        {
-            c = buf[(___index+0)];
-            dest[(___index+0)] = TVP_REVRGB(c);
-        }
-        {
-            c = buf[(___index+1)];
-            dest[(___index+1)] = TVP_REVRGB(c);
-        }
-        {
-            c = buf[(___index+2)];
-            dest[(___index+2)] = TVP_REVRGB(c);
-        }
-        {
-            c = buf[(___index+3)];
-            dest[(___index+3)] = TVP_REVRGB(c);
-        }
-        {
-            c = buf[(___index+4)];
-            dest[(___index+4)] = TVP_REVRGB(c);
-        }
-        {
-            c = buf[(___index+5)];
-            dest[(___index+5)] = TVP_REVRGB(c);
-        }
-        {
-            c = buf[(___index+6)];
-            dest[(___index+6)] = TVP_REVRGB(c);
-        }
-        {
-            c = buf[(___index+7)];
-            dest[(___index+7)] = TVP_REVRGB(c);
-        }
-        ___index += 8;
-    }
-
-    len += (8-1);
-
-    while(___index < len)
-    {
-        {
-            c = buf[___index];
-            dest[___index] = TVP_REVRGB(c);
-        }
-        ___index ++;
-    }
-}
-
-TVP_GL_FUNC_DECL(void, TVPUpscale65_255_c, (tjs_uint8 *dest, tjs_int len)) {
-	tjs_uint8* end = dest + len;
-	while (dest < end - 8) {
-		tjs_uint64 c = *(tjs_uint64*)dest;
-		// left shift with saturation
-		tjs_uint64 tmp = c & 0x4040404040404040ULL;
-		tjs_uint64 tmp2 = tmp << 2;
-		tmp = tmp2 - (tmp >> 6);
-		c <<= 2;
-		c -= tmp2;
-		c |= tmp;
-		*(tjs_uint64*)dest = c;
-		dest += 8;
-	}
-	while (dest < end) {
-		tjs_uint c = *dest << 2;
-		*dest = c > 255 ? 255 : c;
-		++dest;
-	}
-}
-
-
 /*export*/
 TVP_GL_FUNC_DECL(void, TVPBLConvert32BitTo8Bit_c, (tjs_uint8 *dest, const tjs_uint32 *buf, tjs_int len))
 {
@@ -12018,29 +11942,6 @@ TVP_GL_FUNC_DECL(void, TVPPsExclusionBlend_HDA_o_c, (tjs_uint32 *dest, const tjs
 
 #endif
 
-TVP_GL_FUNC_DECL(void, TVPConvert32BitTo24Bit_c, (tjs_uint8 *dest, const tjs_uint8 *buf, tjs_int len))
-{
-	const tjs_uint8 *slimglim = buf + len; // in bytes
-	const tjs_uint8 *slimglims = slimglim - 16;
-	while (buf < slimglims) {
-		tjs_uint32 c0 = 0[(tjs_uint32*)buf] & 0xFFFFFF;
-		tjs_uint32 c1 = 1[(tjs_uint32*)buf] & 0xFFFFFF;
-		tjs_uint32 c2 = 2[(tjs_uint32*)buf] & 0xFFFFFF;
-		tjs_uint32 c3 = 3[(tjs_uint32*)buf] & 0xFFFFFF;
-		0[(tjs_uint32*)dest] = (c0) | (c1 << 24);
-		1[(tjs_uint32*)dest] = (c1 >> 8) | (c2 << 16);
-		2[(tjs_uint32*)dest] = (c2 >> 16) | (c3 << 8);
-		buf += 16;
-		dest += 12;
-	}
-	while (buf < slimglim)
-	{
-		*(tjs_uint32*)dest = *(tjs_uint32*)buf;
-		dest += 3;
-		buf += 4;
-	}
-}
-
 TVP_GL_FUNC_PTR_DECL(void, TVPAlphaBlend,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len));
 TVP_GL_FUNC_PTR_DECL(void, TVPAlphaBlend_HDA,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len));
 TVP_GL_FUNC_PTR_DECL(void, TVPAlphaBlend_o,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len, tjs_int opa));
@@ -12303,11 +12204,6 @@ TVP_GL_FUNC_PTR_DECL(void, TVPPsExclusionBlend,  (tjs_uint32 *dest, const tjs_ui
 TVP_GL_FUNC_PTR_DECL(void, TVPPsExclusionBlend_o,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len, tjs_int opa));
 TVP_GL_FUNC_PTR_DECL(void, TVPPsExclusionBlend_HDA,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len));
 TVP_GL_FUNC_PTR_DECL(void, TVPPsExclusionBlend_HDA_o,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len, tjs_int opa));
-
-// add by ZeaS
-TVP_GL_FUNC_PTR_DECL(void, TVPReverseRGB, (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len));
-TVP_GL_FUNC_PTR_DECL(void, TVPUpscale65_255, (tjs_uint8 *dest, tjs_int len));
-TVP_GL_FUNC_PTR_DECL(void, TVPConvert32BitTo24Bit, (tjs_uint8 *dest, const tjs_uint8 *buf, tjs_int len));
 
 /* suffix "_c" : function is written in C */
 // #include "tvpgl_route.h"
@@ -12592,10 +12488,6 @@ TVP_GL_FUNC_DECL(void, TVPInitTVPGL, ())
 	TVPPsExclusionBlend_HDA = TVPPsExclusionBlend_HDA_c;
 	TVPPsExclusionBlend_HDA_o = TVPPsExclusionBlend_HDA_o_c;
 #endif
-// add by ZeaS
-    TVPReverseRGB = TVPReverseRGB_c;
-	TVPUpscale65_255 = TVPUpscale65_255_c;
-	TVPConvert32BitTo24Bit = TVPConvert32BitTo24Bit_c;
 #endif
 	TVPCreateTable();
 	TVPGL_C_Init();

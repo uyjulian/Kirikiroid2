@@ -775,7 +775,7 @@ void TVPSaveTextureAsBMP(tTJSBinaryStream* dst, iTVPTexture2D* bmp, const ttstr 
 			{
 				if (!buf) buf = new tjs_uint8[bmppitch];
 				if (pixelbytes == 4) {
-					TVPReverseRGB((tjs_uint32 *)buf, (const tjs_uint32 *)bmp->GetScanLineForRead(y), bmp->GetWidth());
+					//TVPReverseRGB((tjs_uint32 *)buf, (const tjs_uint32 *)bmp->GetScanLineForRead(y), bmp->GetWidth());
 				} else if (pixelbytes == 1) {
 					TVPDither32BitTo8Bit(buf, (const tjs_uint32*)bmp->GetScanLineForRead(y),
 						bmp->GetWidth(), 0, y);

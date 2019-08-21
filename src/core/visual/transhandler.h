@@ -311,7 +311,6 @@ public:
 class iTVPTransHandlerProvider
 {
 public:
-	virtual ~iTVPTransHandlerProvider() {} // add by ZeaS
 	virtual tjs_error TJS_INTF_METHOD AddRef() = 0;
 	virtual tjs_error TJS_INTF_METHOD Release() = 0;
 

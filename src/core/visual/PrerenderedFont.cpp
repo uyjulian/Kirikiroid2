@@ -2,7 +2,6 @@
 #include "PrerenderedFont.h"
 #include "BinaryStream.h"
 #include "MsgIntf.h"
-#include "tvpgl.h"
 
 extern tTJSHashTable<ttstr, tTVPPrerenderedFont *> TVPPrerenderedFonts;
 
@@ -151,8 +150,6 @@ void tTVPPrerenderedFont::Retrieve(const tTVPPrerenderedCharacterItem * item,
 			}
 		}
 	}
-
-	TVPUpscale65_255(buffer, item->Width * item->Height);
 
 	// expand to each pitch
 	ptr = destlim - item->Width;
