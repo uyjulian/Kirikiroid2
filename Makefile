@@ -3,7 +3,6 @@
 TVP_IMAGE_ENABLE_WEBP ?= 1
 TVP_IMAGE_ENABLE_BMP ?= 1
 TVP_IMAGE_ENABLE_TLG ?= 1
-TVP_IMAGE_ENABLE_PNG ?= 1
 TVP_IMAGE_ENABLE_JXR ?= 1
 TVP_AUDIO_ENABLE_WAVE ?= 1
 TVP_AUDIO_ENABLE_OPUS ?= 1
@@ -92,13 +91,6 @@ endif
 
 ifdef TVP_IMAGE_ENABLE_TLG
 	CFLAGS += -DTVP_IMAGE_ENABLE_TLG
-endif
-
-ifdef TVP_IMAGE_ENABLE_PNG
-	CFLAGS += -DTVP_IMAGE_ENABLE_PNG
-	CFLAGS += -I/usr/local/opt/libpng/include
-	LDFLAGS += -L/usr/local/opt/libpng/lib
-	LDLIBS += -lpng
 endif
 
 ifdef TVP_IMAGE_ENABLE_JXR
@@ -304,9 +296,6 @@ SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
 ifdef TVP_IMAGE_ENABLE_JXR
 SOURCES += src/core/visual/LoadJXR.cpp
-endif
-ifdef TVP_IMAGE_ENABLE_PNG
-SOURCES += src/core/visual/LoadPNG.cpp
 endif
 ifdef TVP_IMAGE_ENABLE_TLG
 SOURCES += src/core/visual/LoadTLG.cpp
