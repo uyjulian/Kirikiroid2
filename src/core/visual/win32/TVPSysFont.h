@@ -22,7 +22,6 @@ public:
 	void Assign( const tTVPSysFont* font );
 	void Assign( const tTVPFont &font );
 #if 0
-	void ApplyFont( const LOGFONT* info );
 	void GetFont( LOGFONT* font ) const;
 	HDC GetDC() { return hMemDC_; }
 #endif

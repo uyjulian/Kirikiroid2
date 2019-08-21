@@ -63,6 +63,7 @@ bool TVPFreeUnusedLayerCache = false;
 	// (layer cache is not freed until system compact event if this is false)
 //---------------------------------------------------------------------------
 
+
 //---------------------------------------------------------------------------
 // temporary bitmap management
 //---------------------------------------------------------------------------

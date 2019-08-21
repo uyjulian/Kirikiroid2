@@ -190,7 +190,6 @@ void TVPUnregisterGraphicLoadingHandler(const ttstr & name,
 		TVPGraphicType.Unregister(tTVPGraphicHandlerType(name, loading, header, save, accept, formatdata));
 	}
 }
-
 //---------------------------------------------------------------------------
 tTVPGraphicHandlerType* TVPGetGraphicLoadHandler( const ttstr& ext )
 {
@@ -1415,10 +1414,6 @@ static tjs_uint64 TVPGraphicCacheLimit = 0;
 static tjs_uint64 TVPGraphicCacheTotalBytes = 0;
 tjs_uint64 TVPGraphicCacheSystemLimit = 0; // maximum possible value of  TVPGraphicCacheLimit
 //---------------------------------------------------------------------------
-tjs_uint64 TVPGetGraphicCacheTotalBytes() {
-	return TVPGraphicCacheTotalBytes;
-}
-//---------------------------------------------------------------------------
 static void TVPCheckGraphicCacheLimit()
 {
 	while(TVPGraphicCacheTotalBytes > TVPGraphicCacheLimit)
@@ -1578,7 +1573,7 @@ tTVPGraphicHandlerType* TVPFindGraphicLoadHandler(ttstr &_name, ttstr *maskname,
 	int extlen = ext.GetLen();
 	tTVPGraphicHandlerType * handler;
 
-	if (ext == TJS_W(""))
+	if(ext == TJS_W(""))
 	{
 		// missing extension
 		// suggest registered extensions

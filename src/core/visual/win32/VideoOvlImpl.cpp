@@ -33,6 +33,8 @@
 #if 0
 #include "TVPVideoOverlay.h"
 #endif
+#define TVPDSAttenuateToPan(x) x
+#define TVPDSAttenuateToVolume(x) x
 
 //---------------------------------------------------------------------------
 static std::vector<tTJSNI_VideoOverlay *> TVPVideoOverlayVector;
@@ -720,15 +722,14 @@ void tTJSNI_VideoOverlay::SetTimePosition( tjs_uint64 p )
 }
 tjs_uint64 tTJSNI_VideoOverlay::GetTimePosition()
 {
-#if 0
 	tjs_uint64	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetPosition( &result );
 	}
-	return result;
 #endif
-	return 0;
+	return result;
 }
 void tTJSNI_VideoOverlay::SetFrame( tjs_int f )
 {
@@ -744,15 +745,14 @@ void tTJSNI_VideoOverlay::SetFrame( tjs_int f )
 }
 tjs_int tTJSNI_VideoOverlay::GetFrame()
 {
-#if 0
 	tjs_int	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetFrame( &result );
 	}
-	return result;
 #endif
-	return 0;
+	return result;
 }
 void tTJSNI_VideoOverlay::SetStopFrame( tjs_int f )
 {
@@ -774,51 +774,47 @@ void tTJSNI_VideoOverlay::SetDefaultStopFrame()
 }
 tjs_int tTJSNI_VideoOverlay::GetStopFrame()
 {
-#if 0
 	tjs_int	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetStopFrame( &result );
 	}
-	return result;
 #endif
-	return 0;
+	return result;
 }
 tjs_real tTJSNI_VideoOverlay::GetFPS()
 {
-#if 0
 	tjs_real	result = 0.0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetFPS( &result );
 	}
-	return result;
 #endif
-	return 0.0;
+	return result;
 }
 tjs_int tTJSNI_VideoOverlay::GetNumberOfFrame()
 {
-#if 0
 	tjs_int	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetNumberOfFrame( &result );
 	}
-	return result;
 #endif
-	return 0;
+	return result;
 }
 tjs_int64 tTJSNI_VideoOverlay::GetTotalTime()
 {
-#if 0
 	tjs_int64	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetTotalTime( &result );
 	}
-	return result;
 #endif
-	return 0;
+	return result;
 }
 void tTJSNI_VideoOverlay::SetLoop( bool b )
 {
@@ -845,15 +841,14 @@ void tTJSNI_VideoOverlay::SetMode( tTVPVideoOverlayMode m )
 
 tjs_real tTJSNI_VideoOverlay::GetPlayRate()
 {
-#if 0
 	tjs_real	result = 0.0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetPlayRate( &result );
 	}
-	return result;
 #endif
-	return 0.0;
+	return result;
 }
 void tTJSNI_VideoOverlay::SetPlayRate(tjs_real r)
 {
@@ -867,15 +862,14 @@ void tTJSNI_VideoOverlay::SetPlayRate(tjs_real r)
 
 tjs_int tTJSNI_VideoOverlay::GetAudioBalance()
 {
-#if 0
 	long	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetAudioBalance( &result );
 	}
-	return TVPDSAttenuateToPan( result );
 #endif
-	return 0;
+	return TVPDSAttenuateToPan( result );
 }
 void tTJSNI_VideoOverlay::SetAudioBalance(tjs_int b)
 {
@@ -888,15 +882,14 @@ void tTJSNI_VideoOverlay::SetAudioBalance(tjs_int b)
 }
 tjs_int tTJSNI_VideoOverlay::GetAudioVolume()
 {
-#if 0
 	long	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetAudioVolume( &result );
 	}
-	return TVPDSAttenuateToVolume( result );
 #endif
-	return 0;
+	return TVPDSAttenuateToVolume( result );
 }
 void tTJSNI_VideoOverlay::SetAudioVolume(tjs_int b)
 {
@@ -909,15 +902,14 @@ void tTJSNI_VideoOverlay::SetAudioVolume(tjs_int b)
 }
 tjs_uint tTJSNI_VideoOverlay::GetNumberOfAudioStream()
 {
-#if 0
 	unsigned long	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetNumberOfAudioStream( &result );
 	}
-	return result;
 #endif
-	return 0;
+	return result;
 }
 void tTJSNI_VideoOverlay::SelectAudioStream(tjs_uint n)
 {
@@ -930,15 +922,14 @@ void tTJSNI_VideoOverlay::SelectAudioStream(tjs_uint n)
 }
 tjs_int tTJSNI_VideoOverlay::GetEnabledAudioStream()
 {
-#if 0
 	long		result = -1;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetEnableAudioStreamNum( &result );
 	}
-	return result;
 #endif
-	return -1;
+	return result;
 }
 void tTJSNI_VideoOverlay::DisableAudioStream()
 {
@@ -952,15 +943,14 @@ void tTJSNI_VideoOverlay::DisableAudioStream()
 
 tjs_uint tTJSNI_VideoOverlay::GetNumberOfVideoStream()
 {
-#if 0
 	unsigned long	result = 0;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetNumberOfVideoStream( &result );
 	}
-	return result;
 #endif
-	return 0;
+	return result;
 }
 void tTJSNI_VideoOverlay::SelectVideoStream(tjs_uint n)
 {
@@ -973,15 +963,14 @@ void tTJSNI_VideoOverlay::SelectVideoStream(tjs_uint n)
 }
 tjs_int tTJSNI_VideoOverlay::GetEnabledVideoStream()
 {
-#if 0
 	long		result = -1;
+#if 0
 	if(VideoOverlay)
 	{
 		VideoOverlay->GetEnableVideoStreamNum( &result );
 	}
-	return result;
 #endif
-	return -1;
+	return result;
 }
 void tTJSNI_VideoOverlay::SetMixingLayer( tTJSNI_BaseLayer *l )
 {
@@ -1386,8 +1375,6 @@ void tTJSNI_VideoOverlay::ClearWndProcMessages()
 	}
 #endif
 }
-
-
 //---------------------------------------------------------------------------
 
 

@@ -204,7 +204,6 @@ void TVPSaveTextureAsBMP(const ttstr &path, class iTVPTexture2D* tex, const ttst
 #endif
 
 
-
 //---------------------------------------------------------------------------
 // Graphics cache management
 //---------------------------------------------------------------------------
@@ -419,7 +418,7 @@ extern bool TVPCheckImageCache( const ttstr& nname, tTVPBaseBitmap* dest,
 extern bool TVPHasImageCache( const ttstr& nname, tTVPGraphicLoadMode mode,
 	tjs_uint dw, tjs_uint dh, tjs_int32 keyidx );
 extern void TVPLoadImageHeader( const ttstr & storagename, iTJSDispatch2** dic );
-extern void TVPSaveImage(const ttstr & storagename, const ttstr & mode, const iTVPBaseBitmap* image, iTJSDispatch2* meta);
+extern void TVPSaveImage( const ttstr & storagename, const ttstr & mode, const iTVPBaseBitmap* image, iTJSDispatch2* meta );
 extern bool TVPGetSaveOption( const ttstr & type, iTJSDispatch2** dic );
 //---------------------------------------------------------------------------
 

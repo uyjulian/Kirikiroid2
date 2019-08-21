@@ -61,7 +61,6 @@ bool TVPIsEnableDrawDevice() {
 	TVPInitDrawDeviceOptions();
 	return TVPEnableDrawDevice;
 }
-
 //---------------------------------------------------------------------------
 tTVPDrawDevice::tTVPDrawDevice()
 {
@@ -128,8 +127,6 @@ bool tTVPDrawDevice::TransformFromPrimaryLayerManager(tjs_int &x, tjs_int &y)
 	x = pl_w ? (x * DestRect.get_width()  / pl_w) : 0;
 	y = pl_h ? (y * DestRect.get_height() / pl_h) : 0;
 
-    x += DestRect.left;
-    y += DestRect.top;
 #endif
 	return true;
 }
@@ -202,10 +199,6 @@ void TJS_INTF_METHOD tTVPDrawDevice::SetDestRectangle(const tTVPRect & rect)
 //---------------------------------------------------------------------------
 
 
-void tTVPDrawDevice::SetLockedSize(tjs_int w, tjs_int h)
-{
-	LockedWidth = w; LockedHeight = h;
-}
 
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPDrawDevice::SetClipRectangle(const tTVPRect & rect)
@@ -687,11 +680,6 @@ void TJS_INTF_METHOD tTVPDrawDevice::SetShowUpdateRect(bool b)
 {
 	// なにもしない
 }
-
-void TJS_INTF_METHOD tTVPDrawDevice::SetWindowSize(tjs_int w, tjs_int h) {
-    WinWidth = w; WinHeight = h;
-}
-
 //---------------------------------------------------------------------------
 bool TJS_INTF_METHOD tTVPDrawDevice::SwitchToFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution )
 {
@@ -699,7 +687,7 @@ bool TJS_INTF_METHOD tTVPDrawDevice::SwitchToFullScreen( int window, tjs_uint w,
 #if 0
 	// ChangeDisplaySettings を使用したフルスクリーン化
 	bool success = false;
-#ifdef WIN32
+#ifdef _WIN32
 	DEVMODE dm;
 	ZeroMemory(&dm, sizeof(DEVMODE));
 	dm.dmSize = sizeof(DEVMODE);

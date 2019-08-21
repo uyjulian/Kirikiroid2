@@ -4033,6 +4033,7 @@ void tTVPBaseBitmap::PartialAffineBlt(PartialAffineBltParam *param)
 	}
 #endif
 }
+
 //---------------------------------------------------------------------------
 bool iTVPBaseBitmap::AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
 		tTVPRect refrect, const tTVPPointD * points_in,

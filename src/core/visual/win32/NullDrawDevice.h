@@ -19,7 +19,6 @@ public:
 	void TJS_INTF_METHOD SetTargetWindow(HWND wnd, bool is_main) override {}
 #endif
 	void TJS_INTF_METHOD SetDestRectangle(const tTVPRect & rect) override {}
-	void TJS_INTF_METHOD SetWindowSize(tjs_int w, tjs_int h) override {}
 	void TJS_INTF_METHOD SetClipRectangle(const tTVPRect & rect) override {}
 	void TJS_INTF_METHOD GetSrcSize(tjs_int &w, tjs_int &h) override {}
 	void TJS_INTF_METHOD NotifyLayerResize(iTVPLayerManager * manager) override {}

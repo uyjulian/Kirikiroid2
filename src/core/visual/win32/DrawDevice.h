@@ -90,7 +90,6 @@ public:
 	//!				再描画の必要性が通知されるため)。
 	virtual void TJS_INTF_METHOD SetDestRectangle(const tTVPRect & rect) = 0;
 
-	virtual void TJS_INTF_METHOD SetWindowSize(tjs_int w, tjs_int h) = 0;
 	//! @brief		(Window->DrawDevice) クリッピング矩形の設定
 	//! @note		ウィンドウから、描画先をクリッピングするための矩形を設定するために呼ばれる。
 	//!				描画デバイスは、SetDestRectangleで指定された領域を、このメソッドで指定された矩形
@@ -396,7 +395,6 @@ public:
 	//!				差分更新の最適化に役立てるための支援機能。
 	//!				実装する必要はないが、実装することが望ましい。
 	virtual void TJS_INTF_METHOD SetShowUpdateRect(bool b) = 0;
-    virtual void Clear() {}
 
 	//! @brief		(Window->DrawDevice) フルスクリーン化する
 	//! @param		window		ウィンドウハンドル
@@ -413,7 +411,7 @@ public:
 	//! @param		h			要求する高さ
 	//! @param		bpp			元々のBit per pixels
 	//! @param		color		16bpp の時 565 か 555を指定
-	virtual void TJS_INTF_METHOD RevertFromFullScreen(int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color) = 0;
+	virtual void TJS_INTF_METHOD RevertFromFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color ) = 0;
 
 	//! @brief		(Window->DrawDevice) VBlank待ちを行う
 	//! @param		in_vblank	待たなくてもVBlank内だったかどうかを返す( !0 : 内、0: 外 )
@@ -484,7 +482,6 @@ public:
 
 //---- 描画位置・サイズ関連
 	virtual void TJS_INTF_METHOD SetDestRectangle(const tTVPRect & rect);
-    virtual void TJS_INTF_METHOD SetWindowSize(tjs_int w, tjs_int h);
 	virtual void TJS_INTF_METHOD SetClipRectangle(const tTVPRect & rect);
 	virtual void TJS_INTF_METHOD GetSrcSize(tjs_int &w, tjs_int &h);
 	virtual void TJS_INTF_METHOD NotifyLayerResize(iTVPLayerManager * manager);
@@ -541,10 +538,9 @@ public:
 	virtual void TJS_INTF_METHOD DumpLayerStructure();
 	virtual void TJS_INTF_METHOD SetShowUpdateRect(bool b);
 
-	void SetLockedSize(tjs_int w, tjs_int h);
 //---- フルスクリーン
-	virtual bool TJS_INTF_METHOD SwitchToFullScreen(int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution);
-	virtual void TJS_INTF_METHOD RevertFromFullScreen(int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color);
+	virtual bool TJS_INTF_METHOD SwitchToFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution );
+	virtual void TJS_INTF_METHOD RevertFromFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color );
 
 // ほかのメソッドについては実装しない
 };

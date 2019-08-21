@@ -69,14 +69,16 @@ tTVPBasicDrawDevice::~tTVPBasicDrawDevice()
 {
 	DestroyD3DDevice();
 }
-#if 0
 //---------------------------------------------------------------------------
 void tTVPBasicDrawDevice::DestroyD3DDevice() {
+#if 0
 	DestroyTexture();
 	if(Direct3DDevice) Direct3DDevice->Release(), Direct3DDevice = NULL;
 	if(Direct3D) Direct3D = NULL;
+#endif
 }
 //---------------------------------------------------------------------------
+#if 0
 void tTVPBasicDrawDevice::DestroyTexture() {
 	if(TextureBuffer && Texture) Texture->UnlockRect(0), TextureBuffer = NULL;
 	if(Texture) Texture->Release(), Texture = NULL;

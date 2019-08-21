@@ -655,7 +655,6 @@ bool tTVPNativeBaseBitmap::IsOpaque() const
 {
 	return Bitmap->IsOpaque();
 }
-
 //---------------------------------------------------------------------------
 bool tTVPNativeBaseBitmap::Assign(const tTVPNativeBaseBitmap &rhs)
 {

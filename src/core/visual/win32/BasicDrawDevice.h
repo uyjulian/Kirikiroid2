@@ -14,7 +14,7 @@ class tTVPBasicDrawDevice : public tTVPDrawDevice
 {
 	typedef tTVPDrawDevice inherited;
 
-	void*TargetWindow;
+	void* TargetWindow;
 	bool IsMainWindow;
 	bool DrawUpdateRectangle;
 	bool BackBufferDirty;
@@ -59,7 +59,7 @@ private:
 
  	bool CreateD3DDevice();
 #endif
-	void DestroyD3DDevice() {}
+	void DestroyD3DDevice();
 
 #if 0
 	bool CreateTexture();

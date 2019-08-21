@@ -32,12 +32,6 @@ enum {
 	clAdapt= 0x01ffffff,
 	clPalIdx = 0x3000000,
 	clAlphaMat = 0x4000000,
-	clUnknown = 0x80000019,
-	clHotLight = 0x8000001a,
-	clGradientActiveCaption = 0x8000001b,
-	clGradientInactiveCaption = 0x8000001c,
-	clMenuLight = 0x8000001d,
-	clMenuBar = 0x8000001e,
 };
 
 inline unsigned long ColorToRGB( unsigned long col ) {
