@@ -548,7 +548,7 @@ public:
 public:
 	/** シングルスレッド */
 	template<typename TWeightFunc>
-	void Resample(const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func) {
+	void Resample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func ) {
 		const int srcwidth = srcrect.get_width();
 		const int srcheight = srcrect.get_height();
 		const int dstwidth = destrect.get_width();
@@ -558,7 +558,7 @@ public:
 		ResampleImage( clip, blendfunc, dest, destrect, src, srcrect );
 	}
 	template<typename TWeightFunc>
-	void ResampleMT(const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func) {
+	void ResampleMT( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func ) {
 		const int srcwidth = srcrect.get_width();
 		const int srcheight = srcrect.get_height();
 		const int dstwidth = destrect.get_width();
@@ -656,17 +656,17 @@ void TJS_USERENTRY ResamplerFunc( void* p ) {
 	}
 }
 
-void TVPBicubicResample(const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float sharpness) {
+void TVPBicubicResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float sharpness ) {
 	BicubicWeight weightfunc(sharpness);
 	Resampler sampler;
 	sampler.ResampleMT( clip, blendfunc, dest, destrect, src, srcrect, BicubicWeight::RANGE, weightfunc );
 }
-void TVPAreaAvgResample(const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect) {
+void TVPAreaAvgResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect ) {
 	Resampler sampler;
 	sampler.ResampleAreaAvgMT( clip, blendfunc, dest, destrect, src, srcrect );
 }
 template<typename TWeightFunc>
-void TVPWeightResample(const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect) {
+void TVPWeightResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect ) {
 	TWeightFunc weightfunc;
 	Resampler sampler;
 	sampler.ResampleMT( clip, blendfunc, dest, destrect, src, srcrect, TWeightFunc::RANGE, weightfunc );

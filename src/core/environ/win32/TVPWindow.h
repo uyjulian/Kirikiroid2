@@ -446,7 +446,6 @@ public:
 	tjs_int GetTouchPointCount() const { return 0; }
 	bool GetTouchVelocity(tjs_int id, float& x, float& y, float& speed) const { return false; }
 	void ResetDrawDevice() {}
-	void SendCloseMessage() {}
 	void BeginMove() {}
 	void SetLayerLeft(tjs_int l) {}
 	tjs_int GetLayerLeft() const { return 0; }

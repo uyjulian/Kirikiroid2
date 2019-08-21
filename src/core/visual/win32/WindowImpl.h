@@ -263,7 +263,6 @@ public:
 	TTVPWindowForm * GetForm() const { return Form; }
 	void NotifyWindowClose();
 
-	void SendCloseMessage();
 	void TickBeat();
 
 private:
