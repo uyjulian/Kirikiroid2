@@ -2008,7 +2008,7 @@ void TJS_INTF_METHOD tTJSNI_Window::NotifyBitmapCompleted(class iTVPLayerManager
 {
 	if( DrawDevice ) {
 #if 0
-		DrawDevice->NotifyBitmapCompleted(manager,x,y,bits,bitmapinfo->GetBITMAPINFO(), cliprect, type, opacity );
+		DrawDevice->NotifyBitmapCompleted(manager,x,y,bits,bitmapinfo, cliprect, type, opacity );
 #endif
 		DrawDevice->NotifyBitmapCompleted(manager, x, y, bmp, cliprect, type, opacity);
 	}

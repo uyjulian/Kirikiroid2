@@ -14,7 +14,6 @@
 #define __RESAMPLE_IMAGE_INTERNAL_H__
 
 struct tTVPImageCopyFuncBase {
-	virtual ~tTVPImageCopyFuncBase() {}
 	virtual void operator() ( tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len ) const = 0;
 };
 struct tTVPBlendImageFunc : public tTVPImageCopyFuncBase {
