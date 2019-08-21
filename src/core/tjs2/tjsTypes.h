@@ -12,6 +12,7 @@
 #ifndef __TJSTYPES_H__
 #define __TJSTYPES_H__
 
+#include <stddef.h>
 #include <stdint.h>
 
 #if 0 && defined(HAVE_CONFIG_H)

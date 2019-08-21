@@ -45,21 +45,22 @@ typedef struct
 #pragma pack(pop)
 /*]*/
 
-#if 1
-#define TVP_GL_FUNC_DECL(rettype, funcname, arg)  rettype  funcname arg
-#define TVP_GL_FUNC_EXTERN_DECL(rettype, funcname, arg)  extern rettype  funcname arg
-#define TVP_GL_FUNC_PTR_DECL(rettype, funcname, arg) rettype ( * funcname) arg
-#define TVP_GL_FUNC_PTR_EXTERN_DECL_(rettype, funcname, arg) \
-	extern rettype ( * funcname) arg; \
-	extern rettype funcname##_c arg;
+#ifdef _WIN32
+#define TVP_GL_FUNC_DECL(rettype, funcname, arg)  rettype __cdecl funcname arg
+#define TVP_GL_FUNC_EXTERN_DECL(rettype, funcname, arg)  extern rettype __cdecl funcname arg
+#define TVP_GL_FUNC_PTR_DECL(rettype, funcname, arg) rettype (__cdecl * funcname) arg
+#define TVP_GL_FUNC_PTR_EXTERN_DECL_(rettype, funcname, arg) extern rettype (__cdecl * funcname) arg
+#define TVP_GL_FUNC_PTR_EXTERN_DECL TVP_GL_FUNC_PTR_EXTERN_DECL_
+#elif defined(__GNUC__)
+#define TVP_GL_FUNC_DECL(rettype, funcname, arg)  rettype funcname arg
+#define TVP_GL_FUNC_EXTERN_DECL(rettype, funcname, arg)  extern rettype funcname arg
+#define TVP_GL_FUNC_PTR_DECL(rettype, funcname, arg) rettype (*funcname) arg
+#define TVP_GL_FUNC_PTR_EXTERN_DECL_(rettype, funcname, arg) extern rettype (*funcname) arg
 #define TVP_GL_FUNC_PTR_EXTERN_DECL TVP_GL_FUNC_PTR_EXTERN_DECL_
 #endif
 
 extern unsigned char TVPDivTable[256*256];
 extern unsigned char TVP252DitherPalette[3][256];
-
-#define TVP_TLG6_H_BLOCK_SIZE 8
-#define TVP_TLG6_W_BLOCK_SIZE 8
 
 /* put platform dependent declaration here */
 
@@ -67,8 +68,10 @@ extern unsigned char TVP252DitherPalette[3][256];
 /* add here compiler specific inline directives */
 #if defined( __BORLANDC__ ) || ( _MSC_VER )
 	#define TVP_INLINE_FUNC __inline
-#else
+#elif defined(__GNUC__)
 	#define TVP_INLINE_FUNC inline
+#else
+	#define TVP_INLINE_FUNC 
 #endif
 
 static tjs_uint32 TVP_INLINE_FUNC TVPSaturatedAdd(tjs_uint32 a, tjs_uint32 b)
@@ -364,6 +367,8 @@ TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPSwapLine32,  (tjs_uint32 *line1, tjs_uint32
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPReverse8,  (tjs_uint8 *pixels, tjs_int len));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPReverse32,  (tjs_uint32 *pixels, tjs_int len));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPDoGrayScale,  (tjs_uint32 *dest, tjs_int len));
+TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPRedBlueSwap,  (tjs_uint32 *dest, tjs_int len));
+TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPRedBlueSwapCopy,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPInitGammaAdjustTempData,  (tTVPGLGammaAdjustTempData *temp, const tTVPGLGammaAdjustData *data));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPUninitGammaAdjustTempData,  (tTVPGLGammaAdjustTempData *temp));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPAdjustGamma,  (tjs_uint32 *dest, tjs_int len, tTVPGLGammaAdjustTempData *temp));
@@ -395,13 +400,6 @@ TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPBLConvert32BitTo32Bit_AddAlpha,  (tjs_uint3
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPDither32BitTo16Bit565,  (tjs_uint16 *dest, const tjs_uint32 *src, tjs_int len, tjs_int xofs, tjs_int yofs));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPDither32BitTo16Bit555,  (tjs_uint16 *dest, const tjs_uint32 *src, tjs_int len, tjs_int xofs, tjs_int yofs));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPDither32BitTo8Bit,  (tjs_uint8 *dest, const tjs_uint32 *src, tjs_int len, tjs_int xofs, tjs_int yofs));
-TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPTLG5ComposeColors3To4,  (tjs_uint8 *outp, const tjs_uint8 *upper, tjs_uint8 * const * buf, tjs_int width));
-TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPTLG5ComposeColors4To4,  (tjs_uint8 *outp, const tjs_uint8 *upper, tjs_uint8 * const* buf, tjs_int width));
-TVP_GL_FUNC_PTR_EXTERN_DECL(tjs_int, TVPTLG5DecompressSlide,  (tjs_uint8 *out, const tjs_uint8 *in, tjs_int insize, tjs_uint8 *text, tjs_int initialr));
-TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPTLG6DecodeGolombValuesForFirst,  (tjs_int8 *pixelbuf, tjs_int pixel_count, tjs_uint8 *bit_pool));
-TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPTLG6DecodeGolombValues,  (tjs_int8 *pixelbuf, tjs_int pixel_count, tjs_uint8 *bit_pool));
-TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPTLG6DecodeLineGeneric,  (tjs_uint32 *prevline, tjs_uint32 *curline, tjs_int width, tjs_int start_block, tjs_int block_limit, tjs_uint8 *filtertypes, tjs_int skipblockbytes, tjs_uint32 *in, tjs_uint32 initialp, tjs_int oddskip, tjs_int dir));
-TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPTLG6DecodeLine,  (tjs_uint32 *prevline, tjs_uint32 *curline, tjs_int width, tjs_int block_count, tjs_uint8 *filtertypes, tjs_int skipblockbytes, tjs_uint32 *in, tjs_uint32 initialp, tjs_int oddskip, tjs_int dir));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPPsAlphaBlend,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPPsAlphaBlend_o,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len, tjs_int opa));
 TVP_GL_FUNC_PTR_EXTERN_DECL(void, TVPPsAlphaBlend_HDA,  (tjs_uint32 *dest, const tjs_uint32 *src, tjs_int len));
