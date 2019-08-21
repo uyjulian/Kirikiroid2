@@ -12,9 +12,6 @@
 #define VideoOvlIntfH
 
 #include "tjsNative.h"
-#include "SoundBufferBaseIntf.h"
-#include "voMode.h"
-#include <functional>
 
 /*[*/
 //---------------------------------------------------------------------------
@@ -78,9 +75,6 @@ protected:
 
 public:
 	virtual void Disconnect() = 0; // called from Window object's invalidation
-	virtual bool GetVisible() const = 0;
-	virtual const tTVPRect &GetBounds() const = 0;
-	virtual bool GetVideoSize(tjs_int &w, tjs_int &h) const = 0;
 
 	tTJSVariantClosure GetActionOwnerNoAddRef() const { return ActionOwner; }
 };

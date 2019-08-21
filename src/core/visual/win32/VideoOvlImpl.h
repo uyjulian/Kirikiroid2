@@ -31,9 +31,6 @@ class tTJSNI_VideoOverlay : public tTJSNI_BaseVideoOverlay
 	typedef tTJSNI_BaseVideoOverlay inherited;
 
 	iTVPVideoOverlay *VideoOverlay;
-	iTVPVideoOverlay *CachedOverlay = nullptr;
-	tTVPVideoOverlayMode CachedOverlayMode;
-	ttstr   CachedPlayingFile;
 
 	tTVPRect Rect;
 	bool Visible;
@@ -97,7 +94,6 @@ public:
 	void SetPosition(tjs_int left, tjs_int top);
 	void SetSize(tjs_int width, tjs_int height);
 	void SetBounds(const tTVPRect & rect);
-	virtual const tTVPRect &GetBounds() const override { return Rect; }
 
 	void SetLeft(tjs_int l);
 	tjs_int GetLeft() const { return Rect.left; }
@@ -192,15 +188,11 @@ public:
 	tjs_int GetOriginalWidth();
 	tjs_int GetOriginalHeight();
 
-	bool GetVideoSize(tjs_int &w, tjs_int &h) const override;
-
 	void ResetOverlayParams();
 	void SetRectOffset(tjs_int ofsx, tjs_int ofsy);
 	void DetachVideoOverlay();
 
-	void PostEvent(const NativeEvent& ev) { EventQueue.PostEvent(ev); }
-
-public:
+private:
 	void WndProc( NativeEvent& ev );
 		// UtilWindow's window procedure
 	void ClearWndProcMessages(); // clear WndProc's message queue
