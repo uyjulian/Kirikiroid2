@@ -60,11 +60,6 @@ static void TVPLoadGraphicRouter(void* formatdata, void *callbackdata, tTVPGraph
 			return CALL_LOAD_FUNC(TVPLoadWEBP);
 		}
 #endif
-#ifdef TVP_IMAGE_ENABLE_JXR
-		if (!memcmp(header, "\x49\x49\xbc\x01", 4)) {
-			return CALL_LOAD_FUNC(TVPLoadJXR);
-		}
-#endif
 #undef CALL_LOAD_FUNC
 	}
 	TVPThrowExceptionMessage(TVPImageLoadError, TJS_W("Invalid image"));
@@ -89,11 +84,6 @@ static void TVPLoadHeaderRouter(void* formatdata, tTJSBinaryStream *src, iTJSDis
 #ifdef TVP_IMAGE_ENABLE_WEBP
 		if (!memcmp(header, "RIFF", 4) && !memcmp(header + 8, "WEBPVP8", 7)) {
 			return CALL_LOAD_FUNC(TVPLoadHeaderWEBP);
-		}
-#endif
-#ifdef TVP_IMAGE_ENABLE_JXR
-		if (!memcmp(header, "\x49\x49\xbc\x01", 4)) {
-			return CALL_LOAD_FUNC(TVPLoadHeaderJXR);
 		}
 #endif
 		// if (!memcmp(header, "PVR\3", 4)) {
@@ -143,10 +133,6 @@ public:
 	tTVPGraphicType()
 	{
 		// register some native-supported formats
-#ifdef TVP_IMAGE_ENABLE_JXR
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".jxr"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsJXR, TVPAcceptSaveAsJXR, NULL));
-#endif
 #ifdef TVP_IMAGE_ENABLE_WEBP
 		Handlers.push_back(tTVPGraphicHandlerType(
 			TJS_W(".webp"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, nullptr, nullptr, NULL));

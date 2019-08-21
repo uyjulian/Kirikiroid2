@@ -161,12 +161,6 @@ extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCall
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
 #endif
 
-#ifdef TVP_IMAGE_ENABLE_JXR
-extern void TVPLoadJXR(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
-	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
-	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
-#endif
-
 #ifdef TVP_IMAGE_ENABLE_TLG
 extern void TVPLoadTLG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
@@ -194,9 +188,6 @@ extern void TVPLoadWEBP(void* formatdata, void *callbackdata, tTVPGraphicSizeCal
 #ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPLoadHeaderBMP(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
 #endif
-#ifdef TVP_IMAGE_ENABLE_JXR
-extern void TVPLoadHeaderJXR(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
-#endif
 #ifdef TVP_IMAGE_ENABLE_TLG
 extern void TVPLoadHeaderTLG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic);
 #endif
@@ -212,9 +203,6 @@ extern void TVPLoadHeaderWEBP(void* formatdata, tTJSBinaryStream *src, iTJSDispa
 #ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
 #endif
-#ifdef TVP_IMAGE_ENABLE_JXR
-extern void TVPSaveAsJXR(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
-#endif
 #ifdef TVP_IMAGE_ENABLE_TLG
 extern void TVPSaveAsTLG(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
 #endif
@@ -226,9 +214,6 @@ extern void TVPSaveAsTLG(void* formatdata, tTJSBinaryStream* dst, const iTVPBase
 //---------------------------------------------------------------------------
 #ifdef TVP_IMAGE_ENABLE_BMP
 extern bool TVPAcceptSaveAsBMP(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
-#endif
-#ifdef TVP_IMAGE_ENABLE_JXR
-extern bool TVPAcceptSaveAsJXR(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
 #endif
 #ifdef TVP_IMAGE_ENABLE_TLG
 extern bool TVPAcceptSaveAsTLG(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
