@@ -2,7 +2,6 @@
 ##### OPTIONS #####
 TVP_IMAGE_ENABLE_WEBP ?= 1
 TVP_IMAGE_ENABLE_BMP ?= 1
-TVP_IMAGE_ENABLE_TLG ?= 1
 TVP_AUDIO_ENABLE_WAVE ?= 1
 TVP_AUDIO_ENABLE_OPUS ?= 1
 TVP_AUDIO_ENABLE_VORBIS ?= 1
@@ -86,10 +85,6 @@ endif
 
 ifdef TVP_IMAGE_ENABLE_BMP
 	CFLAGS += -DTVP_IMAGE_ENABLE_BMP
-endif
-
-ifdef TVP_IMAGE_ENABLE_TLG
-	CFLAGS += -DTVP_IMAGE_ENABLE_TLG
 endif
 
 ifdef TVP_AUDIO_ENABLE_WAVE
@@ -286,15 +281,8 @@ SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
 SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
-ifdef TVP_IMAGE_ENABLE_TLG
-SOURCES += src/core/visual/LoadTLG.cpp
-endif
 ifdef TVP_IMAGE_ENABLE_WEBP
 SOURCES += src/core/visual/LoadWEBP.cpp
-endif
-ifdef TVP_IMAGE_ENABLE_TLG
-SOURCES += src/core/visual/SaveTLG5.cpp
-SOURCES += src/core/visual/SaveTLG6.cpp
 endif
 ifdef TVP_ARCHIVE_ENABLE_XP3
 SOURCES += src/core/base/XP3Archive.cpp
