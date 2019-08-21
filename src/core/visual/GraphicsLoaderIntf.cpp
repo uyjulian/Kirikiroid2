@@ -60,12 +60,6 @@ static void TVPLoadGraphicRouter(void* formatdata, void *callbackdata, tTVPGraph
 			return CALL_LOAD_FUNC(TVPLoadTLG);
 		}
 #endif
-#ifdef TVP_IMAGE_ENABLE_JPEG
-		if (!memcmp(header, "\xFF\xD8\xFF", 3) &&
-			header[3] >= 0xE0 && header[3] <= 0xEF ) {
-			return CALL_LOAD_FUNC(TVPLoadJPEG);
-		}
-#endif
 #ifdef TVP_IMAGE_ENABLE_WEBP
 		if (!memcmp(header, "RIFF", 4) && !memcmp(header + 8, "WEBPVP8", 7)) {
 			return CALL_LOAD_FUNC(TVPLoadWEBP);
@@ -100,12 +94,6 @@ static void TVPLoadHeaderRouter(void* formatdata, tTJSBinaryStream *src, iTJSDis
 #ifdef TVP_IMAGE_ENABLE_TLG
 		if (!memcmp(header, "TLG", 3)) {
 			return CALL_LOAD_FUNC(TVPLoadHeaderTLG);
-		}
-#endif
-#ifdef TVP_IMAGE_ENABLE_JPEG
-		if (!memcmp(header, "\xFF\xD8\xFF", 3) &&
-			header[3] >= 0xE0 && header[3] <= 0xEF) {
-			return CALL_LOAD_FUNC(TVPLoadHeaderJPG);
 		}
 #endif
 #ifdef TVP_IMAGE_ENABLE_WEBP
@@ -178,14 +166,6 @@ public:
 			TJS_W(".bmp"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
 		Handlers.push_back(tTVPGraphicHandlerType(
 			TJS_W(".dib"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
-#endif
-#ifdef TVP_IMAGE_ENABLE_JPEG
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".jpeg"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsJPG, TVPAcceptSaveAsJPG, NULL));
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".jpg"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsJPG, TVPAcceptSaveAsJPG, NULL));
-		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".jif"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsJPG, TVPAcceptSaveAsJPG, NULL));
 #endif
 #ifdef TVP_IMAGE_ENABLE_PNG
 		Handlers.push_back(tTVPGraphicHandlerType(

@@ -1360,21 +1360,6 @@ void TVPAfterSystemInit()
 			TVPDefaultHoldAlpha = false;
 	}
 
-#ifdef TVP_IMAGE_ENABLE_JPEG
-	// check TVPJPEGFastLoad option
-	if(TVPGetCommandLine(TJS_W("-jpegdec"), &opt)) // this specifies precision for JPEG decoding
-	{
-		ttstr str(opt);
-		if(str == TJS_W("normal"))
-			TVPJPEGLoadPrecision = jlpMedium;
-		else if(str == TJS_W("low"))
-			TVPJPEGLoadPrecision = jlpLow;
-		else if(str == TJS_W("high"))
-			TVPJPEGLoadPrecision = jlpHigh;
-
-	}
-#endif
-
 	// dump option
 	TVPDumpOptions();
 
