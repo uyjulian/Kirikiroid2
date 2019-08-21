@@ -1,6 +1,5 @@
 
 ##### OPTIONS #####
-TVP_IMAGE_ENABLE_WEBP ?= 1
 TVP_IMAGE_ENABLE_BMP ?= 1
 TVP_AUDIO_ENABLE_WAVE ?= 1
 TVP_AUDIO_ENABLE_OPUS ?= 1
@@ -75,13 +74,6 @@ endif
 CFLAGS += -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2
 LDFLAGS += -L/usr/local/opt/freetype/lib
 LDLIBS += -lfreetype
-
-ifdef TVP_IMAGE_ENABLE_WEBP
-	CFLAGS += -DTVP_IMAGE_ENABLE_WEBP
-	CFLAGS += -I/usr/local/opt/webp/include
-	LDFLAGS += -L/usr/local/opt/webp/lib
-	LDLIBS += -lwebp
-endif
 
 ifdef TVP_IMAGE_ENABLE_BMP
 	CFLAGS += -DTVP_IMAGE_ENABLE_BMP
@@ -281,9 +273,6 @@ SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
 SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
-ifdef TVP_IMAGE_ENABLE_WEBP
-SOURCES += src/core/visual/LoadWEBP.cpp
-endif
 ifdef TVP_ARCHIVE_ENABLE_XP3
 SOURCES += src/core/base/XP3Archive.cpp
 endif

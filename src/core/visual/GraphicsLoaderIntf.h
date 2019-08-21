@@ -162,11 +162,6 @@ extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCall
 #endif
 
 //---------------------------------------------------------------------------
-#ifdef TVP_IMAGE_ENABLE_WEBP
-extern void TVPLoadWEBP(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
-	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
-	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
-#endif
 
 //---------------------------------------------------------------------------
 // Image header handler
@@ -182,9 +177,6 @@ extern void TVPLoadWEBP(void* formatdata, void *callbackdata, tTVPGraphicSizeCal
 //---------------------------------------------------------------------------
 #ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPLoadHeaderBMP(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
-#endif
-#ifdef TVP_IMAGE_ENABLE_WEBP
-extern void TVPLoadHeaderWEBP(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic);
 #endif
 //---------------------------------------------------------------------------
 
