@@ -180,7 +180,7 @@ void tTJSNI_Bitmap::CopyFrom( const tTJSNI_Bitmap* src ) {
 	Bitmap->Assign(*src->GetBitmap());
 }
 //----------------------------------------------------------------------
-void tTJSNI_Bitmap::CopyFrom(const  iTVPBaseBitmap* src) {
+void tTJSNI_Bitmap::CopyFrom( const  iTVPBaseBitmap* src ) {
 	Bitmap->Assign(*src);
 }
 //----------------------------------------------------------------------

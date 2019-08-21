@@ -383,11 +383,9 @@ static tTVPCharacterData * TVPGetCharacter(const tTVPFontAndCharacterData & font
 tTVPBitmap::tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp, bool unpadding)
 {
 	// tTVPBitmap constructor
-
 #ifdef _WIN32
 	TVPInitWindowOptions(); // ensure window/bitmap usage options are initialized
 #endif
-
 	RefCount = 1;
 
 	Allocate(width, height, bpp, unpadding); // allocate initial bitmap
@@ -399,7 +397,6 @@ tTVPBitmap::tTVPBitmap(tjs_uint width, tjs_uint height, tjs_uint bpp, void* bits
 #ifdef _WIN32
 	TVPInitWindowOptions(); // ensure window/bitmap usage options are initialized
 #endif
-
 	RefCount = 1;
 
 	BitmapInfo = new BitmapInfomation( width, height, bpp );
@@ -441,7 +438,6 @@ tTVPBitmap::tTVPBitmap(const tTVPBitmap & r)
 #ifdef _WIN32
 	TVPInitWindowOptions(); // ensure window/bitmap usage options are initialized
 #endif
-
 	RefCount = 1;
 
 	// allocate bitmap which has the same metrics to r

@@ -98,15 +98,14 @@ bool tTVPDrawDevice::TransformToPrimaryLayerManager(tjs_int &x, tjs_int &y)
 
 #if 0
 	// プライマリレイヤマネージャのプライマリレイヤのサイズを得る
-	tjs_int pl_w = LockedWidth, pl_h = LockedHeight;
-	if(pl_w <= 0 && pl_h <= 0 && !manager->GetPrimaryLayerSize(pl_w, pl_h)) return false;
-    //pl_w = WinWidth; pl_h = WinHeight;
+	tjs_int pl_w, pl_h;
+	if(!manager->GetPrimaryLayerSize(pl_w, pl_h)) return false;
 
 	// x , y は DestRect の 0, 0 を原点とした座標として渡されてきている
 	tjs_int w = DestRect.get_width();
 	tjs_int h = DestRect.get_height();
-	x = w ? ((x - DestRect.left) * pl_w / w) : 0;
-	y = h ? ((y - DestRect.top) * pl_h / h) : 0;
+	x = w ? (x * pl_w / w) : 0;
+	y = h ? (y * pl_h / h) : 0;
 #endif
 
 	return true;
@@ -119,18 +118,19 @@ bool tTVPDrawDevice::TransformFromPrimaryLayerManager(tjs_int &x, tjs_int &y)
 {
 	iTVPLayerManager * manager = GetLayerManagerAt(PrimaryLayerManagerIndex);
 	if(!manager) return false;
-	return true;
+#if 0
 
 	// プライマリレイヤマネージャのプライマリレイヤのサイズを得る
-	tjs_int pl_w = LockedWidth, pl_h = LockedHeight;
-	if (pl_w <= 0 && pl_h <= 0 && !manager->GetPrimaryLayerSize(pl_w, pl_h)) return false;
-    //pl_w = WinWidth; pl_h = WinHeight;
+	tjs_int pl_w, pl_h;
+	if(!manager->GetPrimaryLayerSize(pl_w, pl_h)) return false;
 
 	// x , y は DestRect の 0, 0 を原点とした座標として渡されてきている
 	x = pl_w ? (x * DestRect.get_width()  / pl_w) : 0;
 	y = pl_h ? (y * DestRect.get_height() / pl_h) : 0;
+
     x += DestRect.left;
     y += DestRect.top;
+#endif
 	return true;
 }
 //---------------------------------------------------------------------------

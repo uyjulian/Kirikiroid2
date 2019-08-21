@@ -76,17 +76,6 @@ public:
 #if 0
 	void SetToRecreateDrawer() { DestroyD3DDevice(); }
 #endif
-	enum tDrawerType
-	{
-		dtNone, //!< drawer なし
-		dtDrawDib, //!< もっとも単純なdrawer
-		dtDBGDI, // GDI によるダブルバッファリングを行うdrawer
-		dtDBDD, // DirectDraw によるダブルバッファリングを行うdrawer
-		dtDBD3D // Direct3D によるダブルバッファリングを行うdrawer
-	} DrawerType = dtDrawDib, PreferredDrawerType = dtDrawDib;
-	tDrawerType GetDrawerType() const { return DrawerType; }
-	void SetPreferredDrawerType(tDrawerType type) { PreferredDrawerType = type; }
-	tDrawerType GetPreferredDrawerType() const { return PreferredDrawerType; }
 
 public:
 #if 0

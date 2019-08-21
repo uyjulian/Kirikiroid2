@@ -934,59 +934,6 @@ TJS_BEGIN_NATIVE_PROP_DECL(interface)
 }
 TJS_END_NATIVE_PROP_DECL(interface)
 //----------------------------------------------------------------------
-#define TVP_REGISTER_PTDD_ENUM(name) \
-	TJS_BEGIN_NATIVE_PROP_DECL(name) \
-	{ \
-		TJS_BEGIN_NATIVE_PROP_GETTER \
-		{ \
-		*result = (tjs_int64)tTVPBasicDrawDevice::name; \
-			return TJS_S_OK; \
-		} \
-		TJS_END_NATIVE_PROP_GETTER \
-		TJS_DENY_NATIVE_PROP_SETTER \
-	} \
-	TJS_END_NATIVE_PROP_DECL(name)
-// compatible for old kirikiri2
-TVP_REGISTER_PTDD_ENUM(dtNone)
-TVP_REGISTER_PTDD_ENUM(dtDrawDib)
-TVP_REGISTER_PTDD_ENUM(dtDBGDI)
-TVP_REGISTER_PTDD_ENUM(dtDBDD)
-TVP_REGISTER_PTDD_ENUM(dtDBD3D)
-//----------------------------------------------------------------------
-TJS_BEGIN_NATIVE_PROP_DECL(preferredDrawer)
-{
-	TJS_BEGIN_NATIVE_PROP_GETTER
-	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BasicDrawDevice);
-		*result = (tjs_int64)(_this->GetDevice()->GetPreferredDrawerType());
-		return TJS_S_OK;
-	}
-	TJS_END_NATIVE_PROP_GETTER
-
-	TJS_BEGIN_NATIVE_PROP_SETTER
-	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BasicDrawDevice);
-		_this->GetDevice()->SetPreferredDrawerType((tTVPBasicDrawDevice::tDrawerType)(tjs_int)*param);
-		return TJS_S_OK;
-	}
-	TJS_END_NATIVE_PROP_SETTER
-}
-TJS_END_NATIVE_PROP_DECL(preferredDrawer)
-//----------------------------------------------------------------------
-TJS_BEGIN_NATIVE_PROP_DECL(drawer)
-{
-	TJS_BEGIN_NATIVE_PROP_GETTER
-	{
-		TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_BasicDrawDevice);
-		*result = (tjs_int64)(_this->GetDevice()->GetDrawerType());
-		return TJS_S_OK;
-	}
-	TJS_END_NATIVE_PROP_GETTER
-
-	TJS_DENY_NATIVE_PROP_SETTER
-}
-TJS_END_NATIVE_PROP_DECL(drawer)
-//----------------------------------------------------------------------
 	TJS_END_NATIVE_MEMBERS
 }
 //---------------------------------------------------------------------------

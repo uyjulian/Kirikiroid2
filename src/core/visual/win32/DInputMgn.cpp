@@ -133,6 +133,7 @@ static tjs_uint32 /*__fastcall*/ PadState();
 
 
 
+
 #if 0
 //---------------------------------------------------------------------------
 // pad virtual key code map

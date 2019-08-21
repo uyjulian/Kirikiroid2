@@ -224,7 +224,6 @@ void tTVPAsyncImageLoader::LoadRequest( iTJSDispatch2 *owner, tTJSNI_Bitmap* bmp
 // tTJSCriticalSectionHolder cs_holder(TVPCreateStreamCS);
 //	tTJSBinaryStream* stream = TVPCreateStream(nname, TJS_BS_READ);
 // TVPCreateStream はロックされているので、非同期で実行可能
-
 void tTVPAsyncImageLoader::PushLoadQueue( iTJSDispatch2 *owner, tTJSNI_Bitmap *bmp, const ttstr &nname ) {
 	tTVPImageLoadCommand* cmd = new tTVPImageLoadCommand();
 	cmd->owner_ = owner;
@@ -271,23 +270,18 @@ void tTVPAsyncImageLoader::LoadingThread() {
 		} while( loading && !GetTerminated() );
 	}
 }
-tTVPGraphicHandlerType* TVPGuessGraphicLoadHandler(ttstr& name);
 void tTVPAsyncImageLoader::LoadImageFromCommand( tTVPImageLoadCommand* cmd ) {
 	ttstr ext = TVPExtractStorageExt(cmd->path_);
 	tTVPGraphicHandlerType* handler = NULL;
 	if(ext == TJS_W("")) {
-		// missing extension
-		handler = TVPGuessGraphicLoadHandler(cmd->path_);
-#if 0
 		cmd->result_ = TJS_W("Filename extension not found");
-#endif
 	} else {
 		handler = TVPGetGraphicLoadHandler(ext);
 	}
 	if( handler ) {
 		try {
 			tTVPStreamHolder holder(cmd->path_);
-			handler->Load(handler->FormatData, (void*)cmd->dest_, TVPLoadGraphicAsync_SizeCallback,
+			(handler->Load)(handler->FormatData, (void*)cmd->dest_, TVPLoadGraphicAsync_SizeCallback,
 				TVPLoadGraphicAsync_ScanLineCallback, TVPLoadGraphicAsync_MetaInfoPushCallback,
 				holder.Get(), -1, glmNormal );
 		} catch(...) {

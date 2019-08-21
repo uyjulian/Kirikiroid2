@@ -159,9 +159,9 @@ TJS_EXP_FUNC_DEF( void, TVPUnregisterGraphicLoadingHandler, (const ttstr & name,
 extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+//---------------------------------------------------------------------------
 #endif
 
-//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 // Image header handler
@@ -185,7 +185,7 @@ extern void TVPLoadHeaderBMP(void* formatdata, tTJSBinaryStream *src, iTJSDispat
 // Image saving handler
 //---------------------------------------------------------------------------
 #ifdef TVP_IMAGE_ENABLE_BMP
-extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta);
+extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
 #endif
 //---------------------------------------------------------------------------
 

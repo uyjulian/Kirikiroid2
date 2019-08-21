@@ -37,43 +37,6 @@
 #include <complex>
 #include <list>
 
-static void TVPLoadGraphicRouter(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
-	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
-	tTJSBinaryStream *src, tjs_int keyidx, tTVPGraphicLoadMode mode) {
-	uint8_t header[16];
-	tjs_uint64 origSrcPos = src->GetPosition();
-	if (src->Read(header, sizeof(header)) == sizeof(header)) {
-		src->SetPosition(origSrcPos);
-#define CALL_LOAD_FUNC(f) f(formatdata, callbackdata, sizecallback, scanlinecallback, metainfopushcallback, src, keyidx, mode)
-#ifdef TVP_IMAGE_ENABLE_BMP
-		if (!memcmp(header, "BM", 2)) {
-			return CALL_LOAD_FUNC(TVPLoadBMP);
-		}
-#endif
-#undef CALL_LOAD_FUNC
-	}
-	TVPThrowExceptionMessage(TVPImageLoadError, TJS_W("Invalid image"));
-}
-
-static void TVPLoadHeaderRouter(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic) {
-	uint8_t header[16];
-	tjs_uint64 origSrcPos = src->GetPosition();
-	if (src->Read(header, sizeof(header)) == sizeof(header)) {
-		src->SetPosition(origSrcPos);
-#define CALL_LOAD_FUNC(f) f(formatdata, src, dic)
-#ifdef TVP_IMAGE_ENABLE_BMP
-		if (!memcmp(header, "BM", 2)) {
-			return CALL_LOAD_FUNC(TVPLoadHeaderBMP);
-		}
-#endif
-		// if (!memcmp(header, "PVR\3", 4)) {
-		// 	return CALL_LOAD_FUNC(TVPLoadHeaderPVRv3);
-		// }
-#undef CALL_LOAD_FUNC
-	}
-	TVPThrowExceptionMessage(TVPImageLoadError, TJS_W("Invalid image"));
-}
-
 //---------------------------------------------------------------------------
 
 #ifdef TVP_IMAGE_ENABLE_BMP
@@ -115,9 +78,9 @@ public:
 		// register some native-supported formats
 #ifdef TVP_IMAGE_ENABLE_BMP
 		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".bmp"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
+			TJS_W(".bmp"), TVPLoadBMP, TVPLoadHeaderBMP, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
 		Handlers.push_back(tTVPGraphicHandlerType(
-			TJS_W(".dib"), TVPLoadGraphicRouter, TVPLoadHeaderRouter, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
+			TJS_W(".dib"), TVPLoadBMP, TVPLoadHeaderBMP, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
 #endif
 		ReCreateHash();
 		Avail = true;
@@ -228,27 +191,6 @@ void TVPUnregisterGraphicLoadingHandler(const ttstr & name,
 	}
 }
 
-tTVPGraphicHandlerType* TVPGuessGraphicLoadHandler(ttstr& name) { // with name has no extension
-	// suggest registered extensions
-	tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
-	for (i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/)
-	{
-		ttstr newname = name + i.GetKey();
-		if (TVPIsExistentStorage(newname))
-		{
-			// file found
-			name = newname;
-			break;
-		}
-		i++;
-	}
-	if (i.IsNull())
-	{
-		// not found
-		return nullptr;
-	}
-	return &i.GetValue();
-}
 //---------------------------------------------------------------------------
 tTVPGraphicHandlerType* TVPGetGraphicLoadHandler( const ttstr& ext )
 {
@@ -1542,7 +1484,7 @@ void TVPPushGraphicCache( const ttstr& nname, tTVPBitmap* bmp, std::vector<tTVPG
 			hash = tTVPGraphicCache::MakeHash(searchdata);
 
 			data = new tTVPGraphicImageData();
-			data->AssignBitmap(bmp);
+			data->AssignBitmap( bmp );
 			data->ProvinceName = TJS_W("");
 			data->MetaInfo = meta;
 			meta = NULL;
@@ -1594,7 +1536,7 @@ bool TVPCheckImageCache( const ttstr& nname, tTVPBaseBitmap* dest, tTVPGraphicLo
 	return false;
 }
 //---------------------------------------------------------------------------
-// ŒŸõ‚¾‚¯‚·‚é
+// æ¤œç´¢ã ã‘ã™ã‚‹
 bool TVPHasImageCache( const ttstr& nname, tTVPGraphicLoadMode mode, tjs_uint dw, tjs_uint dh, tjs_int32 keyidx )
 {
 	tjs_uint32 hash;
@@ -1774,7 +1716,7 @@ static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
 		keyidx = -1;
 	}
 
-	handler->Load(handler->FormatData, (void*)&data, TVPLoadGraphic_SizeCallback,
+	(handler->Load)(handler->FormatData, (void*)&data, TVPLoadGraphic_SizeCallback,
 		TVPLoadGraphic_ScanLineCallback, TVPLoadGraphic_MetaInfoPushCallback,
 		holder.Get(), keyidx, mode);
 
@@ -1806,7 +1748,7 @@ static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
 	    try
 	    {
 			// load image via handler
-			handler->Load(handler->FormatData, (void*)&data,
+			(handler->Load)(handler->FormatData, (void*)&data,
 				TVPLoadGraphic_SizeCallback, TVPLoadGraphic_ScanLineCallback,
 				NULL,
 				holder.Get(), -1, glmGrayscale);
@@ -2008,208 +1950,6 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
     return ret;
 }
 //---------------------------------------------------------------------------
-#if 0
-#ifdef _MSC_VER
-extern "C"
-__declspec(dllimport) int __stdcall WideCharToMultiByte(
-unsigned int CodePage,
-unsigned long dwFlags,
-const wchar_t* lpWideCharStr,
-int cchWideChar,
-char *lpMultiByteStr,
-int cbMultiByte,
-void* lpDefaultChar,
-int* lpUsedDefaultChar
-);
-#endif
-class TVPGraphicPreload {
-public:
-	struct tImgInfo {
-		ttstr filename;
-		tTVPGraphicHandlerType *handler;
-		tTJSRefHolder<tTJSBinaryStream> Stream;
-		tImgInfo() : handler(nullptr) {}
-	};
-
-    struct tItem {
-		tImgInfo main, mask;
-		tTVPGraphicsSearchData searchdata;
-		ttstr provincename;
-    };
-
-    struct tParam {
-        std::vector<tItem> items; // must be TVPNormalizeStorageName(name);
-        tjs_int limit;
-    };
-
-    static TVPGraphicPreload* Instance() {
-        static TVPGraphicPreload *instance;
-        if(!instance) instance = new TVPGraphicPreload;
-        return instance;
-    }
-
-    void addTask(tParam *param) { // called from main thread
-		{
-			tTJSCSH lock(CSTask);
-			ReqInterrupt = true;
-			clearTask(); // drop all unfinished tasks
-			TaskList.emplace_back(param);
-		}
-		TaskCond.notify_one();
-    }
-
-private:
-    std::list<tParam*> TaskList;
-    std::condition_variable TaskCond;
-	std::mutex TaskMutex;
-    tTJSCriticalSection CSTask;
-    bool ReqInterrupt;
-    
-    std::thread *ThreadID;
-    TVPGraphicPreload()
-    {
-//         TaskCond = SDL_CreateCond();
-//         TaskMutex = SDL_CreateMutex();
-		ThreadID = new std::thread(std::bind(&TVPGraphicPreload::_thread_loop, this));
-        ReqInterrupt = false;
-    }
-
-    void _thread_loop() {
-        while(true) {
-            ReqInterrupt = false;
-            tParam* CurrentTask = nullptr;
-			{
-				tTJSCSH lock(CSTask);
-				if (!TaskList.empty()) {
-					CurrentTask = TaskList.front();
-					TaskList.pop_front();
-				}
-			}
-            if(!CurrentTask) {
-				std::unique_lock<std::mutex> lk(TaskMutex);
-				TaskCond.wait(lk);
-                continue;
-            }
-
-            tjs_uint totalSize = 0;
-            for(auto it = CurrentTask->items.begin(); it != CurrentTask->items.end(); ++it) {
-                if(ReqInterrupt) break;
-                totalSize += loadOneGraph(*it);
-                if(totalSize >= (tjs_uint)CurrentTask->limit) break;
-            }
-            delete CurrentTask;
-        }
-    }
-
-//     static int _thread_entry(void *arg) {
-//         static_cast<TVPGraphicPreload*>(arg)->_thread_loop();
-//         return 0;
-//     }
-
-    void clearTask() {
-        for(auto it = TaskList.begin(); it != TaskList.end(); ++it) {
-            delete *it;
-        }
-        TaskList.clear();
-    }
-
-    unsigned int loadOneGraph(const tItem &item)
-    {
-		// TODO move cache operation to main thread
-		tjs_uint32 hash = tTVPGraphicCache::MakeHash(item.searchdata);
-        tTVPGraphicImageHolder * ptr =
-			TVPGraphicCache.FindAndTouchWithHash(item.searchdata, hash);
-        if (ptr) {
-            return ptr->GetObjectNoAddRef()->GetSize(); // already in cache
-        }
-#ifdef WIN32
-		char buf[16384] = { 0 };
-		ttstr msg = TJS_W("Touching Image: ") + item.main.filename;
-		WideCharToMultiByte(/*CP_ACP*/0, 0, msg.c_str(), -1, buf, sizeof(buf), nullptr, 0);
-		puts(buf);
-		//TVPAddLog(TJS_W("Touching Image: ") + item.main.filename);
-#endif
-
-        // load into dest
-		tTVPGraphicImageData * data = nullptr;
-
-		std::vector<tTVPGraphicMetaInfoPair> * mi = nullptr;
-        int ret = 0;
-        try
-        {
-            tTVPBitmap *bmp;
-            // from TVPInternalLoadGraphic
-            {
-                //tTVPStreamHolder holder(item.imgfile); // open a storage named "name"
-
-                // load the image
-                tTVPLoadGraphicData data;
-				data.Dest = nullptr;
-                data.ColorKey = TVP_clNone;
-                data.Type = lgtFullColor;
-				data.Name = item.main.filename;
-                data.DesW = 0;
-                data.DesH = 0;
-                data.NeedMetaInfo = true;
-				data.MetaInfo = nullptr;
-
-				(item.main.handler->Load)(item.main.handler->FormatData, (void*)&data, TVPLoadGraphic_SizeCallback,
-                    TVPLoadGraphic_ScanLineCallback, TVPLoadGraphic_MetaInfoPushCallback,
-					item.main.Stream.get(), -1, glmNormal);
-
-                mi = data.MetaInfo;
-
-                if(item.mask.handler && item.mask.Stream) {
-                    // open the mask file
-                    //holder.Open(item.maskfile);
-
-                    // fill "data"'s member
-                    data.Type = lgtMask;
-					data.Name = item.mask.filename;
-					data.Buffer = nullptr;
-                    data.DesW = 0;
-                    data.DesH = 0;
-                    data.NeedMetaInfo = false;
-
-					(item.mask.handler->Load)(item.mask.handler->FormatData, (void*)&data,
-                        TVPLoadGraphic_SizeCallback, TVPLoadGraphic_ScanLineCallback, nullptr,
-						item.mask.Stream.get(), -1, glmGrayscale);
-                }
-
-                bmp = data.Dest;
-            }
-
-            data = new tTVPGraphicImageData();
-            data->AssignBitmap(bmp);
-            data->ProvinceName = item.provincename;
-            data->MetaInfo = mi; // now mi is managed under tTVPGraphicImageData
-			mi = nullptr;
-
-            // check size limit
-            TVPCheckGraphicCacheLimit();
-
-            // push into hash table
-            tjs_uint datasize = data->GetSize();
-			TVPGraphicCacheTotalBytes += datasize;
-			tTVPGraphicImageHolder holder(data);
-			TVPGraphicCache.AddWithHash(item.searchdata, hash, holder);
-            ret = bmp->GetWidth() * bmp->GetHeight() * bmp->GetBPP() / 8;
-            bmp->Release();
-        }
-        catch(...)
-        {
-            if(mi) delete mi;
-            if(data) data->Release();
-            throw;
-        }
-
-        if(mi) delete mi;
-        if(data) data->Release();
-
-        return ret;
-    }
-};
-#endif
 
 class tBitmapForAsyncTouch : public tTJSNI_Bitmap {
 	typedef tTJSNI_Bitmap inherit;
@@ -2282,107 +2022,6 @@ void TVPTouchImages(const std::vector<ttstr> & storages, tjs_int64 limit,
 		}
 		return;
 	}
-#if 0
-    // async version
-    TVPGraphicPreload::tParam *param = new TVPGraphicPreload::tParam;
-    param->limit = limitbytes;
-    for(auto it = storages.begin(); it != storages.end(); ++it) {
-        TVPGraphicPreload::tItem item;
-		item.main.handler = nullptr;
-		ttstr name = TVPNormalizeStorageName(*it);
-		tTVPGraphicsSearchData &searchdata = item.searchdata;
-		searchdata.Name = name;
-		searchdata.KeyIdx = TVP_clNone;
-		searchdata.Mode = glmNormal;
-		searchdata.DesW = 0;
-		searchdata.DesH = 0;
-		ttstr ext = TVPExtractStorageExt(name);
-        if(ext.IsEmpty()) { // to avoid handler searching
-            tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
-            for(i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/)
-            {
-                ttstr newname = name + i.GetKey();
-                if(TVPIsExistentStorage(newname))
-                {
-                    // file found
-					item.main.filename = newname;
-					item.main.handler = &i.GetValue();
-                    break;
-                }
-                i++;
-            }
-			if (i.IsNull() || !item.main.handler)
-            {
-                // not found
-                //TVPThrowExceptionMessage(TVPCannotSuggestGraphicExtension, name);
-				continue;
-            }
-        } else {
-			item.main.filename = name;
-			item.main.handler = TVPGraphicType.Hash.Find(ext);
-			if (!item.main.handler) continue;
-		}
-
-        ttstr provincename = ttstr(name, name.length()-ext.length()) + TJS_W("_p");
-        // search extensions
-        tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
-        for(i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/)
-        {
-            ttstr newname = provincename + i.GetKey();
-            if(TVPIsExistentStorage(newname))
-            {
-                // file found
-                item.provincename = newname;
-                break;
-            }
-            i++;
-        }
-        // mask image handling ( addding _m suffix with the filename )
-        while(true)
-        {
-            name = ttstr(name, name.length()-ext.length()) + TJS_W("_m") + ext;
-            if(ext.IsEmpty())
-            {
-                // missing extension
-                // suggest registered extensions
-                tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
-                for(i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/)
-                {
-                    ttstr newname = name;
-                    newname += i.GetKey();
-                    if(TVPIsExistentStorage(newname))
-                    {
-                        // file found
-                        item.mask.filename = newname;
-						item.mask.handler = &i.GetValue();
-                        break;
-                    }
-                    i++;
-                }
-                break;
-            }
-            else
-            {
-                if(!TVPIsExistentStorage(name))
-                {
-                    // not found
-                    ext.Clear();
-                    continue; // retry searching
-                }
-				item.mask.handler = TVPGraphicType.Hash.Find(ext);
-                break;
-            }
-        }
-
-		item.main.Stream = TVPCreateStream(item.main.filename, 0);
-		if (item.main.Stream) {
-			if (item.mask.handler) item.mask.Stream = TVPCreateStream(item.mask.filename, 0);
-			param->items.emplace_back(item);
-		}
-    }
-    TVPGraphicPreload::Instance()->addTask(param);
-    return;
-#endif
 	tjs_int count = 0;
 	tjs_uint64 bytes = 0;
 	tjs_uint64 starttime = TVPGetTickCount();
