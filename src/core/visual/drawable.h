@@ -95,13 +95,13 @@ static bool inline TVPIsTypeUsingAlphaChannel(tTVPLayerType type)
 //---------------------------------------------------------------------------
 // tTVPDrawable definition
 //---------------------------------------------------------------------------
-class tTVPBaseTexture;
+class tTVPBaseBitmap;
 struct tTVPRect;
 class tTVPDrawable
 {
 public:
 	// base class of draw-able objects.
-	virtual tTVPBaseTexture * GetDrawTargetBitmap(const tTVPRect &rect,
+	virtual tTVPBaseBitmap * GetDrawTargetBitmap(const tTVPRect &rect,
 		tTVPRect &cliprect) = 0;
 		// returns target bitmap which has given size
 		// (rect.get_width() * rect.get_height()).
@@ -111,7 +111,7 @@ public:
 		// returns target layer type
 
 	virtual void DrawCompleted(const tTVPRect &destrect,
-		tTVPBaseTexture *bmp, const tTVPRect &cliprect,
+		tTVPBaseBitmap *bmp, const tTVPRect &cliprect,
 		tTVPLayerType type, tjs_int opacity) = 0;
 		// call this when the drawing is completed, passing
 		// the bitmap containing the image, and its clip region.

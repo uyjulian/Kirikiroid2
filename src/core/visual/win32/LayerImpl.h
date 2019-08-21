@@ -29,8 +29,6 @@ public:
 #if 0
 	HRGN CreateMaskRgn(tjs_uint threshold);
 #endif
-	static tTJSNI_Layer* FromVariant(const tTJSVariant& var);
-	static tTJSNI_Layer* FromObject(iTJSDispatch2* obj);
 };
 //---------------------------------------------------------------------------
 #endif

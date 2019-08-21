@@ -178,8 +178,8 @@ HRGN tTJSNI_Layer::CreateMaskRgn(tjs_uint threshold)
 	return Rgn;
 }
 #pragma pack(pop)
-//---------------------------------------------------------------------------
 #endif
+//---------------------------------------------------------------------------
 
 
 
@@ -205,18 +205,3 @@ tTJSNativeClass * TVPCreateNativeClass_Layer()
 }
 //---------------------------------------------------------------------------
 
-// utility functions for custom plugins
-tTJSNI_Layer* tTJSNI_Layer::FromVariant(const tTJSVariant& var) {
-	return FromObject(var.AsObjectNoAddRef());
-}
-
-tTJSNI_Layer* tTJSNI_Layer::FromObject(iTJSDispatch2* obj)
-{
-	tTJSNI_Layer * lay = nullptr;
-	if (obj) {
-		if (TJS_FAILED(obj->NativeInstanceSupport(TJS_NIS_GETINSTANCE,
-			tTJSNC_Layer::ClassID, (iTJSNativeInstance**)&lay)))
-			TVPThrowExceptionMessage(TVPSpecifyLayer);
-	}
-	return lay;
-}

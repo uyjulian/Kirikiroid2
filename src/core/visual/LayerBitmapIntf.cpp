@@ -21,12 +21,9 @@
 #include "tjsUtils.h"
 #include "ThreadIntf.h"
 #include "ResampleImage.h"
-#include "RenderManager.h"
-#include <assert.h>
 
 //#define TVP_FORCE_BILINEAR
 
-iTVPRenderManager *TVPGetSoftwareRenderManager();
 
 //---------------------------------------------------------------------------
 // To forcing bilinear interpolation, define TVP_FORCE_BILINEAR.
@@ -81,7 +78,6 @@ static float sBmFactor[] =
 };
 
 //---------------------------------------------------------------------------
-#if 0
 static tjs_int GetAdaptiveThreadNum(tjs_int pixelNum, float factor)
 {
   if (pixelNum >= factor * 500)
@@ -89,7 +85,6 @@ static tjs_int GetAdaptiveThreadNum(tjs_int pixelNum, float factor)
   else
     return 1;
 }
-#endif
 //---------------------------------------------------------------------------
 #define RET_VOID
 #define BOUND_CHECK(x) \
@@ -106,7 +101,6 @@ static tjs_int GetAdaptiveThreadNum(tjs_int pixelNum, float factor)
 //---------------------------------------------------------------------------
 // tTVPBaseBitmap
 //---------------------------------------------------------------------------
-#if 0
 tTVPBaseBitmap::tTVPBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding) :
 		tTVPNativeBaseBitmap(w, h, bpp, unpadding)
 {
@@ -115,9 +109,8 @@ tTVPBaseBitmap::tTVPBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadd
 tTVPBaseBitmap::~tTVPBaseBitmap()
 {
 }
-#endif
 //---------------------------------------------------------------------------
-void iTVPBaseBitmap::SetSizeWithFill(tjs_uint w, tjs_uint h, tjs_uint32 fillvalue)
+void tTVPBaseBitmap::SetSizeWithFill(tjs_uint w, tjs_uint h, tjs_uint32 fillvalue)
 {
 	// resize, and fill the expanded region with specified value.
 
@@ -125,7 +118,6 @@ void iTVPBaseBitmap::SetSizeWithFill(tjs_uint w, tjs_uint h, tjs_uint32 fillvalu
 	tjs_uint orgh = GetHeight();
 
 	SetSize(w, h);
-	fillvalue = TVP_REVRGB(fillvalue);
 
 	if(w > orgw && h > orgh)
 	{
@@ -165,39 +157,33 @@ void iTVPBaseBitmap::SetSizeWithFill(tjs_uint w, tjs_uint h, tjs_uint32 fillvalu
 	}
 }
 //---------------------------------------------------------------------------
-tjs_uint32 iTVPBaseBitmap::GetPoint(tjs_int x, tjs_int y) const
+tjs_uint32 tTVPBaseBitmap::GetPoint(tjs_int x, tjs_int y) const
 {
 	// get specified point's color or color index
 	if(x < 0 || y < 0 || x >= (tjs_int)GetWidth() || y >= (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPOutOfRectangle);
 
-	return Bitmap->GetPoint(x, y);
-#if 0
 	if(Is32BPP())
 		return  *( (const tjs_uint32*)GetScanLine(y) + x); // 32bpp
 	else
 		return  *( (const tjs_uint8*)GetScanLine(y) + x); // 8bpp
-#endif
 }
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::SetPoint(tjs_int x, tjs_int y, tjs_uint32 value)
+bool tTVPBaseBitmap::SetPoint(tjs_int x, tjs_int y, tjs_uint32 value)
 {
 	// set specified point's color(and opacity) or color index
 	if(x < 0 || y < 0 || x >= (tjs_int)GetWidth() || y >= (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPOutOfRectangle);
 
-	Bitmap->SetPoint(x, y, TVP_REVRGB(value));
-#if 0
 	if(Is32BPP())
 		*( (tjs_uint32*)GetScanLineForWrite(y) + x) = value; // 32bpp
 	else
 		*( (tjs_uint8*)GetScanLine(y) + x) = value; // 8bpp
-#endif
 
 	return true;
 }
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::SetPointMain(tjs_int x, tjs_int y, tjs_uint32 color)
+bool tTVPBaseBitmap::SetPointMain(tjs_int x, tjs_int y, tjs_uint32 color)
 {
 	// set specified point's color (mask is not touched)
 	// for 32bpp
@@ -206,20 +192,14 @@ bool iTVPBaseBitmap::SetPointMain(tjs_int x, tjs_int y, tjs_uint32 color)
 	if(x < 0 || y < 0 || x >= (tjs_int)GetWidth() || y >= (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPOutOfRectangle);
 
-#if 0
 	tjs_uint32 *addr = (tjs_uint32*)GetScanLineForWrite(y) + x;
 	*addr &= 0xff000000;
 	*addr += color & 0xffffff;
-#endif
-	tjs_uint32 clr = Bitmap->GetPoint(x, y);
-	clr &= 0xff000000;
-	clr += TVP_REVRGB(color) & 0xffffff;
-	Bitmap->SetPoint(x, y, clr);
 
 	return true;
 }
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::SetPointMask(tjs_int x, tjs_int y, tjs_int mask)
+bool tTVPBaseBitmap::SetPointMask(tjs_int x, tjs_int y, tjs_int mask)
 {
 	// set specified point's mask (color is not touched)
 	// for 32bpp
@@ -228,15 +208,9 @@ bool iTVPBaseBitmap::SetPointMask(tjs_int x, tjs_int y, tjs_int mask)
 	if(x < 0 || y < 0 || x >= (tjs_int)GetWidth() || y >= (tjs_int)GetHeight())
 		TVPThrowExceptionMessage(TVPOutOfRectangle);
 
-#if 0
 	tjs_uint32 *addr = (tjs_uint32*)GetScanLineForWrite(y) + x;
 	*addr &= 0x00ffffff;
 	*addr += (mask & 0xff) << 24;
-#endif
-	tjs_uint32 clr = Bitmap->GetPoint(x, y);
-	clr &= 0x00ffffff;
-	clr += (mask & 0xff) << 24;
-	Bitmap->SetPoint(x, y, clr);
 
 	return true;
 }
@@ -248,8 +222,6 @@ bool tTVPBaseBitmap::Fill(tTVPRect rect, tjs_uint32 value)
 	// value must be : 0xAARRGGBB (for 32bpp) or 0xII ( for 8bpp )
 	BOUND_CHECK(false);
 
-	if (Is32BPP()) value = TVP_REVRGB(value);
-#if 0
 	if(!IsIndependent())
 	{
 		if(rect.left == 0 && rect.top == 0 &&
@@ -286,34 +258,10 @@ bool tTVPBaseBitmap::Fill(tTVPRect rect, tjs_uint32 value)
           TVPExecThreadTask(&PartialFillEntry, TVP_THREAD_PARAM(param));
         }
         TVPEndThreadTask();
-#endif
-	static iTVPRenderMethod* method = GetRenderManager()->GetRenderMethod("FillARGB");
-	static int paramid = method->EnumParameterID("color");
-	method->SetParameterColor4B(paramid, value);
-	iTVPTexture2D *reftex = GetTexture();
-	GetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect),
-		reftex, rect, tRenderTexRectArray());
 
-	return true;
-}
-
-bool iTVPBaseBitmap::Fill(tTVPRect rect, tjs_uint32 value)
-{
-	// fill target rectangle represented as "rect", with color ( and opacity )
-	// passed by "value".
-	// value must be : 0xAARRGGBB (for 32bpp) or 0xII ( for 8bpp )
-	BOUND_CHECK(false);
-	if (Is32BPP()) value = TVP_REVRGB(value);
-
-	static iTVPRenderMethod* method = TVPGetRenderManager()->GetRenderMethod("FillARGB");
-	static int paramid = method->EnumParameterID("color");
-	method->SetParameterColor4B(paramid, value);
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect),
-		reftex, rect, tRenderTexRectArray());
         return true;
 }
-#if 0
+
 void TJS_USERENTRY tTVPBaseBitmap::PartialFillEntry(void *v)
 {
   const PartialFillParam *param = (const PartialFillParam *)v;
@@ -374,9 +322,8 @@ void tTVPBaseBitmap::PartialFill(const PartialFillParam *param)
 		}
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::FillColor(tTVPRect rect, tjs_uint32 color, tjs_int opa)
+bool tTVPBaseBitmap::FillColor(tTVPRect rect, tjs_uint32 color, tjs_int opa)
 {
 	// fill rectangle with specified color.
 	// this ignores destination alpha (destination alpha will not change)
@@ -391,24 +338,6 @@ bool iTVPBaseBitmap::FillColor(tTVPRect rect, tjs_uint32 color, tjs_int opa)
 	if(opa < 0) opa = 0;
 	if(opa > 255) opa = 255;
 
-	color = TVP_REVRGB(color);
-	iTVPRenderMethod *method;
-	if (opa == 255) {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("FillColor");
-		static int opa_id = _method->EnumParameterID("opacity"), color_id = _method->EnumParameterID("color");
-		method = _method;
-		method->SetParameterOpa(opa_id, opa);
-		method->SetParameterColor4B(color_id, color);
-	} else {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("ConstColorAlphaBlend");
-		static int color_id = _method->EnumParameterID("color");
-		method = _method;
-		method->SetParameterColor4B(color_id, color | 0xFF000000);
-        }
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect),
-		reftex, rect, tRenderTexRectArray());
-#if 0
 	tjs_int pitch = GetPitchBytes();
 	tjs_uint8 *dest = (tjs_uint8*)GetScanLineForWrite(0);
         tjs_int h = rect.bottom - rect.top;
@@ -434,12 +363,10 @@ bool iTVPBaseBitmap::FillColor(tTVPRect rect, tjs_uint32 color, tjs_int opa)
           TVPExecThreadTask(&PartialFillColorEntry, TVP_THREAD_PARAM(param));
         }
         TVPEndThreadTask();
-#endif
 
         return true;
 }
 
-#if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialFillColorEntry(void *v)
 {
   const PartialFillColorParam *param = (const PartialFillColorParam *)v;
@@ -477,9 +404,8 @@ void tTVPBaseBitmap::PartialFillColor(const PartialFillColorParam *param)
 		}
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa,
+bool tTVPBaseBitmap::BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa,
 	bool additive)
 {
 	// fill rectangle with specified color.
@@ -503,30 +429,6 @@ bool iTVPBaseBitmap::BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa,
               }
           }
 
-	color = TVP_REVRGB(color);
-	iTVPRenderMethod *method;
-	if (opa == 255) {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("FillARGB");
-		static int color_id = _method->EnumParameterID("color");
-		method = _method;
-		method->SetParameterColor4B(color_id, color | 0xFF000000);
-	} else if (!additive) {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("ConstColorAlphaBlend_d");
-		static int opa_id = _method->EnumParameterID("opacity"), color_id = _method->EnumParameterID("color");
-		method = _method;
-		method->SetParameterOpa(opa_id, opa);
-		method->SetParameterColor4B(color_id, color);
-	} else {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("ConstColorAlphaBlend_a");
-		static int opa_id = _method->EnumParameterID("opacity"), color_id = _method->EnumParameterID("color");
-		method = _method;
-		method->SetParameterOpa(opa_id, opa);
-		method->SetParameterColor4B(color_id, color);
-        }
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect),
-		reftex, rect, tRenderTexRectArray());
-#if 0
 	tjs_int pitch = GetPitchBytes();
 	tjs_uint8 *dest = (tjs_uint8*)GetScanLineForWrite(0);
         tjs_int h = rect.bottom - rect.top;
@@ -560,12 +462,10 @@ bool iTVPBaseBitmap::BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa,
           TVPExecThreadTask(&PartialBlendColorEntry, TVP_THREAD_PARAM(param));
         }
         TVPEndThreadTask();
-#endif
 
         return true;
 }
 
-#if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialBlendColorEntry(void *v)
 {
   const PartialBlendColorParam *param = (const PartialBlendColorParam *)v;
@@ -625,9 +525,8 @@ void tTVPBaseBitmap::PartialBlendColor(const PartialBlendColorParam *param)
 		}
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::RemoveConstOpacity(tTVPRect rect, tjs_int level)
+bool tTVPBaseBitmap::RemoveConstOpacity(tTVPRect rect, tjs_int level)
 {
 	// remove constant opacity from bitmap. ( similar to PhotoShop's eraser tool )
 	// level is a strength of removing ( 0 thru 255 )
@@ -641,22 +540,6 @@ bool iTVPBaseBitmap::RemoveConstOpacity(tTVPRect rect, tjs_int level)
 	if(level < 0) level = 0;
 	if(level > 255) level = 255;
 
-	iTVPRenderMethod *method;
-	if (level == 255) {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("FillMask");
-		static int opa_id = _method->EnumParameterID("opacity");
-		method = _method;
-		method->SetParameterOpa(opa_id, 0);
-	} else {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("RemoveConstOpacity");
-		static int opa_id = _method->EnumParameterID("opacity");
-		method = _method;
-		method->SetParameterOpa(opa_id, level);
-        }
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect),
-		reftex, rect, tRenderTexRectArray());
-#if 0
 	tjs_int pitch = GetPitchBytes();
 	tjs_uint8 *dest = (tjs_uint8*)GetScanLineForWrite(0);
         tjs_int h = rect.bottom - rect.top;
@@ -681,12 +564,10 @@ bool iTVPBaseBitmap::RemoveConstOpacity(tTVPRect rect, tjs_int level)
           TVPExecThreadTask(&PartialRemoveConstOpacityEntry, TVP_THREAD_PARAM(param));
         }
         TVPEndThreadTask();
-#endif
 
         return true;
 }
 
-#if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialRemoveConstOpacityEntry(void *v)
 {
   const PartialRemoveConstOpacityParam *param = (const PartialRemoveConstOpacityParam *)v;
@@ -723,22 +604,14 @@ void tTVPBaseBitmap::PartialRemoveConstOpacity(const PartialRemoveConstOpacityPa
 
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::FillMask(tTVPRect rect, tjs_int value)
+bool tTVPBaseBitmap::FillMask(tTVPRect rect, tjs_int value)
 {
 	// fill mask with specified value.
 	BOUND_CHECK(false);
 
 	if(!Is32BPP()) TVPThrowExceptionMessage(TVPInvalidOperationFor8BPP);
 
-	static iTVPRenderMethod *method = TVPGetRenderManager()->GetRenderMethod("FillMask");
-	static int opa_id = method->EnumParameterID("opacity");
-	method->SetParameterOpa(opa_id, value);
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray());
-#if 0
 	tjs_int pitch = GetPitchBytes();
 	tjs_uint8 *dest = (tjs_uint8*)GetScanLineForWrite(0);
         tjs_int h = rect.bottom - rect.top;
@@ -763,12 +636,10 @@ bool iTVPBaseBitmap::FillMask(tTVPRect rect, tjs_int value)
           TVPExecThreadTask(&PartialFillMaskEntry, TVP_THREAD_PARAM(param));
         }
         TVPEndThreadTask();
-#endif
 
         return true;
 }
 
-#if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialFillMaskEntry(void *v)
 {
   const PartialFillMaskParam *param = (const PartialFillMaskParam *)v;
@@ -791,10 +662,9 @@ void tTVPBaseBitmap::PartialFillMask(const PartialFillMaskParam *param)
 		sc += pitch;
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-	tTVPRect refrect, tjs_int plane)
+bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const tTVPBaseBitmap *ref,
+		tTVPRect refrect, tjs_int plane)
 {
 	// copy bitmap rectangle.
 	// TVP_BB_COPY_MAIN in "plane" : main image is copied
@@ -812,7 +682,7 @@ bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 		(bool)!Is32BPP() == (bool)!ref->Is32BPP())
 	{
 		// entire area of both bitmaps
-		AssignTexture(ref->GetTexture());
+		AssignBitmap(*ref);
 		return true;
 	}
 
@@ -874,7 +744,6 @@ bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 	if(refrect.top >= refrect.bottom) return false; // not drawable
 
 
-#if 0
         // transfer
         tjs_uint8 *dest = (tjs_uint8*)GetScanLineForWrite(0);
         const tjs_uint8 *src = (const tjs_uint8*)ref->GetScanLine(0);
@@ -910,150 +779,10 @@ bool tTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
           TVPExecThreadTask(&PartialCopyRectEntry, TVP_THREAD_PARAM(param));
         }
         TVPEndThreadTask();
-#endif
-	iTVPRenderMethod *method;
-	switch (plane)
-	{
-	case TVP_BB_COPY_MAIN:
-	{
-		static iTVPRenderMethod *_method = GetRenderManager()->GetRenderMethod("CopyColor");
-		method = _method;
-	}
-		break;
-	case TVP_BB_COPY_MASK:
-	{
-		static iTVPRenderMethod *_method = GetRenderManager()->GetRenderMethod("CopyMask");
-		method = _method;
-	}
-		break;
-	case TVP_BB_COPY_MAIN | TVP_BB_COPY_MASK:
-	{
-		static iTVPRenderMethod *_method = GetRenderManager()->GetRenderMethod("Copy");
-		method = _method;
-	}
-		break;
-	}
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(ref->GetTexture(), refrect)
-	};
-	iTVPTexture2D *reftex = GetTexture();
-	GetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray(src_tex));
 
-	return true;
+        return true;
 }
 
-bool iTVPBaseBitmap::CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-		tTVPRect refrect, tjs_int plane)
-{
-	// copy bitmap rectangle.
-	// TVP_BB_COPY_MAIN in "plane" : main image is copied
-	// TVP_BB_COPY_MASK in "plane" : mask image is copied
-	// "plane" is ignored if the bitmap is 8bpp
-	// the source rectangle is ( "refrect" ) and the destination upper-left corner
-	// is (x, y).
-	if(!Is32BPP()) plane = (TVP_BB_COPY_MASK|TVP_BB_COPY_MAIN);
-	if(x == 0 && y == 0 && refrect.left == 0 && refrect.top == 0 &&
-		refrect.right == (tjs_int)ref->GetWidth() &&
-		refrect.bottom == (tjs_int)ref->GetHeight() &&
-		(tjs_int)GetWidth() == refrect.right &&
-		(tjs_int)GetHeight() == refrect.bottom &&
-		plane == (TVP_BB_COPY_MASK|TVP_BB_COPY_MAIN) &&
-		(bool)!Is32BPP() == (bool)!ref->Is32BPP())
-	{
-		// entire area of both bitmaps
-		AssignTexture(ref->GetTexture());
-		return true;
-	}
-
-	// bound check
-	tjs_int bmpw, bmph;
-
-	bmpw = ref->GetWidth();
-	bmph = ref->GetHeight();
-
-	if(refrect.left < 0)
-		x -= refrect.left, refrect.left = 0;
-	if(refrect.right > bmpw)
-		refrect.right = bmpw;
-
-	if(refrect.left >= refrect.right) return false;
-
-	if(refrect.top < 0)
-		y -= refrect.top, refrect.top = 0;
-	if(refrect.bottom > bmph)
-		refrect.bottom = bmph;
-
-	if(refrect.top >= refrect.bottom) return false;
-
-	bmpw = GetWidth();
-	bmph = GetHeight();
-
-	tTVPRect rect;
-	rect.left = x;
-	rect.top = y;
-	rect.right = rect.left + refrect.get_width();
-	rect.bottom = rect.top + refrect.get_height();
-
-	if(rect.left < 0)
-	{
-		refrect.left += -rect.left;
-		rect.left = 0;
-	}
-
-	if(rect.right > bmpw)
-	{
-		refrect.right -= (rect.right - bmpw);
-		rect.right = bmpw;
-	}
-
-	if(refrect.left >= refrect.right) return false; // not drawable
-
-	if(rect.top < 0)
-	{
-		refrect.top += -rect.top;
-		rect.top = 0;
-	}
-
-	if(rect.bottom > bmph)
-	{
-		refrect.bottom -= (rect.bottom - bmph);
-		rect.bottom = bmph;
-	}
-
-	if(refrect.top >= refrect.bottom) return false; // not drawable
-
-	iTVPRenderMethod *method;
-		switch(plane)
-		{
-		case TVP_BB_COPY_MAIN:
-			{
-			static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("CopyColor");
-			method = _method;
-			}
-			break;
-		case TVP_BB_COPY_MASK:
-			{
-			static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("CopyMask");
-			method = _method;
-			}
-			break;
-		case TVP_BB_COPY_MAIN|TVP_BB_COPY_MASK:
-			{
-			static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("Copy");
-			method = _method;
-			}
-			break;
-		}
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(ref->GetTexture(), refrect)
-	};
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray(src_tex));
-	return true;
-}
-#if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialCopyRectEntry(void *v)
 {
   const PartialCopyRectParam *param = (const PartialCopyRectParam *)v;
@@ -1153,78 +882,21 @@ void tTVPBaseBitmap::PartialCopyRect(const PartialCopyRectParam *param)
 		}
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::Copy9Patch( const iTVPBaseBitmap *ref, tTVPRect& margin )
+void tTVPBaseBitmap::Read9PatchInfo( tTVPRect& scale, tTVPRect& margin ) const
 {
-	if(!Is32BPP()) return false;
-
-	tjs_int w = ref->GetWidth();
-	tjs_int h = ref->GetHeight();
-	// 9 + 上下の11ピクセルは必要
-	if( w < 11 || h < 11 ) return false;
-	tjs_int dw = GetWidth();
-	tjs_int dh = GetHeight();
-	// コピー先が元画像よりも小さい時はコピー不可
-	if( dw < (w-2) || dh < (h-2) ) return false;
-
-	if (!TVPGetRenderManager()->IsSoftware()) {
-		static iTVPRenderMethod *method = TVPGetRenderManager()->GetRenderMethod("Copy");
-		iTVPTexture2D *reftex = GetTexture();
-		tTVPRect rcdest(0, 0, dw, dh);
-		iTVPTexture2D *dsttex = GetTextureForRender(method->IsBlendTarget(), &rcdest);
-		tRenderTexRectArray::Element src_tex;
-		tRenderTexRectArray srctex(&src_tex, 1);
-		src_tex.first = ref->GetTexture();
-		if (margin.top > 0) {
-			src_tex.second.top = 0;
-			src_tex.second.bottom = margin.top;
-			tTVPRect rect(0, 0, 0, margin.top);
-			if (margin.left > 0) { // LT
-				src_tex.second.left = 0;
-				src_tex.second.right = margin.left;
-				rect.left = 0;
-				rect.bottom = margin.left;
-				TVPGetRenderManager()->OperateRect(method, dsttex, reftex, rect, srctex);
-			}
-			if (margin.get_width() > 0) { // T
-				src_tex.second.left = margin.left;
-				src_tex.second.right = margin.right;
-				TVPGetRenderManager()->OperateRect(method, dsttex, reftex, tTVPRect(margin.left, 0, dw - margin.right, margin.top), srctex);
-			}
-			if (margin.right < w) { // RT
-				src_tex.second.left = margin.right;
-				src_tex.second.right = w;
-				TVPGetRenderManager()->OperateRect(method, dsttex, reftex, tTVPRect(dw - margin.right, 0, dw, margin.top), srctex);
-			}
-		}
-		if (margin.get_height() > 0) {
-			if (margin.left > 0) { // L
-				src_tex.second.left = 0;
-				src_tex.second.top = margin.top;
-				src_tex.second.right = margin.left;
-				src_tex.second.bottom = margin.bottom;
-				TVPGetRenderManager()->OperateRect(method, dsttex, reftex, tTVPRect(0, margin.top, margin.left, dh - margin.bottom), srctex);
-			}
-			if (margin.get_width() > 0) { // C
-				;
-			}
-		}
-		return false; // TODO implement universal version
-	}
-
-	const tjs_uint32 *src = (const tjs_uint32*)ref->GetScanLine(0);
-	tjs_int pitch = ref->GetPitchBytes() / sizeof(tjs_uint32);
-	const tjs_uint32 *srcbottom = (const tjs_uint32*)ref->GetScanLine(h-1);
-	tTVPRect scale(-1,-1,-1,-1);
+	const tjs_int w = GetWidth();
+	const tjs_int h = GetHeight();
+	const tjs_uint32 *src = (const tjs_uint32*)GetScanLine(0);
+	const tjs_int pitch = GetPitchBytes() / sizeof(tjs_uint32);
+	const tjs_uint32 *srcbottom = (const tjs_uint32*)GetScanLine(h-1);
+	scale = tTVPRect(-1,-1,-1,-1);
 	margin = tTVPRect( -1, -1, -1, -1 );
-	tTVPARGB<tjs_uint8> hor, ver;
 	for( tjs_int x = 1; x < (w-1); x++ )
 	{
 		if( scale.left == -1 && (src[x]&0xff000000) == 0xff000000 )
 		{
 			scale.left = x;
-			hor = src[x];
 		}
 		else if( scale.left != -1 && scale.right == -1 && (src[x]&0xff000000) == 0 )
 		{
@@ -1242,21 +914,18 @@ bool iTVPBaseBitmap::Copy9Patch( const iTVPBaseBitmap *ref, tTVPRect& margin )
 
 		if( scale.right != -1 && margin.right != -1 ) break;
 	}
-#if 0
 	if( scale.left != -1 && scale.right == -1 ) {
 		scale.right = w - 1;
 	}
 	if( margin.left != -1 && margin.right == -1 ) {
 		margin.right = 0;
 	}
-#endif
 
 	for( tjs_int y = 1; y < (h-1); y++ )
 	{
 		if( scale.top == -1 && (src[y*pitch]&0xff000000) == 0xff000000 )
 		{
 			scale.top = y;
-			ver = src[y*pitch];
 		}
 		else if( scale.top != -1 && scale.bottom == -1 && (src[y*pitch]&0xff000000) == 0 )
 		{
@@ -1274,22 +943,36 @@ bool iTVPBaseBitmap::Copy9Patch( const iTVPBaseBitmap *ref, tTVPRect& margin )
 
 		if( scale.bottom != -1 && margin.bottom != -1 ) break;
 	}
-#if 0
 	if( scale.top != -1 && scale.bottom == -1 ) {
 		scale.bottom = h - 1;
 	}
 	if( margin.top != -1 && margin.bottom == -1 ) {
 		margin.bottom = 0;
 	}
-#endif
+}
+//---------------------------------------------------------------------------
+bool tTVPBaseBitmap::Copy9Patch( const tTVPBaseBitmap *ref, tTVPRect& margin )
+{
+	if(!Is32BPP()) return false;
+
+	tjs_int w = ref->GetWidth();
+	tjs_int h = ref->GetHeight();
+	// 9 + 上下の11ピクセルは必要
+	if( w < 11 || h < 11 ) return false;
+	tjs_int dw = GetWidth();
+	tjs_int dh = GetHeight();
+	// コピー先が元画像よりも小さい時はコピー不可
+	if( dw < (w-2) || dh < (h-2) ) return false;
+
+	tTVPRect scale( -1, -1, -1, -1 );
+	ref->Read9PatchInfo( scale, margin );
+
 	// スケール用の領域が見付からない時はコピーできない
 	if( scale.left == -1 || scale.right == -1 || scale.top == -1 || scale.bottom == -1 )
 		return false;
 
-#if 0
 	const tjs_uint32 *src = (const tjs_uint32*)ref->GetScanLine( 0 );
 	const tjs_int pitch = ref->GetPitchBytes() / sizeof( tjs_uint32 );
-#endif
 
 	const tjs_int src_left_width = scale.left - 1;
 	const tjs_int src_right_width = w - 1 - scale.right;
@@ -1418,8 +1101,8 @@ bool iTVPBaseBitmap::Copy9Patch( const iTVPBaseBitmap *ref, tTVPRect& margin )
 	return true;
 }
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-	tTVPRect refrect, tTVPBBBltMethod method, tjs_int opa, bool hda)
+bool tTVPBaseBitmap::Blt(tjs_int x, tjs_int y, const tTVPBaseBitmap *ref,
+		tTVPRect refrect, tTVPBBBltMethod method, tjs_int opa, bool hda)
 {
 	// blt src bitmap with various methods.
 
@@ -1497,16 +1180,6 @@ bool iTVPBaseBitmap::Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
 
 	if(refrect.top >= refrect.bottom) return false; // not drawable
 
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(ref->GetTexture(), refrect)
-	};
-	iTVPRenderManager *mgr = GetRenderManager();
-	iTVPRenderMethod *rmethod = mgr->GetRenderMethod(opa, hda, method);
-	if (!rmethod) return false;
-	iTVPTexture2D *reftex = GetTexture();
-	mgr->OperateRect(rmethod, GetTextureForRender(rmethod->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray(src_tex));
-#if 0
         tjs_uint8 *dest = (tjs_uint8*)GetScanLineForWrite(0);
         const tjs_uint8 *src = (const tjs_uint8*)ref->GetScanLine(0);
         tjs_int dpitch = GetPitchBytes();
@@ -1539,13 +1212,11 @@ bool iTVPBaseBitmap::Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
           TVPExecThreadTask(&PartialBltEntry, TVP_THREAD_PARAM(param));
         }
         TVPEndThreadTask();
-#endif
 
         return true;
 }
 
 
-#if 0
 void TJS_USERENTRY tTVPBaseBitmap::PartialBltEntry(void *v)
 {
   const PartialBltParam *param = (const PartialBltParam *)v;
@@ -1851,10 +1522,8 @@ void tTVPBaseBitmap::PartialBlt(const PartialBltParam *param)
 				 ;
 	}
 }
-#endif
 //---------------------------------------------------------------------------
 // SIMD で高速化することも出来るけど、頻繁に呼び出すものでもないので単純実装。
-#if 0
 template <typename tFuncExtractColor>
 bool tTVPBaseBitmap::CopyWithDifferentBitWidth( tTVPBaseBitmap *dstbmp, const tTVPBaseBitmap *srcbmp, const tFuncExtractColor& func ) {
 	if( !srcbmp || !dstbmp ) return false;
@@ -1904,155 +1573,7 @@ bool tTVPBaseBitmap::CopyWithDifferentBitWidth( tTVPBaseBitmap *dstbmp, const tT
 }
 template bool tTVPBaseBitmap::CopyWithDifferentBitWidth<tTVPBaseBitmap::GrayToAlphaFunctor>( tTVPBaseBitmap *dstbmp, const tTVPBaseBitmap *srcbmp, const tTVPBaseBitmap::GrayToAlphaFunctor& func );
 template bool tTVPBaseBitmap::CopyWithDifferentBitWidth<tTVPBaseBitmap::GrayToColorFunctor>( tTVPBaseBitmap *dstbmp, const tTVPBaseBitmap *srcbmp, const tTVPBaseBitmap::GrayToColorFunctor& func );
-#endif
-bool iTVPBaseBitmap::Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-	const tTVPRect &refrect, tTVPLayerType type, tjs_int opa, bool hda) {
 
-	tTVPBBBltMethod met;
-	switch (type) {
-	case ltBinder:
-		// no action
-		return false;
-
-	case ltOpaque: // formerly ltCoverRect
-				   // copy
-		met = opa == 255 ? bmCopy : bmCopyOnAlpha;
-		break;
-
-	case ltAlpha: // formerly ltTransparent
-				  // alpha blend
-		met = hda ? bmAlpha : bmAlphaOnAlpha;
-		break;
-
-	case ltAdditive:
-		// additive blend
-		// hda = true if destination has alpha
-		// ( preserving mask )
-		met = bmAdd;
-		break;
-
-	case ltSubtractive:
-		// subtractive blend
-		met = bmSub;
-		break;
-
-	case ltMultiplicative:
-		// multiplicative blend
-		met = bmMul;
-		break;
-
-	case ltDodge:
-		// color dodge ( "Ooi yaki" in Japanese )
-		met = bmDodge;
-		break;
-
-	case ltDarken:
-		// darken blend (select lower luminosity)
-		met = bmDarken;
-		break;
-
-	case ltLighten:
-		// lighten blend (select higher luminosity)
-		met = bmLighten;
-		break;
-
-	case ltScreen:
-		// screen multiplicative blend
-		met = bmScreen;
-		break;
-
-	case ltAddAlpha:
-		// alpha blend
-		met = bmAddAlpha;
-		break;
-
-	case ltPsNormal:
-		// Photoshop compatible normal blend
-		met = bmPsNormal;
-		break;
-
-	case ltPsAdditive:
-		// Photoshop compatible additive blend
-		met = bmPsAdditive;
-		break;
-
-	case ltPsSubtractive:
-		// Photoshop compatible subtractive blend
-		met = bmPsSubtractive;
-		break;
-
-	case ltPsMultiplicative:
-		// Photoshop compatible multiplicative blend
-		met = bmPsMultiplicative;
-		break;
-
-	case ltPsScreen:
-		// Photoshop compatible screen blend
-		met = bmPsScreen;
-		break;
-
-	case ltPsOverlay:
-		// Photoshop compatible overlay blend
-		met = bmPsOverlay;
-		break;
-
-	case ltPsHardLight:
-		// Photoshop compatible hard light blend
-		met = bmPsHardLight;
-		break;
-
-	case ltPsSoftLight:
-		// Photoshop compatible soft light blend
-		met = bmPsSoftLight;
-		break;
-
-	case ltPsColorDodge:
-		// Photoshop compatible color dodge blend
-		met = bmPsColorDodge;
-		break;
-
-	case ltPsColorDodge5:
-		// Photoshop 5.x compatible color dodge blend
-		met = bmPsColorDodge5;
-		break;
-
-	case ltPsColorBurn:
-		// Photoshop compatible color burn blend
-		met = bmPsColorBurn;
-		break;
-
-	case ltPsLighten:
-		// Photoshop compatible compare (lighten) blend
-		met = bmPsLighten;
-		break;
-
-	case ltPsDarken:
-		// Photoshop compatible compare (darken) blend
-		met = bmPsDarken;
-		break;
-
-	case ltPsDifference:
-		// Photoshop compatible difference blend
-		met = bmPsDifference;
-		break;
-
-	case ltPsDifference5:
-		// Photoshop 5.x compatible difference blend
-		met = bmPsDifference5;
-		break;
-
-	case ltPsExclusion:
-		// Photoshop compatible exclusion blend
-		met = bmPsExclusion;
-		break;
-
-	default:
-		return false;
-	}
-
-	return Blt(x, y, ref, refrect, met, opa, hda);
-}
-#if 0
 //---------------------------------------------------------------------------
 // template function for strech loop
 //---------------------------------------------------------------------------
@@ -2354,11 +1875,10 @@ void tTVPBaseBitmap::TVPDoBiLinearStretchLoop(
 		destp += destpitch;
 	}
 }
-#endif
 
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::StretchBlt(tTVPRect cliprect,
-		tTVPRect destrect, const iTVPBaseBitmap *ref,
+bool tTVPBaseBitmap::StretchBlt(tTVPRect cliprect,
+		tTVPRect destrect, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, tTVPBBBltMethod method, tjs_int opa,
 			bool hda, tTVPBBStretchType mode, tjs_real typeopt )
 {
@@ -2403,37 +1923,6 @@ bool iTVPBaseBitmap::StretchBlt(tTVPRect cliprect,
 	if(cr.right > w) cr.right = w;
 	if(cr.bottom > h) cr.bottom = h;
 
-	if (cr.left > destrect.left) {
-		refrect.left += (float)rw / dw * (cr.left - destrect.left);
-		destrect.left = cr.left;
-	}
-	if (cr.right < destrect.right) {
-		refrect.right -= (float)refrect.get_width() / destrect.get_width() * (destrect.right - cr.right);
-		destrect.right = cr.right;
-	}
-	if (cr.top > destrect.top) {
-		refrect.top += (float)rh / dh * (cr.top - destrect.top);
-		destrect.top = cr.top;
-	}
-	if (cr.bottom < destrect.bottom) {
-		refrect.bottom -= (float)refrect.get_height() / destrect.get_height() * (destrect.bottom - cr.bottom);
-		destrect.bottom = cr.bottom;
-	}
-
-	static int StretchTypeId = TVPGetRenderManager()->EnumParameterID("StretchType");
-	TVPGetRenderManager()->SetParameterInt(StretchTypeId, (int)type);
-
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(ref->GetTexture(), refrect)
-	};
-	iTVPRenderManager *mgr = GetRenderManager();
-	iTVPRenderMethod *rmethod = mgr->GetRenderMethod(opa, hda, method);
-	if (!rmethod) return false;
-	iTVPTexture2D *reftex = GetTexture();
-	mgr->OperateRect(rmethod, GetTextureForRender(rmethod->IsBlendTarget(), &destrect), reftex,
-		destrect, tRenderTexRectArray(src_tex));
-	return true;
-#if 0
 	//--- check mode and other conditions
 	if( type >= stLinear )
 	{
@@ -4031,74 +3520,15 @@ void tTVPBaseBitmap::PartialAffineBlt(PartialAffineBltParam *param)
 			}
 		}
 	}
-#endif
 }
 
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
+bool tTVPBaseBitmap::AffineBlt(tTVPRect destrect, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, const tTVPPointD * points_in,
 			tTVPBBBltMethod method, tjs_int opa,
 			tTVPRect * updaterect,
 			bool hda, tTVPBBStretchType mode, bool clear, tjs_uint32 clearcolor)
 {
-	// check source rectangle
-	if (refrect.left >= refrect.right ||
-		refrect.top >= refrect.bottom) return false;
-	if (refrect.left < 0 || refrect.top < 0 ||
-		refrect.right >(tjs_int)ref->GetWidth() ||
-		refrect.bottom >(tjs_int)ref->GetHeight())
-		TVPThrowExceptionMessage(TVPOutOfRectangle);
-
-	// create point list in fixed point real format
-
-	if (destrect.left < 0) destrect.left = 0;
-	if (destrect.top < 0) destrect.top = 0;
-	if (destrect.right >(tjs_int)GetWidth()) destrect.right = GetWidth();
-	if (destrect.bottom >(tjs_int)GetHeight()) destrect.bottom = GetHeight();
-
-	if (destrect.left >= destrect.right ||
-		destrect.top >= destrect.bottom) return false; // not drawable
-
-	if (clear)
-	{
-		if (hda)
-			FillColor(destrect, clearcolor, 255);
-		else
-			Fill(destrect, clearcolor);
-	}
-
-	tTVPPointD dstpt[6] = {
-		{ points_in[0].x, points_in[0].y }, // left-top
-		{ points_in[1].x, points_in[1].y }, // right-top
-		{ points_in[2].x, points_in[2].y }, // left-bottom
-
-		{ points_in[1].x, points_in[1].y }, // right-top
-		{ points_in[2].x, points_in[2].y }, // left-bottom
-		{ points_in[1].x - points_in[0].x + points_in[2].x, points_in[1].y - points_in[0].y + points_in[2].y }, // right-bottom
-	};
-	tTVPPointD refpt[6] = {
-		{ (double)refrect.left, (double)refrect.top },
-		{ (double)refrect.right, (double)refrect.top },
-		{ (double)refrect.left, (double)refrect.bottom },
-
-		{ (double)refrect.right, (double)refrect.top },
-		{ (double)refrect.left, (double)refrect.bottom },
-		{ (double)refrect.right, (double)refrect.bottom },
-	};
-
-	tTVPBBStretchType type = (tTVPBBStretchType)(mode & stTypeMask);
-	static int StretchTypeId = TVPGetRenderManager()->EnumParameterID("StretchType");
-	TVPGetRenderManager()->SetParameterInt(StretchTypeId, (int)type);
-	iTVPRenderManager *mgr = GetRenderManager();
-	iTVPRenderMethod *_method = mgr->GetRenderMethod(opa, hda, method);
-	if (!_method) return false;
-	tRenderTexQuadArray::Element src_tex[] = { tRenderTexQuadArray::Element(ref->GetTexture(), refpt) };
-	iTVPTexture2D *reftex = GetTexture();
-	mgr->OperateTriangles(_method, 2, GetTextureForRender(_method->IsBlendTarget(), &destrect),
-		reftex, destrect, dstpt, tRenderTexQuadArray(src_tex));
-	if (updaterect) *updaterect = destrect;
-	return true;
-#if 0
 	if(0 == InternalAffineBlt(destrect, ref, refrect, points_in, method, opa, updaterect, hda,
 		mode, clear, clearcolor))
 	{
@@ -4113,10 +3543,9 @@ bool iTVPBaseBitmap::AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
 		return false;
 	}
 	return true;
-#endif
 }
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
+bool tTVPBaseBitmap::AffineBlt(tTVPRect destrect, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, const t2DAffineMatrix & matrix,
 			tTVPBBBltMethod method, tjs_int opa,
 			tTVPRect * updaterect,
@@ -4155,7 +3584,6 @@ bool iTVPBaseBitmap::AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
 	return AffineBlt(destrect, ref, refrect, points, method, opa, updaterect, hda, type, clear, clearcolor);
 }
 //---------------------------------------------------------------------------
-#if 0
 // some blur operation template functions to select algorithm by base integer type
 template <typename tARGB, typename base_int_type>
 void TVPAddSubVertSum(base_int_type *dest, const tjs_uint32 *addline,
@@ -4472,9 +3900,8 @@ void tTVPBaseBitmap::DoBoxBlurLoop(const tTVPRect &rect, const tTVPRect & area)
 		delete [] dest_buf;
 	}
 }
-#endif
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::InternalDoBoxBlur(tTVPRect rect, tTVPRect area, bool hasalpha)
+bool tTVPBaseBitmap::InternalDoBoxBlur(tTVPRect rect, tTVPRect area, bool hasalpha)
 {
 	BOUND_CHECK(false);
 
@@ -4490,7 +3917,6 @@ bool iTVPBaseBitmap::InternalDoBoxBlur(tTVPRect rect, tTVPRect area, bool hasalp
 		TVPThrowExceptionMessage(TVPBoxBlurAreaMustContainCenterPixel);
 
 
-#if 0
 	tjs_uint64 area_size = (tjs_uint64)
 		(area.right - area.left + 1) * (area.bottom - area.top + 1);
 	if(area_size < 256)
@@ -4510,42 +3936,10 @@ bool iTVPBaseBitmap::InternalDoBoxBlur(tTVPRect rect, tTVPRect area, bool hasalp
 	else
 		TVPThrowExceptionMessage(TVPBoxBlurAreaMustBeSmallerThan16Million);
 
-#endif
-	iTVPRenderMethod *method; int idL, idT, idR, idB;
-	if (hasalpha) {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("BoxBlurAlpha");
-		static int
-			_idL = _method->EnumParameterID("area_left"),
-			_idT = _method->EnumParameterID("area_top"),
-			_idR = _method->EnumParameterID("area_right"),
-			_idB = _method->EnumParameterID("area_bottom");
-		idL = _idL, idT = _idT, idR = _idR, idB = _idB;
-		method = _method;
-	} else {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("BoxBlur");
-		static int
-			_idL = _method->EnumParameterID("area_left"),
-			_idT = _method->EnumParameterID("area_top"),
-			_idR = _method->EnumParameterID("area_right"),
-			_idB = _method->EnumParameterID("area_bottom");
-		idL = _idL, idT = _idT, idR = _idR, idB = _idB;
-		method = _method;
-	}
-	method->SetParameterInt(idL, area.left);
-	method->SetParameterInt(idT, area.top);
-	method->SetParameterInt(idR, area.right);
-	method->SetParameterInt(idB, area.bottom);
-
-	iTVPTexture2D *reftex = GetTexture();
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(reftex, rect)
-	};
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray(src_tex));
 	return true;
 }
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::DoBoxBlur(const tTVPRect & rect, const tTVPRect & area)
+bool tTVPBaseBitmap::DoBoxBlur(const tTVPRect & rect, const tTVPRect & area)
 {
 	// Blur the bitmap with box-blur algorithm.
 	// 'rect' is a rectangle to blur.
@@ -4560,7 +3954,7 @@ bool iTVPBaseBitmap::DoBoxBlur(const tTVPRect & rect, const tTVPRect & area)
 	return InternalDoBoxBlur(rect, area, false);
 }
 //---------------------------------------------------------------------------
-bool iTVPBaseBitmap::DoBoxBlurForAlpha(const tTVPRect & rect, const tTVPRect &area)
+bool tTVPBaseBitmap::DoBoxBlurForAlpha(const tTVPRect & rect, const tTVPRect &area)
 {
 	return InternalDoBoxBlur(rect, area, true);
 }
@@ -4571,7 +3965,7 @@ void tTVPBaseBitmap::UDFlip(const tTVPRect &rect)
 
 	if(rect.left < 0 || rect.top < 0 || rect.right > (tjs_int)GetWidth() ||
 		rect.bottom > (tjs_int)GetHeight())
-		TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
+				TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
 
 	tjs_int h = (rect.bottom - rect.top) /2;
 	tjs_int w = rect.right - rect.left;
@@ -4605,30 +3999,13 @@ void tTVPBaseBitmap::UDFlip(const tTVPRect &rect)
 		}
 	}
 }
-
-void iTVPBaseBitmap::UDFlip(const tTVPRect &rect)
-{
-	// up-down flip for given rectangle
-
-	if(rect.left < 0 || rect.top < 0 || rect.right > (tjs_int)GetWidth() ||
-		rect.bottom > (tjs_int)GetHeight())
-				TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
-
-	iTVPTexture2D * reftex = GetTexture();
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(reftex, tTVPRect(rect.left, rect.bottom, rect.right, rect.top))
-	};
-	static iTVPRenderMethod* method = GetRenderManager()->GetRenderMethod("Copy");
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect),
-		reftex, rect, tRenderTexRectArray(src_tex));
-}
 //---------------------------------------------------------------------------
 void tTVPBaseBitmap::LRFlip(const tTVPRect &rect)
 {
 	// left-right flip
 	if(rect.left < 0 || rect.top < 0 || rect.right > (tjs_int)GetWidth() ||
 		rect.bottom > (tjs_int)GetHeight())
-		TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
+				TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
 
 	tjs_int h = rect.bottom - rect.top;
 	tjs_int w = rect.right - rect.left;
@@ -4657,30 +4034,13 @@ void tTVPBaseBitmap::LRFlip(const tTVPRect &rect)
 		}
 	}
 }
-
-void iTVPBaseBitmap::LRFlip(const tTVPRect &rect)
-{
-	// left-right flip
-	if(rect.left < 0 || rect.top < 0 || rect.right > (tjs_int)GetWidth() ||
-		rect.bottom > (tjs_int)GetHeight())
-				TVPThrowExceptionMessage(TVPSrcRectOutOfBitmap);
-
-	iTVPTexture2D * reftex = GetTexture();
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(reftex, tTVPRect(rect.right, rect.top, rect.left, rect.bottom))
-	};
-	static iTVPRenderMethod* method = GetRenderManager()->GetRenderMethod("Copy");
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect),
-		reftex, rect, tRenderTexRectArray(src_tex));
-}
 //---------------------------------------------------------------------------
-void iTVPBaseBitmap::DoGrayScale(tTVPRect rect)
+void tTVPBaseBitmap::DoGrayScale(tTVPRect rect)
 {
 	if(!Is32BPP()) return;  // 8bpp is always grayscaled bitmap
 
 	BOUND_CHECK(RET_VOID);
 
-#if 0
 	tjs_int h = rect.bottom - rect.top;
 	tjs_int w = rect.right - rect.left;
 
@@ -4694,15 +4054,9 @@ void iTVPBaseBitmap::DoGrayScale(tTVPRect rect)
 		TVPDoGrayScale((tjs_uint32*)line, w);
 		line += pitch;
 	}
-#endif
-
-	static iTVPRenderMethod* method = TVPGetRenderManager()->GetRenderMethod("DoGrayScale");
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray());
 }
 //---------------------------------------------------------------------------
-void iTVPBaseBitmap::AdjustGamma(tTVPRect rect, const tTVPGLGammaAdjustData & data)
+void tTVPBaseBitmap::AdjustGamma(tTVPRect rect, const tTVPGLGammaAdjustData & data)
 {
 	if(!Is32BPP()) TVPThrowExceptionMessage(TVPInvalidOperationFor8BPP);
 
@@ -4711,7 +4065,6 @@ void iTVPBaseBitmap::AdjustGamma(tTVPRect rect, const tTVPGLGammaAdjustData & da
 	if(!memcmp(&data, &TVPIntactGammaAdjustData, sizeof(tTVPGLGammaAdjustData)))
 		return;
 
-#if 0
 	tTVPGLGammaAdjustTempData temp;
 	TVPInitGammaAdjustTempData(&temp, &data);
 
@@ -4739,16 +4092,9 @@ void iTVPBaseBitmap::AdjustGamma(tTVPRect rect, const tTVPGLGammaAdjustData & da
 	}
 
 	TVPUninitGammaAdjustTempData(&temp);
-#endif
-	static iTVPRenderMethod *method = TVPGetRenderManager()->GetRenderMethod("AdjustGamma");
-	static int data_id = method->EnumParameterID("gammaAdjustData");
-	method->SetParameterPtr(data_id, &data);
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray());
 }
 //---------------------------------------------------------------------------
-void iTVPBaseBitmap::AdjustGammaForAdditiveAlpha(tTVPRect rect, const tTVPGLGammaAdjustData & data)
+void tTVPBaseBitmap::AdjustGammaForAdditiveAlpha(tTVPRect rect, const tTVPGLGammaAdjustData & data)
 {
 	if(!Is32BPP()) TVPThrowExceptionMessage(TVPInvalidOperationFor8BPP);
 
@@ -4757,7 +4103,6 @@ void iTVPBaseBitmap::AdjustGammaForAdditiveAlpha(tTVPRect rect, const tTVPGLGamm
 	if(!memcmp(&data, &TVPIntactGammaAdjustData, sizeof(tTVPGLGammaAdjustData)))
 		return;
 
-#if 0
 	tTVPGLGammaAdjustTempData temp;
 	TVPInitGammaAdjustTempData(&temp, &data);
 
@@ -4785,16 +4130,9 @@ void iTVPBaseBitmap::AdjustGammaForAdditiveAlpha(tTVPRect rect, const tTVPGLGamm
 	}
 
 	TVPUninitGammaAdjustTempData(&temp);
-#endif
-	static iTVPRenderMethod *method = TVPGetRenderManager()->GetRenderMethod("AdjustGamma_a");
-	static int data_id = method->EnumParameterID("gammaAdjustData");
-	method->SetParameterPtr(data_id, &data);
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rect), reftex,
-		rect, tRenderTexRectArray());
 }
 //---------------------------------------------------------------------------
-void iTVPBaseBitmap::ConvertAddAlphaToAlpha()
+void tTVPBaseBitmap::ConvertAddAlphaToAlpha()
 {
 	// convert additive alpha representation to alpha representation
 
@@ -4802,7 +4140,6 @@ void iTVPBaseBitmap::ConvertAddAlphaToAlpha()
 
 	tjs_int w = GetWidth();
 	tjs_int h = GetHeight();
-#if 0
 	tjs_int pitch = GetPitchBytes();
 	tjs_uint8 * line = (tjs_uint8*)GetScanLineForWrite(0);
 
@@ -4811,15 +4148,9 @@ void iTVPBaseBitmap::ConvertAddAlphaToAlpha()
 		TVPConvertAdditiveAlphaToAlpha((tjs_uint32*)line, w);
 		line += pitch;
 	}
-#endif
-	static iTVPRenderMethod* method = TVPGetRenderManager()->GetRenderMethod("AdditiveAlphaToAlpha");
-	tTVPRect rc(0, 0, w, h);
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rc), reftex,
-		rc, tRenderTexRectArray());
 }
 //---------------------------------------------------------------------------
-void iTVPBaseBitmap::ConvertAlphaToAddAlpha()
+void tTVPBaseBitmap::ConvertAlphaToAddAlpha()
 {
 	// convert additive alpha representation to alpha representation
 
@@ -4827,7 +4158,6 @@ void iTVPBaseBitmap::ConvertAlphaToAddAlpha()
 
 	tjs_int w = GetWidth();
 	tjs_int h = GetHeight();
-#if 0
 	tjs_int pitch = GetPitchBytes();
 	tjs_uint8 * line = (tjs_uint8*)GetScanLineForWrite(0);
 
@@ -4836,44 +4166,8 @@ void iTVPBaseBitmap::ConvertAlphaToAddAlpha()
 		TVPConvertAlphaToAdditiveAlpha((tjs_uint32*)line, w);
 		line += pitch;
 	}
-#endif
-	static iTVPRenderMethod* method = TVPGetRenderManager()->GetRenderMethod("AlphaToAdditiveAlpha");
-	tTVPRect rc(0, 0, w, h);
-	iTVPTexture2D *reftex = GetTexture();
-	TVPGetRenderManager()->OperateRect(method, GetTextureForRender(method->IsBlendTarget(), &rc), reftex,
-		rc, tRenderTexRectArray());
 }
 //---------------------------------------------------------------------------
 
-tTVPBaseBitmap::tTVPBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp /*= 32*/) {
-	if (!w) w = 1; if (!h) h = 1;
-	Bitmap = TVPGetSoftwareRenderManager()->CreateTexture2D(nullptr, 0, w, h, bpp == 8 ? TVPTextureFormat::Gray : TVPTextureFormat::RGBA);
-}
 
-bool tTVPBaseBitmap::AssignBitmap(tTVPBitmap *bmp) {
-	return AssignTexture(TVPGetSoftwareRenderManager()->CreateTexture2D(bmp));
-}
 
-iTVPRenderManager* tTVPBaseBitmap::GetRenderManager() {
-	return TVPGetSoftwareRenderManager();
-}
-
-//---------------------------------------------------------------------------
-tTVPBaseTexture::tTVPBaseTexture(tjs_uint w, tjs_uint h, tjs_uint bpp /*= 32*/) {
-	if (!w) w = 1; if (!h) h = 1;
-	Bitmap = TVPGetRenderManager()->CreateTexture2D(nullptr, 0, w, h, bpp == 8 ? TVPTextureFormat::Gray : TVPTextureFormat::RGBA);
-}
-
-bool tTVPBaseTexture::AssignBitmap(tTVPBitmap *bmp) {
-	assert(false);
-	return false;
-}
-
-iTVPRenderManager* tTVPBaseTexture::GetRenderManager() {
-	return TVPGetRenderManager();
-}
-
-void tTVPBaseTexture::Update(const void *pixel, unsigned int pitch, int x, int y, int w, int h)
-{
-	GetTextureForRender(false, nullptr)->Update(pixel, TVPTextureFormat::RGBA, pitch, tTVPRect(x, y, x + w, y + h));
-}

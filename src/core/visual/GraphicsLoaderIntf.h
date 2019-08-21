@@ -20,20 +20,13 @@ namespace TJS {
 class tTJSBinaryStream;
 };
 
-enum tTVPGraphicPixelFormat
-{
-	gpfLuminance,
-	gpfPalette,
-	gpfRGB,
-	gpfRGBA
-};
 
 /*[*/
 //---------------------------------------------------------------------------
 // Graphic Loading Handler Type
 //---------------------------------------------------------------------------
-typedef int (*tTVPGraphicSizeCallback) // return line pitch
-	(void *callbackdata, tjs_uint w, tjs_uint h, tTVPGraphicPixelFormat fmt);
+typedef void (*tTVPGraphicSizeCallback)
+	(void *callbackdata, tjs_uint w, tjs_uint h);
 /*
 	callback type to inform the image's size.
 	call this once before TVPGraphicScanLineCallback.
@@ -64,7 +57,8 @@ enum tTVPGraphicLoadMode
 {
 	glmNormal, // normal, ie. 32bit ARGB graphic
 	glmPalettized, // palettized 8bit mode
-	glmGrayscale // grayscale 8bit mode
+	glmGrayscale, // grayscale 8bit mode
+	glmNormalRGBA // normal, ie. 32bit ABGR(big endian. little endian : RGBA) graphic, GPU native format.
 };
 /*]*/
 
@@ -92,7 +86,7 @@ typedef void (*tTVPGraphicLoadingHandler)(void* formatdata,
 */
 
 typedef void (*tTVPGraphicHeaderLoadingHandler)(void* formatdata,  tTJSBinaryStream *src, class iTJSDispatch2** dic );
-typedef void (*tTVPGraphicSaveHandler)(void* formatdata,  tTJSBinaryStream* dst, const class iTVPBaseBitmap* image,
+typedef void (*tTVPGraphicSaveHandler)(void* formatdata,  tTJSBinaryStream* dst, const class tTVPBaseBitmap* image,
 	const ttstr & mode, class iTJSDispatch2* meta );
 
 /*[*/
@@ -155,12 +149,10 @@ TJS_EXP_FUNC_DEF( void, TVPUnregisterGraphicLoadingHandler, (const ttstr & name,
 //---------------------------------------------------------------------------
 // default handlers
 //---------------------------------------------------------------------------
-#ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
 //---------------------------------------------------------------------------
-#endif
 
 
 //---------------------------------------------------------------------------
@@ -175,33 +167,23 @@ extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCall
 //    etc...
 // ]
 //---------------------------------------------------------------------------
-#ifdef TVP_IMAGE_ENABLE_BMP
 extern void TVPLoadHeaderBMP(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
-#endif
 //---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
 // Image saving handler
 //---------------------------------------------------------------------------
-#ifdef TVP_IMAGE_ENABLE_BMP
-extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
-#endif
+extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const tTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
 //---------------------------------------------------------------------------
 
 
 //---------------------------------------------------------------------------
 // is accept
 //---------------------------------------------------------------------------
-#ifdef TVP_IMAGE_ENABLE_BMP
 extern bool TVPAcceptSaveAsBMP(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
-#endif
 //---------------------------------------------------------------------------
 
-#ifdef TVP_IMAGE_ENABLE_BMP
-void TVPSaveTextureAsBMP(tTJSBinaryStream* dst, class iTVPTexture2D* bmp, const ttstr & mode = TJS_W(""), iTJSDispatch2* meta = nullptr);
-void TVPSaveTextureAsBMP(const ttstr &path, class iTVPTexture2D* tex, const ttstr &mode = TJS_W(""), iTJSDispatch2* meta = nullptr);
-#endif
 
 
 //---------------------------------------------------------------------------
@@ -234,18 +216,15 @@ extern void TVPTouchImages(const std::vector<ttstr> & storages, tjs_int64 limit,
 
 
 
-class iTVPBaseBitmap;
 //---------------------------------------------------------------------------
 // TVPLoadGraphic
 //---------------------------------------------------------------------------
-extern int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int keyidx,
+extern void TVPLoadGraphic(tTVPBaseBitmap *dest, const ttstr &name, tjs_int keyidx,
 	tjs_uint desw, tjs_uint desh,
-	tTVPGraphicLoadMode mode, ttstr *provincename = NULL, iTJSDispatch2 ** metainfo = NULL);
+	tTVPGraphicLoadMode mode, ttstr *provincename = NULL, iTJSDispatch2 ** metainfo = NULL, bool unpadding=false);
 	// throws exception when this function can not handle the file
 //---------------------------------------------------------------------------
 
-extern void TVPLoadGraphicProvince(tTVPBaseBitmap *dest, const ttstr &name, tjs_int keyidx,
-	tjs_uint desw, tjs_uint desh);
 
 
 //---------------------------------------------------------------------------
@@ -392,7 +371,7 @@ struct tTVPGraphicHandlerType
 	}
 	void Load( void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback, tTVPGraphicScanLineCallback scanlinecallback,
 		tTVPMetaInfoPushCallback metainfopushcallback, tTJSBinaryStream *src, tjs_int32 keyidx, tTVPGraphicLoadMode mode);
-	void Save( const ttstr & storagename, const ttstr & mode, const iTVPBaseBitmap* image, iTJSDispatch2* meta );
+	void Save( const ttstr & storagename, const ttstr & mode, const tTVPBaseBitmap* image, iTJSDispatch2* meta );
 	void Header( tTJSBinaryStream *src, iTJSDispatch2** dic );
 	bool AcceptSave( const ttstr & type, iTJSDispatch2** dic )
 	{
@@ -409,7 +388,7 @@ struct tTVPGraphicMetaInfoPair
 };
 
 extern iTJSDispatch2 * TVPMetaInfoPairsToDictionary( std::vector<tTVPGraphicMetaInfoPair> *vec );
-extern void TVPPushGraphicCache( const ttstr& nname, class tTVPBitmap* bmp,
+extern void TVPPushGraphicCache( const ttstr& nname, tTVPBaseBitmap* bmp,
 	std::vector<tTVPGraphicMetaInfoPair>* meta );
 extern tTVPGraphicHandlerType* TVPGetGraphicLoadHandler( const ttstr& ext );
 extern bool TVPCheckImageCache( const ttstr& nname, tTVPBaseBitmap* dest,
@@ -418,7 +397,7 @@ extern bool TVPCheckImageCache( const ttstr& nname, tTVPBaseBitmap* dest,
 extern bool TVPHasImageCache( const ttstr& nname, tTVPGraphicLoadMode mode,
 	tjs_uint dw, tjs_uint dh, tjs_int32 keyidx );
 extern void TVPLoadImageHeader( const ttstr & storagename, iTJSDispatch2** dic );
-extern void TVPSaveImage( const ttstr & storagename, const ttstr & mode, const iTVPBaseBitmap* image, iTJSDispatch2* meta );
+extern void TVPSaveImage( const ttstr & storagename, const ttstr & mode, const tTVPBaseBitmap* image, iTJSDispatch2* meta );
 extern bool TVPGetSaveOption( const ttstr & type, iTJSDispatch2** dic );
 //---------------------------------------------------------------------------
 

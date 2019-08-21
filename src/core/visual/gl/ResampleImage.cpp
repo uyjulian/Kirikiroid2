@@ -389,9 +389,9 @@ public:
 		int width_;
 
 		const float* wstarty_;
-		const iTVPBaseBitmap* src_;
+		const tTVPBaseBitmap* src_;
 		const tTVPRect* srcrect_;
-		iTVPBaseBitmap* dest_;
+		tTVPBaseBitmap* dest_;
 		const tTVPRect* destrect_;
 
 		const tTVPResampleClipping* clip_;
@@ -399,7 +399,7 @@ public:
 	};
 
 	/** 縦方向の拡大縮小処理 */
-	inline void samplingVertical( int y, tjs_uint32* dstbits, int dstheight, int srcwidth, const iTVPBaseBitmap *src, const tTVPRect &srcrect, const float*& wstarty ) {
+	inline void samplingVertical( int y, tjs_uint32* dstbits, int dstheight, int srcwidth, const tTVPBaseBitmap *src, const tTVPRect &srcrect, const float*& wstarty ) {
 		const int top = paramy_.start_[y];
 		const int len = paramy_.length_[y];
 		const int bottom = top + len;
@@ -460,7 +460,7 @@ public:
 		}
 	}
 
-	void ResampleImage( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect ) {
+	void ResampleImage( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect ) {
 		const int srcwidth = srcrect.get_width();
 		const int dstheight = destrect.get_height();
 #ifdef _DEBUG
@@ -499,7 +499,7 @@ public:
 			}
 		}
 	}
-	void ResampleImageMT( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, tjs_int threadNum ) {
+	void ResampleImageMT( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect, tjs_int threadNum ) {
 		const int srcwidth = srcrect.get_width();
 		const float* wstarty = &paramy_.weight_[0];
 		// クリッピング部分スキップ
@@ -509,9 +509,7 @@ public:
 		int offset = clip.offsety_;
 		const int height = clip.getDestHeight();
 
-#if 0
 		TVPBeginThreadTask(threadNum);
-#endif
 		std::vector<ThreadParameter> params(threadNum);
 		for( int i = 0; i < threadNum; i++ ) {
 			ThreadParameter* param = &params[i];
@@ -528,9 +526,7 @@ public:
 			param->blendfunc_ = blendfunc;
 			int top = param->start_;
 			int bottom = param->end_;
-#if 0
 			TVPExecThreadTask(&ResamplerFunc, TVP_THREAD_PARAM(param));
-#endif
 			if( i < (threadNum-1) ) {
 				for( int y = top; y < bottom; y++ ) {
 					int len = paramy_.length_[y];
@@ -538,17 +534,12 @@ public:
 				}
 			}
 		}
-#if 0
 		TVPEndThreadTask();
-#endif
-		TVPExecThreadTask(threadNum, [&](int i){
-			ResamplerFunc(&params[i]);
-		});
 	}
 public:
 	/** シングルスレッド */
 	template<typename TWeightFunc>
-	void Resample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func ) {
+	void Resample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func ) {
 		const int srcwidth = srcrect.get_width();
 		const int srcheight = srcrect.get_height();
 		const int dstwidth = destrect.get_width();
@@ -558,7 +549,7 @@ public:
 		ResampleImage( clip, blendfunc, dest, destrect, src, srcrect );
 	}
 	template<typename TWeightFunc>
-	void ResampleMT( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func ) {
+	void ResampleMT( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect, float tap, TWeightFunc& func ) {
 		const int srcwidth = srcrect.get_width();
 		const int srcheight = srcrect.get_height();
 		const int dstwidth = destrect.get_width();
@@ -578,7 +569,7 @@ public:
 		AxisParamCalculateAxis( paramy_, srcrect.top, srcrect.bottom, srcheight, dstheight, tap, func );
 		ResampleImageMT( clip, blendfunc, dest, destrect, src, srcrect, threadNum );
 	}
-	void ResampleAreaAvg( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect ) {
+	void ResampleAreaAvg( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect ) {
 		const int srcwidth = srcrect.get_width();
 		const int srcheight = srcrect.get_height();
 		const int dstwidth = destrect.get_width();
@@ -588,7 +579,7 @@ public:
 		AxisParamCalculateAxisAreaAvg( paramy_, srcrect.top, srcrect.bottom, srcheight, dstheight );
 		ResampleImage( clip, blendfunc, dest, destrect, src, srcrect );
 	}
-	void ResampleAreaAvgMT( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect ) {
+	void ResampleAreaAvgMT( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect ) {
 		const int srcwidth = srcrect.get_width();
 		const int srcheight = srcrect.get_height();
 		const int dstwidth = destrect.get_width();
@@ -621,9 +612,9 @@ void TJS_USERENTRY ResamplerFunc( void* p ) {
 	work.reserve( width );
 #endif
 
-	iTVPBaseBitmap* dest = param->dest_;
+	tTVPBaseBitmap* dest = param->dest_;
 	const tTVPRect& destrect = *param->destrect_;
-	const iTVPBaseBitmap* src = param->src_;
+	const tTVPBaseBitmap* src = param->src_;
 	const tTVPRect& srcrect = *param->srcrect_;
 
 	const int srcwidth = srcrect.get_width();
@@ -656,17 +647,17 @@ void TJS_USERENTRY ResamplerFunc( void* p ) {
 	}
 }
 
-void TVPBicubicResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect, float sharpness ) {
+void TVPBicubicResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect, float sharpness ) {
 	BicubicWeight weightfunc(sharpness);
 	Resampler sampler;
 	sampler.ResampleMT( clip, blendfunc, dest, destrect, src, srcrect, BicubicWeight::RANGE, weightfunc );
 }
-void TVPAreaAvgResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect ) {
+void TVPAreaAvgResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect ) {
 	Resampler sampler;
 	sampler.ResampleAreaAvgMT( clip, blendfunc, dest, destrect, src, srcrect );
 }
 template<typename TWeightFunc>
-void TVPWeightResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect ) {
+void TVPWeightResample( const tTVPResampleClipping &clip, const tTVPImageCopyFuncBase* blendfunc, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect ) {
 	TWeightFunc weightfunc;
 	Resampler sampler;
 	sampler.ResampleMT( clip, blendfunc, dest, destrect, src, srcrect, TWeightFunc::RANGE, weightfunc );
@@ -684,7 +675,7 @@ void TVPWeightResample( const tTVPResampleClipping &clip, const tTVPImageCopyFun
  * @param opa : 不透明度
  * @param hda : 書き込み先アルファ保持
  */
-void TVPResampleImage( const tTVPRect &cliprect, iTVPBaseBitmap *dest, const tTVPRect &destrect, const iTVPBaseBitmap *src, const tTVPRect &srcrect,
+void TVPResampleImage( const tTVPRect &cliprect, tTVPBaseBitmap *dest, const tTVPRect &destrect, const tTVPBaseBitmap *src, const tTVPRect &srcrect,
 	tTVPBBStretchType type, tjs_real typeopt, tTVPBBBltMethod method, tjs_int opa, bool hda ) {
 	// クリッピング処理
 	tTVPResampleClipping clip;

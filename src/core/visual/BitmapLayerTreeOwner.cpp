@@ -97,7 +97,7 @@ void TJS_INTF_METHOD tTJSNI_BitmapLayerTreeOwner::StartBitmapCompletion(iTVPLaye
 }
 //----------------------------------------------------------------------
 void TJS_INTF_METHOD tTJSNI_BitmapLayerTreeOwner::NotifyBitmapCompleted(class iTVPLayerManager * manager,
-	tjs_int x, tjs_int y, tTVPBaseTexture *bitmapinfo,
+	tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 	const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity) {
 	assert(BitmapNI);
 
@@ -130,17 +130,15 @@ void TJS_INTF_METHOD tTJSNI_BitmapLayerTreeOwner::NotifyBitmapCompleted(class iT
 		long width_bytes   = cliprect.get_width() * 4; // 32bit
 		long dest_y      = y;
 		long dest_x      = x;
-		const tjs_uint8 * src_p = (const tjs_uint8 *)bitmapinfo->GetScanLine(0);
+		const tjs_uint8 * src_p = (const tjs_uint8 *)bits;
 		long src_pitch;
-#if 0
+
 		if(bitmapinfo->GetHeight() < 0) {
 			// bottom-down
 			src_pitch = bitmapinfo->GetWidth() * 4;
 			//src_pitch = -bitmapinfo->GetWidth() * 4;
 			//src_p += bitmapinfo->GetWidth() * 4 * (bitmapinfo->GetHeight() - 1);
-		} else
-#endif
-		{
+		} else {
 			// bottom-up
 			src_pitch = -(int)bitmapinfo->GetWidth() * 4;
 			src_p += bitmapinfo->GetWidth() * 4 * (bitmapinfo->GetHeight() - 1);

@@ -18,13 +18,11 @@
 #include <dinput.h>
 #endif
 
-#ifndef CALLBACK
-#define CALLBACK
-typedef const void  *LPCDIDEVICEINSTANCE;
-#endif
 
 #include <vector>
 
+
+#if 0
 //---------------------------------------------------------------------------
 // Enumerations/constants
 //---------------------------------------------------------------------------
@@ -61,12 +59,12 @@ extern tTVPJoyPadDetectionType TVPJoyPadDetectionType; // = jdtDirectInput;
 //---------------------------------------------------------------------------
 class tTVPKeyRepeatEmulator
 {
-	tjs_uint32 PressedTick;
+	DWORD PressedTick;
 	bool  Pressed;
 	tjs_int LastRepeatCount;
 
-	static tjs_int HoldTime; // keyboard key-repeats hold-time
-	static tjs_int IntervalTime; // keyboard key-repeats interval-time
+	static INT32 HoldTime; // keyboard key-repeats hold-time
+	static INT32 IntervalTime; // keyboard key-repeats interval-time
 
 
 	/*
@@ -110,7 +108,7 @@ public:
 
 	virtual ~tTVPDirectInputDevice();
 
-	void SetCooperativeLevel(int window);
+	void SetCooperativeLevel(HWND window);
 		// set cooperatice level to the Device.
 		// This may be called from the constructor
 };
@@ -123,7 +121,7 @@ public:
 class tTVPWheelDirectInputDevice : public tTVPDirectInputDevice
 {
 public:
-	tTVPWheelDirectInputDevice(int window);
+	tTVPWheelDirectInputDevice(HWND window);
 	~tTVPWheelDirectInputDevice();
 
 	tjs_int GetWheelDelta();
@@ -144,17 +142,17 @@ class tTVPPadDirectInputDevice : public tTVPDirectInputDevice
 	tTVPKeyRepeatEmulator CrossKeysRepeater;
 	tTVPKeyRepeatEmulator TriggerKeysRepeater;
 
-	std::vector<tjs_uint16> UppedKeys;
-	std::vector<tjs_uint16> DownedKeys;
-	std::vector<tjs_uint16> RepeatKeys;
+	std::vector<WORD> UppedKeys;
+	std::vector<WORD> DownedKeys;
+	std::vector<WORD> RepeatKeys;
 
 public:
-	tTVPPadDirectInputDevice(int window);
+	tTVPPadDirectInputDevice(HWND window);
 	~tTVPPadDirectInputDevice();
 
 private:
 	static bool CALLBACK EnumJoySticksCallback(
-		LPCDIDEVICEINSTANCE lpddi, void* pvRef);
+		LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
 
 private:
 	void Update(tjs_uint32 newstate);
@@ -166,9 +164,9 @@ public:
 	void WindowActivated();
 	void WindowDeactivated();
 
-	const std::vector<tjs_uint16>& GetUppedKeys() const { return UppedKeys; }
-	const std::vector<tjs_uint16>& GetDownedKeys() const { return DownedKeys; }
-	const std::vector<tjs_uint16>& GetRepeatKeys() const { return RepeatKeys; }
+	const std::vector<WORD>& GetUppedKeys() const { return UppedKeys; }
+	const std::vector<WORD>& GetDownedKeys() const { return DownedKeys; }
+	const std::vector<WORD>& GetRepeatKeys() const { return RepeatKeys; }
 
 private:
 	tjs_uint32 GetState();
@@ -184,6 +182,7 @@ public:
 	static bool GetAsyncState(tjs_uint keycode, bool getcurrent);
 };
 //---------------------------------------------------------------------------
+#endif
 
 
 

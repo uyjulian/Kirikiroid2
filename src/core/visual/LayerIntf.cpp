@@ -8,9 +8,7 @@
 //---------------------------------------------------------------------------
 // Layer Management
 //---------------------------------------------------------------------------
-#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
-#endif
 #include "tjsCommHead.h"
 
 #include <math.h>
@@ -41,17 +39,12 @@
 #include "FontSystem.h"
 #include "tjsDictionary.h"
 
-#ifdef __ANDROID__
+#ifndef _WIN32
 #include "VirtualKey.h"
 #endif
-#include "vkdefine.h"
-#include "RenderManager.h"
-#include <cstdlib>
-#include "FontImpl.h"
 
 extern void TVPSetFontRasterizer( tjs_int index );
 extern tjs_int TVPGetFontRasterizer();
-extern FontRasterizer* GetCurrentRasterizer();
 extern void TVPMapPrerenderedFont(const tTVPFont & font, const ttstr & storage);
 extern void TVPUnmapPrerenderedFont(const tTVPFont & font);
 extern tjs_int TVPGetCursor(const ttstr & name);
@@ -81,34 +74,32 @@ class tTVPTempBitmapHolder : public tTVPCompactEventCallbackIntf
 		beginning of the process :-)
 	*/
 
-	tTVPBaseTexture *Bitmap;
+	tTVPBaseBitmap Bitmap;
 
-	std::vector<tTVPBaseTexture *> Temporaries;
+	std::vector<tTVPBaseBitmap *> Temporaries;
 	tjs_uint TempLevel;
 	bool TempCompactInit;
 
 private:
 	tjs_int RefCount;
-	tTVPTempBitmapHolder() : TempLevel(0), TempCompactInit(false)
+	tTVPTempBitmapHolder() : Bitmap(32,32,32), TempLevel(0), TempCompactInit(false)
 	{
 		// the default image must be a transparent, white colored rectangle
 		RefCount = 1;
-        Bitmap = new tTVPBaseTexture(32, 32);
-		Bitmap->Fill(tTVPRect(0, 0, 32, 32), TVP_RGBA2COLOR(255, 255, 255, 0));
+		Bitmap.Fill(tTVPRect(0, 0, 32, 32), TVP_RGBA2COLOR(255, 255, 255, 0));
 	}
 
 	~tTVPTempBitmapHolder()
 	{
-		std::vector<tTVPBaseTexture*>::iterator i;
+		std::vector<tTVPBaseBitmap*>::iterator i;
 		for(i = Temporaries.begin(); i != Temporaries.end(); i++)
 		{
 			delete (*i);
 		}
 		if(TempCompactInit) TVPRemoveCompactEventHook(this);
-        if(Bitmap) delete Bitmap;
 	}
 
-	tTVPBaseTexture * InternalGetTemp(tjs_uint w, tjs_uint h, bool fit)
+	tTVPBaseBitmap * InternalGetTemp(tjs_uint w, tjs_uint h, bool fit)
 	{
 		// compact initialization
 		if(!TempCompactInit)
@@ -125,13 +116,13 @@ private:
 		if(TempLevel > Temporaries.size())
 		{
 			// increase buffer size
-			tTVPBaseTexture *bmp = new tTVPBaseTexture(w, h);
+			tTVPBaseBitmap *bmp = new tTVPBaseBitmap(w, h, 32);
 			Temporaries.push_back(bmp);
 			return bmp;
 		}
 		else
 		{
-			tTVPBaseTexture *bmp = Temporaries[TempLevel - 1];
+			tTVPBaseBitmap *bmp = Temporaries[TempLevel -1];
 			if(!fit)
 			{
 				tjs_uint bw = bmp->GetWidth();
@@ -163,7 +154,7 @@ private:
 	void CompactTempBitmap()
 	{
 		// compact tmporary bitmap cache
-		std::vector<tTVPBaseTexture*>::iterator i;
+		std::vector<tTVPBaseBitmap*>::iterator i;
 		for(i = Temporaries.begin() + TempLevel; i != Temporaries.end();
 			i++)
 		{
@@ -204,24 +195,24 @@ public:
 		}
 	}
 
-	static const tTVPBaseTexture * Get()
+	static const tTVPBaseBitmap & Get()
 		{ return TVPTempBitmapHolder->Bitmap; }
 
 
-	static tTVPBaseTexture * GetTemp(tjs_uint w, tjs_uint h, bool fit = false)
+	static tTVPBaseBitmap * GetTemp(tjs_uint w, tjs_uint h, bool fit = false)
 		{ return TVPTempBitmapHolder->InternalGetTemp(w, h, fit); }
 
 	static void FreeTemp()
 		{ TVPTempBitmapHolder->InternalFreeTemp(); }
 };
 //---------------------------------------------------------------------------
-const tTVPBaseTexture & TVPGetInitialBitmap()
+const tTVPBaseBitmap & TVPGetInitialBitmap()
 {
 	tTVPTempBitmapHolder::AddRef(); // ensure default bitmap
-	const tTVPBaseTexture *bmp = TVPTempBitmapHolder->Get();
+	const tTVPBaseBitmap &bmp = TVPTempBitmapHolder->Get();
 	tTVPTempBitmapHolder::Release();
 
-	return *bmp;
+	return bmp;
 }
 //---------------------------------------------------------------------------
 void TVPTempBitmapHolderAddRef()
@@ -302,7 +293,7 @@ void TVPTempBitmapHolderRelease()
 //---------------------------------------------------------------------------
 // global options
 //---------------------------------------------------------------------------
-tTVPGraphicSplitOperationType TVPGraphicSplitOperationType = gsotNone;
+tTVPGraphicSplitOperationType TVPGraphicSplitOperationType = gsotSimple;
 bool TVPDefaultHoldAlpha = false;
 //---------------------------------------------------------------------------
 
@@ -467,8 +458,7 @@ tTJSNI_BaseLayer::Construct(tjs_int numparams, tTJSVariant **param,
 	if(lay)
 	{
 		Manager = lay->GetManager();
-		if (Manager)
-			Manager->AddRef(); // lock manager
+		Manager->AddRef(); // lock manager
 	}
 
 	// register to parent layer
@@ -2075,7 +2065,7 @@ void tTJSNI_BaseLayer::AllocateImage()
 	{
 		ImageLeft = 0;
 		ImageTop = 0;
-        MainImage = new tTVPBaseTexture(Rect.get_width(), Rect.get_height());
+		MainImage = new tTVPBaseBitmap(Rect.get_width(), Rect.get_height(), 32);
 		MainImage->Fill(tTVPRect(0, 0, Rect.get_width(), Rect.get_height()), NeutralColor);
 		MainImage->SetFont(Font); // set font
 	}
@@ -2127,9 +2117,9 @@ void tTJSNI_BaseLayer::DeallocateProvinceImage()
 void tTJSNI_BaseLayer::AllocateDefaultImage()
 {
 	if(!MainImage)
-		MainImage = new tTVPBaseTexture(*TVPTempBitmapHolder->Get());
+		MainImage = new tTVPBaseBitmap(TVPTempBitmapHolder->Get());
 	else
-		MainImage->Assign(*TVPTempBitmapHolder->Get());
+		MainImage->Assign(TVPTempBitmapHolder->Get());
 
 	FontChanged = true; // invalidate font assignment cache
 	ResetClip();  // cliprect is reset
@@ -2147,7 +2137,7 @@ void tTJSNI_BaseLayer::AssignImages(tTJSNI_BaseLayer *src)
 		if(MainImage)
 			main_changed = MainImage->Assign(* src->MainImage);
 		else
-			MainImage = new tTVPBaseTexture(* src->MainImage);
+			MainImage = new tTVPBaseBitmap(* src->MainImage);
 		FontChanged = true; // invalidate font assignment cache
 	}
 	else
@@ -2180,7 +2170,7 @@ void tTJSNI_BaseLayer::AssignImages(tTJSNI_BaseLayer *src)
 	if(main_changed) Update(false); // update
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::AssignMainImageWithUpdate(iTVPBaseBitmap *bmp)
+void tTJSNI_BaseLayer::AssignMainImageWithUpdate(tTVPBaseBitmap *bmp)
 {
 	// assign images
 	bool main_changed = true;
@@ -2190,7 +2180,7 @@ void tTJSNI_BaseLayer::AssignMainImageWithUpdate(iTVPBaseBitmap *bmp)
 		if(MainImage)
 			main_changed = MainImage->Assign(*bmp);
 		else
-			MainImage = new tTVPBaseTexture(*bmp);
+			MainImage = new tTVPBaseBitmap(*bmp);
 		FontChanged = true; // invalidate font assignment cache
 	}
 	else
@@ -2211,7 +2201,7 @@ void tTJSNI_BaseLayer::AssignMainImageWithUpdate(iTVPBaseBitmap *bmp)
 	if(main_changed) Update(false); // update
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::AssignMainImage(iTVPBaseBitmap *bmp)
+void tTJSNI_BaseLayer::AssignMainImage(tTVPBaseBitmap *bmp)
 {
 	// assign single main bitmap image. the image size assigned must be
 	// identical to the destination layer bitmap.
@@ -2507,17 +2497,6 @@ void tTJSNI_BaseLayer::SaveLayerImage(const ttstr &name, const ttstr &type)
 	dic->Release();
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::AssignTexture(iTVPTexture2D *tex)
-{
-	if (!MainImage) TVPThrowExceptionMessage(TVPNotDrawableLayerType);
-	MainImage->AssignTexture(tex);
-	InternalSetImageSize(MainImage->GetWidth(), MainImage->GetHeight());
-	ImageModified = true;
-	ResetClip();  // cliprect is reset
-	Update(false);
-}
-
-//---------------------------------------------------------------------------
 iTJSDispatch2 * tTJSNI_BaseLayer::LoadImages(const ttstr &name, tjs_uint32 colorkey)
 {
 	// loads image(s) from specified storage.
@@ -2551,8 +2530,8 @@ iTJSDispatch2 * tTJSNI_BaseLayer::LoadImages(const ttstr &name, tjs_uint32 color
 
 			try
 			{
-				TVPLoadGraphicProvince(ProvinceImage, provincename, 0,
-					MainImage->GetWidth(), MainImage->GetHeight());
+				TVPLoadGraphic(ProvinceImage, provincename, 0,
+					MainImage->GetWidth(), MainImage->GetHeight(), glmPalettized, NULL, NULL);
 
 				if(ProvinceImage->GetWidth() != MainImage->GetWidth() ||
 					ProvinceImage->GetHeight() != MainImage->GetHeight())
@@ -2595,8 +2574,8 @@ void tTJSNI_BaseLayer::LoadProvinceImage(const ttstr &name)
 
 	try
 	{
-		TVPLoadGraphicProvince(ProvinceImage, name, 0,
-			MainImage->GetWidth(), MainImage->GetHeight());
+		TVPLoadGraphic(ProvinceImage, name, 0,
+			MainImage->GetWidth(), MainImage->GetHeight(), glmPalettized, NULL, NULL);
 
 		if(ProvinceImage->GetWidth() != MainImage->GetWidth() ||
 			ProvinceImage->GetHeight() != MainImage->GetHeight())
@@ -2913,8 +2892,6 @@ bool tTJSNI_BaseLayer::_HitTestNoVisibleCheck(tjs_int x, tjs_int y)
 			if(px >= 0 && py >= 0 && px < (tjs_int)MainImage->GetWidth() &&
 				py < (tjs_int)MainImage->GetHeight())
 			{
-                if (HitThreshold <= 0) return true;
-				
 				tjs_uint32 cl = MainImage->GetPoint(px, py);
 				if((tjs_int)(cl >> 24) < HitThreshold)
 					return false;
@@ -3656,7 +3633,7 @@ void tTJSNI_BaseLayer::AllocateCache()
 	if(!CacheBitmap)
 	{
 		CacheBitmap =
-			new tTVPBaseTexture(Rect.get_width(), Rect.get_height(), 32);
+			new tTVPBaseBitmap(Rect.get_width(), Rect.get_height(), 32);
 	}
 	else
 	{
@@ -4072,8 +4049,8 @@ void tTJSNI_BaseLayer::DrawText(tjs_int x, tjs_int y, const ttstr &text,
 
 	color = TVPToActualColor(color);
 
-	MainImage->DrawText(ClipRect, x, y, text, TVP_REVRGB(color), met,
-		opa, HoldAlpha, aa, shadowlevel, TVP_REVRGB(shadowcolor), shadowwidth,
+	MainImage->DrawText(ClipRect, x, y, text, color, met,
+		opa, HoldAlpha, aa, shadowlevel, shadowcolor, shadowwidth,
 		shadowofsx, shadowofsy, &r);
 
 	if(r.GetCount()) ImageModified = true;
@@ -4146,9 +4123,8 @@ void tTJSNI_BaseLayer::PiledCopy(tjs_int dx, tjs_int dy, tTJSNI_BaseLayer *src,
 	src->IncCacheEnabledCount(); // enable cache
 	try
 	{
-        iTVPBaseBitmap *bmp = src->Complete(rect);
-		tTVPRect rc(rect);
-		ImageModified = MainImage->CopyRect(dx, dy, bmp, rc,
+		tTVPBaseBitmap *bmp = src->Complete(rect);
+		ImageModified = MainImage->CopyRect(dx, dy, bmp, rect,
 			TVP_BB_COPY_MAIN|TVP_BB_COPY_MASK) || ImageModified;
 	}
 	catch(...)
@@ -4171,7 +4147,7 @@ void tTJSNI_BaseLayer::PiledCopy(tjs_int dx, tjs_int dy, tTJSNI_BaseLayer *src,
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::CopyRect(tjs_int dx, tjs_int dy, iTVPBaseBitmap *src, iTVPBaseBitmap *provincesrc,
+void tTJSNI_BaseLayer::CopyRect(tjs_int dx, tjs_int dy, tTVPBaseBitmap *src, tTVPBaseBitmap *provincesrc,
 	const tTVPRect &srcrect)
 {
 	// copy rectangle
@@ -4239,7 +4215,7 @@ void tTJSNI_BaseLayer::CopyRect(tjs_int dx, tjs_int dy, iTVPBaseBitmap *src, iTV
 	}
 }
 //---------------------------------------------------------------------------
-bool tTJSNI_BaseLayer::Copy9Patch( const iTVPBaseBitmap *src, tTVPRect &margin )
+bool tTJSNI_BaseLayer::Copy9Patch( const tTVPBaseBitmap *src, tTVPRect &margin )
 {
 	if(!MainImage) TVPThrowExceptionMessage(TVPNotDrawableLayerType);
 	ImageModified = MainImage->Copy9Patch( src, margin );
@@ -4259,7 +4235,7 @@ bool tTJSNI_BaseLayer::Copy9Patch( const iTVPBaseBitmap *src, tTVPRect &margin )
 	return ImageModified;
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::StretchCopy(const tTVPRect &destrect, iTVPBaseBitmap *src,
+void tTJSNI_BaseLayer::StretchCopy(const tTVPRect &destrect, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBBStretchType type, tjs_real typeopt)
 {
 	// stretching copy
@@ -4302,7 +4278,7 @@ void tTJSNI_BaseLayer::StretchCopy(const tTVPRect &destrect, iTVPBaseBitmap *src
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::AffineCopy(const t2DAffineMatrix &matrix, iTVPBaseBitmap *src,
+void tTJSNI_BaseLayer::AffineCopy(const t2DAffineMatrix &matrix, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBBStretchType type, bool clear)
 {
 	// affine copy
@@ -4343,7 +4319,7 @@ void tTJSNI_BaseLayer::AffineCopy(const t2DAffineMatrix &matrix, iTVPBaseBitmap 
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::AffineCopy(const tTVPPointD *points, iTVPBaseBitmap *src,
+void tTJSNI_BaseLayer::AffineCopy(const tTVPPointD *points, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBBStretchType type, bool clear)
 {
 	// affine copy
@@ -4384,7 +4360,7 @@ void tTJSNI_BaseLayer::AffineCopy(const tTVPPointD *points, iTVPBaseBitmap *src,
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::OperateRect(tjs_int dx, tjs_int dy, iTVPBaseBitmap *src,
+void tTJSNI_BaseLayer::OperateRect(tjs_int dx, tjs_int dy, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBlendOperationMode mode,
 			tjs_int opacity)
 {
@@ -4423,7 +4399,7 @@ void tTJSNI_BaseLayer::OperateRect(tjs_int dx, tjs_int dy, iTVPBaseBitmap *src,
 }
 //---------------------------------------------------------------------------
 void tTJSNI_BaseLayer::OperateStretch(const tTVPRect &destrect,
-	iTVPBaseBitmap *src, const tTVPRect &srcrect, tTVPBlendOperationMode mode, tjs_int opacity,
+	tTVPBaseBitmap *src, const tTVPRect &srcrect, tTVPBlendOperationMode mode, tjs_int opacity,
 			tTVPBBStretchType type, tjs_real typeopt)
 {
 	// stretching operation (add/mul/sub etc.)
@@ -4461,7 +4437,7 @@ void tTJSNI_BaseLayer::OperateStretch(const tTVPRect &destrect,
 }
 //---------------------------------------------------------------------------
 void tTJSNI_BaseLayer::OperateAffine(const t2DAffineMatrix &matrix,
-	iTVPBaseBitmap *src,
+	tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBlendOperationMode mode, tjs_int opacity,
 		tTVPBBStretchType type)
 {
@@ -4495,7 +4471,7 @@ void tTJSNI_BaseLayer::OperateAffine(const t2DAffineMatrix &matrix,
 
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::OperateAffine(const tTVPPointD *points, iTVPBaseBitmap *src,
+void tTJSNI_BaseLayer::OperateAffine(const tTVPPointD *points, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBlendOperationMode mode, tjs_int opacity,
 		tTVPBBStretchType type)
 {
@@ -5177,7 +5153,7 @@ void tTJSNI_BaseLayer::QueryUpdateExcludeRect(tTVPRect &rect, bool parentvisible
 	rect.bottom += Rect.top;
 
 	// check visibility & opacity
-	if (parentvisible && (DisplayType == ltOpaque || (MainImage && MainImage->IsOpaque())) && Opacity == 255)
+	if(parentvisible && DisplayType == ltOpaque && Opacity == 255)
 	{
 		if(rect.is_empty())
 		{
@@ -5191,10 +5167,10 @@ void tTJSNI_BaseLayer::QueryUpdateExcludeRect(tTVPRect &rect, bool parentvisible
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::BltImage(iTVPBaseBitmap *dest, tTVPLayerType destlayertype,
+void tTJSNI_BaseLayer::BltImage(tTVPBaseBitmap *dest, tTVPLayerType destlayertype,
 	tjs_int destx,
-    tjs_int desty, iTVPBaseBitmap *src, const tTVPRect &srcrect,
-	tTVPLayerType drawtype, tjs_int opacity, bool hda)
+	tjs_int desty, tTVPBaseBitmap *src, const tTVPRect &srcrect,
+	tTVPLayerType drawtype, tjs_int opacity)
 {
 	// draw src to dest according with layer type
 /*
@@ -5208,6 +5184,7 @@ void tTJSNI_BaseLayer::BltImage(iTVPBaseBitmap *dest, tTVPLayerType destlayertyp
 */
 
 	// blt to the target
+	bool hda = false;
 	tTVPBBBltMethod met;
 	switch(drawtype)
 	{
@@ -5237,7 +5214,7 @@ void tTJSNI_BaseLayer::BltImage(iTVPBaseBitmap *dest, tTVPLayerType destlayertyp
 
 	case ltAdditive:
 		// additive blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 			// hda = true if destination has alpha
 			// ( preserving mask )
 		met = bmAdd;
@@ -5245,37 +5222,37 @@ void tTJSNI_BaseLayer::BltImage(iTVPBaseBitmap *dest, tTVPLayerType destlayertyp
 
 	case ltSubtractive:
 		// subtractive blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmSub;
 		break;
 
 	case ltMultiplicative:
 		// multiplicative blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmMul;
 		break;
 
 	case ltDodge:
 		// color dodge ( "Ooi yaki" in Japanese )
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmDodge;
 		break;
 
 	case ltDarken:
 		// darken blend (select lower luminosity)
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmDarken;
 		break;
 
 	case ltLighten:
 		// lighten blend (select higher luminosity)
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmLighten;
 		break;
 
 	case ltScreen:
 		// screen multiplicative blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmScreen;
 		break;
 
@@ -5291,97 +5268,97 @@ void tTJSNI_BaseLayer::BltImage(iTVPBaseBitmap *dest, tTVPLayerType destlayertyp
 
 	case ltPsNormal:
 		// Photoshop compatible normal blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsNormal;
 		break;
 
 	case ltPsAdditive:
 		// Photoshop compatible additive blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsAdditive;
 		break;
 
 	case ltPsSubtractive:
 		// Photoshop compatible subtractive blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsSubtractive;
 		break;
 
 	case ltPsMultiplicative:
 		// Photoshop compatible multiplicative blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsMultiplicative;
 		break;
 
 	case ltPsScreen:
 		// Photoshop compatible screen blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsScreen;
 		break;
 
 	case ltPsOverlay:
 		// Photoshop compatible overlay blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsOverlay;
 		break;
 
 	case ltPsHardLight:
 		// Photoshop compatible hard light blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsHardLight;
 		break;
 
 	case ltPsSoftLight:
 		// Photoshop compatible soft light blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsSoftLight;
 		break;
 
 	case ltPsColorDodge:
 		// Photoshop compatible color dodge blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsColorDodge;
 		break;
 
 	case ltPsColorDodge5:
 		// Photoshop 5.x compatible color dodge blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsColorDodge5;
 		break;
 
 	case ltPsColorBurn:
 		// Photoshop compatible color burn blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsColorBurn;
 		break;
 
 	case ltPsLighten:
 		// Photoshop compatible compare (lighten) blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsLighten;
 		break;
 
 	case ltPsDarken:
 		// Photoshop compatible compare (darken) blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsDarken;
 		break;
 
 	case ltPsDifference:
 		// Photoshop compatible difference blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsDifference;
 		break;
 
 	case ltPsDifference5:
 		// Photoshop 5.x compatible difference blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsDifference5;
 		break;
 
 	case ltPsExclusion:
 		// Photoshop compatible exclusion blend
-		hda = hda || TVPIsTypeUsingAlphaChannel(destlayertype);
+		hda = TVPIsTypeUsingAlphaChannel(destlayertype);
 		met = bmPsExclusion;
 		break;
 
@@ -5400,7 +5377,7 @@ void tTJSNI_BaseLayer::DrawSelf(tTVPDrawable *target, tTVPRect &pr,
 		if(DisplayType == ltOpaque)
 		{
 			// fill destination with specified color
-			tTVPBaseTexture *temp = tTVPTempBitmapHolder::GetTemp(
+			tTVPBaseBitmap *temp = tTVPTempBitmapHolder::GetTemp(
 								cr.get_width(),
 								cr.get_height());
 			try
@@ -5431,7 +5408,7 @@ void tTJSNI_BaseLayer::DrawSelf(tTVPDrawable *target, tTVPRect &pr,
 		// transition without children
 
 		// allocate temporary bitmap
-		tTVPBaseTexture *temp = tTVPTempBitmapHolder::GetTemp(
+		tTVPBaseBitmap *temp = tTVPTempBitmapHolder::GetTemp(
 							cr.get_width(),
 							cr.get_height());
 		try
@@ -5457,7 +5434,7 @@ void tTJSNI_BaseLayer::DrawSelf(tTVPDrawable *target, tTVPRect &pr,
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::CopySelfForRect(iTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
+void tTJSNI_BaseLayer::CopySelfForRect(tTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
 	const tTVPRect &srcrect)
 {
 	// copy self image to the target
@@ -5488,7 +5465,7 @@ void tTJSNI_BaseLayer::CopySelfForRect(iTVPBaseBitmap *dest, tjs_int destx, tjs_
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::CopySelf(iTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
+void tTJSNI_BaseLayer::CopySelf(tTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
 	const tTVPRect &r)
 {
 	const tTVPRect &uer = UpdateExcludeRect;
@@ -5543,7 +5520,7 @@ void tTJSNI_BaseLayer::CopySelf(iTVPBaseBitmap *dest, tjs_int destx, tjs_int des
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::EffectImage(iTVPBaseBitmap *dest, const tTVPRect & destrect)
+void tTJSNI_BaseLayer::EffectImage(tTVPBaseBitmap *dest, const tTVPRect & destrect)
 {
 	if(Type == ltFilter)
 	{
@@ -5554,180 +5531,6 @@ void tTJSNI_BaseLayer::EffectImage(iTVPBaseBitmap *dest, const tTVPRect & destre
 		// TODO: do effect
 	}
 }
-
-//---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::InternalDrawNoCache_CPU(tTVPDrawable *target, const tTVPRect &rect)
-{
-    bool totalopaque = (DisplayType == ltOpaque && Opacity == 255);
-    if(GetVisibleChildrenCount() == 0)
-    {
-        // no visible children; no action needed
-        tTVPRect pr = rect;
-        pr.add_offsets(Rect.left, Rect.top);
-        tTVPRect cr = rect;
-        DrawSelf(target, pr, cr);
-    }
-    else
-    {
-        // has at least one visible child
-        const tTVPComplexRect & overlapped = GetOverlappedRegion();
-        const tTVPComplexRect & exposed = GetExposedRegion();
-
-        // process overlapped region
-        // clear DrawnRegion
-        tTVPComplexRect::tIterator it;
-
-
-        DrawnRegion.Clear();
-
-
-        it = overlapped.GetIterator();
-        while(it.Step())
-        {
-            tTVPRect cr(*it);
-
-            // intersection check
-            if(!TVPIntersectRect(&cr, cr, rect)) continue;
-
-
-            tTVPRect updaterectforchild;
-            bool tempalloc = false;
-
-            // setup UpdateBitmapForChild and "updaterectforchild"
-            if(totalopaque)
-            {
-                // this layer is totally opaque
-                UpdateBitmapForChild = target->GetDrawTargetBitmap(
-                    cr, updaterectforchild);
-            }
-            else
-            {
-                // this layer is transparent
-
-                // retrieve temporary bitmap
-                UpdateBitmapForChild = tTVPTempBitmapHolder::GetTemp(
-                    cr.get_width(),
-                    cr.get_height());
-                tempalloc = true;
-                updaterectforchild.left = 0;
-                updaterectforchild.top = 0;
-                updaterectforchild.right = cr.get_width();
-                updaterectforchild.bottom = cr.get_height();
-            }
-
-            try
-            {
-                // copy self image to the target
-                CopySelf(UpdateBitmapForChild,
-                    updaterectforchild.left, updaterectforchild.top, cr);
-
-                TVP_LAYER_FOR_EACH_CHILD_BEGIN(child)
-                {
-                    // for each child...
-
-                    // visible check
-                    if(!child->Visible) continue;
-
-                    // intersection check
-                    tTVPRect chrect;
-                    if(!TVPIntersectRect(&chrect, cr, child->Rect))
-                        continue;
-
-                    // setup UpdateRectForChild
-                    tjs_int ox = chrect.left - cr.left;
-                    tjs_int oy = chrect.top - cr.top;
-
-                    UpdateRectForChild = updaterectforchild;
-                    UpdateRectForChild.add_offsets(ox, oy);
-                    UpdateRectForChildOfsX = chrect.left - child->Rect.left;
-                    UpdateRectForChildOfsY = chrect.top - child->Rect.top;
-
-                    // setup UpdateOfsX, UpdateOfsY
-                    UpdateOfsX = cr.left - updaterectforchild.left;
-                    UpdateOfsY = cr.top - updaterectforchild.top;
-
-                    // call children's "Draw" method
-                    child->Draw((tTVPDrawable*)this, chrect, true);
-                }
-                TVP_LAYER_FOR_EACH_CHILD_END
-
-            }
-            catch(...)
-            {
-                if(tempalloc) tTVPTempBitmapHolder::FreeTemp();
-                throw;
-            }
-
-            // send completion message to the target
-            if(DisplayType != ltBinder)
-            {
-                tTVPRect pr = cr;
-                pr.add_offsets(Rect.left, Rect.top);
-                target->DrawCompleted(pr, UpdateBitmapForChild, updaterectforchild,
-                    DisplayType, Opacity);
-            }
-
-            // release temporary bitmap
-            if(tempalloc) tTVPTempBitmapHolder::FreeTemp();
-
-
-        } // overlapped region
-
-
-        // process exposed region
-        DirectTransferToParent = true; // this flag is used only when MainImage == NULL
-
-
-        it = exposed.GetIterator();
-        while(it.Step())
-        {
-            tTVPRect cr(*it);
-
-            // intersection check
-            if(!TVPIntersectRect(&cr, cr, rect)) continue;
-
-            if(MainImage != NULL)
-            {
-                // send completion message to the target
-                tTVPRect pr = cr;
-                pr.add_offsets(Rect.left, Rect.top);
-                DrawSelf(target, pr, cr);
-            }
-            else
-            {
-                // call children's "Draw" method
-
-                tTVPRect cr(*it);
-
-                // intersection check
-                if(!TVPIntersectRect(&cr, cr, rect)) continue;
-
-
-                tTVPRect updaterectforchild;
-
-                TVP_LAYER_FOR_EACH_CHILD_BEGIN(child)
-                {
-                    // for each child...
-
-                    // visible check
-                    if(!child->Visible) continue;
-
-                    // intersection check
-                    tTVPRect chrect;
-                    if(!TVPIntersectRect(&chrect, cr, child->Rect))
-                        continue;
-
-                    // call children's "Draw" method
-                    child->Draw((tTVPDrawable*)this, chrect, true);
-                }
-                TVP_LAYER_FOR_EACH_CHILD_END
-            }
-        }
-        DirectTransferToParent = false;
-    } // has visible children/no visible children
-}
-//---------------------------------------------------------------------------
-
 //---------------------------------------------------------------------------
 void tTJSNI_BaseLayer::Draw(tTVPDrawable *target, const tTVPRect &r, bool visiblecheck)
 {
@@ -6013,7 +5816,7 @@ void tTJSNI_BaseLayer::Draw(tTVPDrawable *target, const tTVPRect &r, bool visibl
 	CurrentDrawTarget = NULL;
 }
 //---------------------------------------------------------------------------
-tTVPBaseTexture * tTJSNI_BaseLayer::GetDrawTargetBitmap(const tTVPRect &rect,
+tTVPBaseBitmap * tTJSNI_BaseLayer::GetDrawTargetBitmap(const tTVPRect &rect,
 	tTVPRect &cliprect)
 {
 	// called from children to get the image buffer drawn to.
@@ -6021,7 +5824,7 @@ tTVPBaseTexture * tTJSNI_BaseLayer::GetDrawTargetBitmap(const tTVPRect &rect,
 	{
 		tTVPRect _rect(rect);
 		_rect.add_offsets(Rect.left, Rect.top);
-		tTVPBaseTexture * bmp = CurrentDrawTarget->GetDrawTargetBitmap(_rect, cliprect);
+		tTVPBaseBitmap * bmp = CurrentDrawTarget->GetDrawTargetBitmap(_rect, cliprect);
 		return bmp;
 	}
 	tjs_int w = rect.get_width();
@@ -6042,13 +5845,13 @@ tTVPLayerType tTJSNI_BaseLayer::GetTargetLayerType()
 }
 //---------------------------------------------------------------------------
 void tTJSNI_BaseLayer::DrawCompleted(const tTVPRect &destrect,
-	tTVPBaseTexture *bmp,
+	tTVPBaseBitmap *bmp,
 	const tTVPRect &cliprect,
 	tTVPLayerType type, tjs_int opacity)
 {
 	// called from children to notify that the image drawing is completed.
 	// blend the image to the target unless bmp is the same as UpdateBitmapForChild.
-	if(DisplayType == ltBinder || (MainImage == NULL && DirectTransferToParent))
+	if(DisplayType == ltBinder || MainImage == NULL && DirectTransferToParent)
 	{
 		tTVPRect _destrect(destrect);
 		tTVPRect _cliprect(cliprect);
@@ -6264,8 +6067,6 @@ void tTJSNI_BaseLayer::InternalComplete2(tTVPComplexRect & updateregion,
 
 	updateregion.Clear();
 }
-
-
 //---------------------------------------------------------------------------
 void tTJSNI_BaseLayer::InternalComplete(tTVPComplexRect & updateregion,
 	tTVPDrawable *drawable)
@@ -6306,25 +6107,24 @@ void tTJSNI_BaseLayer::CompleteForWindow(tTVPDrawable *drawable)
 
 }
 //---------------------------------------------------------------------------
-tTVPBaseTexture * tTJSNI_BaseLayer::Complete(const tTVPRect & rect)
+tTVPBaseBitmap * tTJSNI_BaseLayer::Complete(const tTVPRect & rect)
 {
 	class tCompleteDrawable : public tTVPDrawable
 	{
-	protected:
-		tTVPBaseTexture * Bitmap;
+		tTVPBaseBitmap * Bitmap;
 		tTVPRect BitmapRect;
 		tTVPLayerType LayerType;
 	public:
-		tCompleteDrawable(tTVPBaseTexture *bmp, tTVPLayerType layertype)
+		tCompleteDrawable(tTVPBaseBitmap *bmp, tTVPLayerType layertype)
 			: Bitmap(bmp), LayerType(layertype) {};
 
-		tTVPBaseTexture * GetDrawTargetBitmap(const tTVPRect &rect,
+		tTVPBaseBitmap * GetDrawTargetBitmap(const tTVPRect &rect,
 			tTVPRect &cliprect)
 			{ cliprect = rect; return Bitmap; }
 		tTVPLayerType GetTargetLayerType() { return LayerType; }
-		virtual void DrawCompleted(const tTVPRect &destrect,
-			tTVPBaseTexture *bmp, const tTVPRect &cliprect,
-			tTVPLayerType type, tjs_int opacity) override
+		void DrawCompleted(const tTVPRect &destrect,
+			tTVPBaseBitmap *bmp, const tTVPRect &cliprect,
+			tTVPLayerType type, tjs_int opacity)
 		{
 			if(bmp != Bitmap)
 			{
@@ -6354,17 +6154,18 @@ tTVPBaseTexture * tTJSNI_BaseLayer::Complete(const tTVPRect & rect)
 		return CacheBitmap;
 	}
 
-	tTVPComplexRect ur;
-	ur.Or(rect);
 	// create drawable object
 	tCompleteDrawable drawable(CacheBitmap, DisplayType);
 
 	// complete
+	tTVPComplexRect ur;
+	ur.Or(rect);
 	InternalComplete(ur, &drawable); // complete cache
+
 	return CacheBitmap;
 }
 //---------------------------------------------------------------------------
-tTVPBaseTexture * tTJSNI_BaseLayer::Complete()
+tTVPBaseBitmap * tTJSNI_BaseLayer::Complete()
 {
 	// complete entire area of the layer
 	tTVPRect r;
@@ -6692,7 +6493,7 @@ void tTJSNI_BaseLayer::InvokeTransition(tjs_uint64 tick)
 	}
 }
 //---------------------------------------------------------------------------
-void tTJSNI_BaseLayer::DoDivisibleTransition(iTVPBaseBitmap *dest,
+void tTJSNI_BaseLayer::DoDivisibleTransition(tTVPBaseBitmap *dest,
 	tjs_int dx, tjs_int dy, const tTVPRect &srcrect)
 {
 	// apply transition ( with no children ) over given target bitmap
@@ -6755,7 +6556,7 @@ void tTJSNI_BaseLayer::DoDivisibleTransition(iTVPBaseBitmap *dest,
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-tTVPBaseTexture * tTJSNI_BaseLayer::tTransDrawable::
+tTVPBaseBitmap * tTJSNI_BaseLayer::tTransDrawable::
 	GetDrawTargetBitmap(const tTVPRect &rect, tTVPRect &cliprect)
 {
 	// save target bitmap pointer
@@ -6770,7 +6571,7 @@ tTVPLayerType tTJSNI_BaseLayer::tTransDrawable::GetTargetLayerType()
 }
 //---------------------------------------------------------------------------
 void tTJSNI_BaseLayer::tTransDrawable::DrawCompleted(const tTVPRect &destrect,
-	tTVPBaseTexture *bmp, const tTVPRect &cliprect, tTVPLayerType type,
+	tTVPBaseBitmap *bmp, const tTVPRect &cliprect, tTVPLayerType type,
 		tjs_int opacity)
 {
 	// do divisible transition
@@ -6782,7 +6583,7 @@ void tTJSNI_BaseLayer::tTransDrawable::DrawCompleted(const tTVPRect &destrect,
 	data.Width = cliprect.get_width();
 	data.Height = cliprect.get_height();
 
-    iTVPBaseBitmap * src1bmp;
+	tTVPBaseBitmap * src1bmp;
 	if(Owner->TransUpdateType == tutDivisible)
 		src1bmp = Src1Bmp;
 	else
@@ -6798,7 +6599,7 @@ void tTJSNI_BaseLayer::tTransDrawable::DrawCompleted(const tTVPRect &destrect,
 	data.Src1Left = cliprect.left;
 	data.Src1Top = cliprect.top;
 
-	tTVPBaseTexture *src = NULL;
+	tTVPBaseBitmap *src = NULL;
 	if(Owner->TransSrc)
 	{
 		// source available
@@ -6822,7 +6623,7 @@ void tTJSNI_BaseLayer::tTransDrawable::DrawCompleted(const tTVPRect &destrect,
 		data.Src2 = NULL;
 	}
 
-	tTVPBaseTexture *dest;
+	tTVPBaseBitmap *dest;
 	bool tempalloc = false;
 	if(bmp == Target || Target == NULL)
 	{
@@ -7327,8 +7128,8 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/copyRect)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 7) return TJS_E_BADPARAMCOUNT;
 
-	iTVPBaseBitmap* src = NULL;
-	iTVPBaseBitmap* provinceSrc = NULL;
+	tTVPBaseBitmap* src = NULL;
+	tTVPBaseBitmap* provinceSrc = NULL;
 	tTJSVariantClosure clo = param[2]->AsObjectClosureNoAddRef();
 	if(clo.Object)
 	{
@@ -7369,7 +7170,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/copy9Patch)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 1) return TJS_E_BADPARAMCOUNT;
 
-	iTVPBaseBitmap* src = NULL;
+	tTVPBaseBitmap* src = NULL;
 	tTJSVariantClosure clo = param[0]->AsObjectClosureNoAddRef();
 	if(clo.Object)
 	{
@@ -7414,7 +7215,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/operateRect)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 7) return TJS_E_BADPARAMCOUNT;
 
-	iTVPBaseBitmap* src = NULL;
+	tTVPBaseBitmap* src = NULL;
 	tTJSVariantClosure clo = param[2]->AsObjectClosureNoAddRef();
 	tTVPBlendOperationMode automode = omAlpha;
 	if(clo.Object)
@@ -7470,7 +7271,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/stretchCopy)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 9) return TJS_E_BADPARAMCOUNT;
 
-	iTVPBaseBitmap* src = NULL;
+	tTVPBaseBitmap* src = NULL;
 	tTJSVariantClosure clo = param[4]->AsObjectClosureNoAddRef();
 	if(clo.Object)
 	{
@@ -7523,7 +7324,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/operateStretch)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 9) return TJS_E_BADPARAMCOUNT;
 
-	iTVPBaseBitmap* src = NULL;
+	tTVPBaseBitmap* src = NULL;
 	tTJSVariantClosure clo = param[4]->AsObjectClosureNoAddRef();
 	tTVPBlendOperationMode automode = omAlpha;
 	if(clo.Object)
@@ -7591,7 +7392,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/affineCopy)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 12) return TJS_E_BADPARAMCOUNT;
 
-	iTVPBaseBitmap* src = NULL;
+	tTVPBaseBitmap* src = NULL;
 	tTJSVariantClosure clo = param[0]->AsObjectClosureNoAddRef();
 	if(clo.Object)
 	{
@@ -7664,7 +7465,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/operateAffine)
 	TJS_GET_NATIVE_INSTANCE(/*var. name*/_this, /*var. type*/tTJSNI_Layer);
 	if(numparams < 12) return TJS_E_BADPARAMCOUNT;
 
-	iTVPBaseBitmap* src = NULL;
+	tTVPBaseBitmap* src = NULL;
 	tTJSVariantClosure clo = param[0]->AsObjectClosureNoAddRef();
 	tTVPBlendOperationMode automode = omAlpha;
 	if(clo.Object)
@@ -10066,16 +9867,21 @@ void tTJSNI_Font::GetFontGlyphDrawRect( const ttstr & text, tTVPRect& area )
 	}
 }
 //---------------------------------------------------------------------------
-extern void TVPGetAllFontList(std::vector<tjs_string>& list);
 void tTJSNI_Font::GetFontList(tjs_uint32 flags, std::vector<ttstr> & list)
 {
 	if( Layer ) Layer->GetFontList(flags,list);
 	else
 	{
+#if 0
+		TVPFontSystem->GetFontList( list, flags, Font );
+#endif
+		//XXX: Fix!
+#if 0
 		std::vector<tjs_string> ansilist;
 		TVPGetAllFontList(ansilist);
 		for(std::vector<tjs_string>::iterator i = ansilist.begin(); i != ansilist.end(); i++)
 			list.push_back(i->c_str());
+#endif
 	}
 }
 //---------------------------------------------------------------------------
@@ -10254,6 +10060,7 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/unmapPrerenderedFont)
 }
 TJS_END_NATIVE_METHOD_DECL(/*func. name*/unmapPrerenderedFont)
 //----------------------------------------------------------------------
+//XXX: Fix!
 #if 0
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/addFont)
 {
@@ -10513,6 +10320,7 @@ struct tFontClassHolder {
 extern void TVPInializeFontRasterizers();
 tTJSNativeClass * TVPCreateNativeClass_Font()
 {
+	//XXX: Fix!
 #if 0
 	TVPInializeFontRasterizers();
 #endif

@@ -15,11 +15,6 @@
 #include "ComplexRect.h"
 #include "tvpgl.h"
 #include "argb.h"
-#include "drawable.h"
-
-#ifndef TVP_REVRGB
-#define TVP_REVRGB(v) ((v & 0xFF00FF00) | ((v >> 16) & 0xFF) | ((v & 0xFF) << 16))
-#endif
 
 /*[*/
 //---------------------------------------------------------------------------
@@ -145,16 +140,20 @@ extern tjs_int TVPGetProcessorNum(void);
 
 
 //---------------------------------------------------------------------------
-// iTVPBaseBitmap
+// tTVPBaseBitmap
 //---------------------------------------------------------------------------
 class tTVPNativeBaseBitmap;
-class iTVPBaseBitmap : public tTVPNativeBaseBitmap
+class tTVPBaseBitmap : public tTVPNativeBaseBitmap
 {
 public:
+	tTVPBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp = 32, bool unpadding=false);
+	tTVPBaseBitmap(const tTVPBaseBitmap & r) :
+		tTVPNativeBaseBitmap(r) {}
+	~tTVPBaseBitmap();
 
-#if 0
-	void operator =(const iTVPBaseBitmap & rhs) { Assign(rhs); }
-#endif
+public:
+
+	void operator =(const tTVPBaseBitmap & rhs) { Assign(rhs); }
 
 	// metrics
 	void SetSizeWithFill(tjs_uint w, tjs_uint h, tjs_uint32 fillvalue);
@@ -166,16 +165,15 @@ public:
 	bool SetPointMask(tjs_int x, tjs_int y, tjs_int mask); // for 32bpp
 
 	// drawing stuff
-	virtual bool Fill(tTVPRect rect, tjs_uint32 value);
+	bool Fill(tTVPRect rect, tjs_uint32 value);
 
 	bool FillColor(tTVPRect rect, tjs_uint32 color, tjs_int opa);
 
 private:
 	bool BlendColor(tTVPRect rect, tjs_uint32 color, tjs_int opa, bool additive);
 
-#if 0
         struct PartialFillParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_uint8 *dest;
           tjs_int x;
           tjs_int y;
@@ -189,7 +187,7 @@ private:
         void PartialFill(const PartialFillParam *param);
 
         struct PartialFillColorParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_uint8 *dest;
           tjs_int x;
           tjs_int y;
@@ -203,7 +201,7 @@ private:
         void PartialFillColor(const PartialFillColorParam *param);
 
         struct PartialBlendColorParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_uint8 *dest;
           tjs_int x;
           tjs_int y;
@@ -218,7 +216,7 @@ private:
         void PartialBlendColor(const PartialBlendColorParam *param);
 
         struct PartialRemoveConstOpacityParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_uint8 *dest;
           tjs_int x;
           tjs_int y;
@@ -231,7 +229,7 @@ private:
         void PartialRemoveConstOpacity(const PartialRemoveConstOpacityParam *param);
   
         struct PartialFillMaskParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_uint8 *dest;
           tjs_int x;
           tjs_int y;
@@ -244,7 +242,7 @@ private:
         void PartialFillMask(const PartialFillMaskParam *param);
 
         struct PartialCopyRectParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_int pixelsize;
           tjs_uint8 *dest;
           tjs_int dpitch;
@@ -263,7 +261,7 @@ private:
         void PartialCopyRect(const PartialCopyRectParam *param);
 
         struct PartialBltParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_uint8 *dest;
           tjs_int dpitch;
           tjs_int dx;
@@ -280,7 +278,6 @@ private:
         };
         static void TJS_USERENTRY PartialBltEntry(void *param);
         void PartialBlt(const PartialBltParam *param);
-#endif
 
 public:
 	bool FillColorOnAlpha(tTVPRect rect, tjs_uint32 color, tjs_int opa)
@@ -297,22 +294,26 @@ public:
 
 	bool FillMask(tTVPRect rect, tjs_int value);
 
-	virtual bool CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
+	bool CopyRect(tjs_int x, tjs_int y, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, tjs_int plane = (TVP_BB_COPY_MAIN|TVP_BB_COPY_MASK));
 
     /**
      * @param ref : コピー元画像(9patch形式)
      * @param margin : 9patchの右下にある描画領域指定を取得する
      */
-    bool Copy9Patch( const iTVPBaseBitmap *ref, tTVPRect& margin );
+    bool Copy9Patch( const tTVPBaseBitmap *ref, tTVPRect& margin );
 
-	bool Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
+	/**
+	 * 9patch用の情報を読み込む
+	 * @param scale 拡大情報
+	 * @param margin マージン情報
+	 */
+	void Read9PatchInfo( tTVPRect& scale, tTVPRect& margin ) const;
+
+	bool Blt(tjs_int x, tjs_int y, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, tTVPBBBltMethod method, tjs_int opa,
 			bool hda = true);
-	bool Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-		const tTVPRect &refrect, tTVPLayerType type, tjs_int opa, bool hda = true);
 
-#if 0
 	// sの最下位8ビットをそのまま出力。DoGrayScaleされた画像を8bit化することを想定
 	struct GrayToAlphaFunctor { inline tjs_uint8 operator()( tjs_uint32 s ) const { return (tjs_uint8)(s&0xff); } };
 	// sをRGB各要素にコピーし、alphaに0xffを入れる
@@ -347,14 +348,12 @@ private:
 			tjs_uint8 * destp, tjs_int destpitch,
 			tjs_int x_step, tjs_int y_step,
 			const tjs_uint8 * refp, tjs_int refpitch);
-#endif
 
 public:
-	bool StretchBlt(tTVPRect cliprect, tTVPRect destrect, const iTVPBaseBitmap *ref,
+	bool StretchBlt(tTVPRect cliprect, tTVPRect destrect, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, tTVPBBBltMethod method, tjs_int opa,
 			bool hda = true, tTVPBBStretchType type = stNearest, tjs_real typeopt=0.0);
 
-#if 0
 private:
 	template <typename tFuncStretch, typename tFuncAffine>
 	static void TVPDoAffineLoop(
@@ -388,7 +387,7 @@ private:
 			const tTVPRect & srcrect);
 
         struct PartialAffineBltParam {
-          iTVPBaseBitmap *self;
+          tTVPBaseBitmap *self;
           tjs_uint8 *dest;
           tjs_int destpitch;
           tjs_int yc;
@@ -421,23 +420,22 @@ private:
         static void TJS_USERENTRY PartialAffineBltEntry(void *param);
         void PartialAffineBlt(PartialAffineBltParam *param);
 
-	int InternalAffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
+	int InternalAffineBlt(tTVPRect destrect, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, const tTVPPointD * points,
 			tTVPBBBltMethod method, tjs_int opa,
 			tTVPRect * updaterect = NULL,
 			bool hda = true, tTVPBBStretchType mode = stNearest, bool clear = false,
 				tjs_uint32 clearcolor = 0);
-#endif
 
 public:
-	bool AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
+	bool AffineBlt(tTVPRect destrect, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, const tTVPPointD * points,
 			tTVPBBBltMethod method, tjs_int opa,
 			tTVPRect * updaterect = NULL,
 			bool hda = true, tTVPBBStretchType mode = stNearest, bool clear = false,
 				tjs_uint32 clearcolor = 0);
 
-	bool AffineBlt(tTVPRect destrect, const iTVPBaseBitmap *ref,
+	bool AffineBlt(tTVPRect destrect, const tTVPBaseBitmap *ref,
 		tTVPRect refrect, const t2DAffineMatrix & matrix,
 			tTVPBBBltMethod method, tjs_int opa,
 			tTVPRect * updaterect = NULL,
@@ -445,10 +443,8 @@ public:
 				tjs_uint32 clearcolor = 0);
 
 private:
-#if 0
 	template <typename tARGB>
 	void DoBoxBlurLoop(const tTVPRect &rect, const tTVPRect & area);
-#endif
 
 	bool InternalDoBoxBlur(tTVPRect rect, tTVPRect area, bool hasalpha);
 
@@ -470,34 +466,11 @@ public:
 
 	// font and text related functions are implemented in each platform.
 
-};
-//---------------------------------------------------------------------------
-class iTVPRenderManager;
-class tTVPBaseBitmap : public iTVPBaseBitmap // for ProvinceImage
-{
 public:
-	tTVPBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp = 32);
-	tTVPBaseBitmap(const iTVPBaseBitmap& r) : iTVPBaseBitmap(r) {}
-	virtual bool AssignBitmap(tTVPBitmap *bmp);
-	virtual iTVPRenderManager* GetRenderManager();
-	bool Fill(tTVPRect rect, tjs_uint32 value) override;
-	virtual bool CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-		tTVPRect refrect, tjs_int plane = (TVP_BB_COPY_MAIN | TVP_BB_COPY_MASK));
-	void UDFlip(const tTVPRect &rect);
-	void LRFlip(const tTVPRect &rect);
 };
 //---------------------------------------------------------------------------
 
 
 
 
-class tTVPBaseTexture : public iTVPBaseBitmap
-{
-public:
-	tTVPBaseTexture(tjs_uint w, tjs_uint h, tjs_uint bpp = 32);
-	tTVPBaseTexture(const iTVPBaseBitmap& r) : iTVPBaseBitmap(r) {}
-	virtual bool AssignBitmap(tTVPBitmap *bmp);
-	virtual iTVPRenderManager* GetRenderManager();
-	void Update(const void *pixel, unsigned int pitch, int x, int y, int w, int h);
-};
 #endif

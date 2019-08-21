@@ -23,12 +23,13 @@
 #include "LayerBitmapIntf.h"
 #include "MsgIntf.h"
 
+#if 0
+// move to intf
 void tTVPGraphicHandlerType::Load( void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback, tTVPGraphicScanLineCallback scanlinecallback,
 	tTVPMetaInfoPushCallback metainfopushcallback, tTJSBinaryStream *src, tjs_int32 keyidx, tTVPGraphicLoadMode mode)
 {
 	if( LoadHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, TJS_W("unknown"));
 
-#if 0
 	if( IsPlugin )
 	{
 		tTVPIStreamAdapter *istream = new tTVPIStreamAdapter(src);
@@ -44,18 +45,16 @@ void tTVPGraphicHandlerType::Load( void* formatdata, void *callbackdata, tTVPGra
 		istream->Release();
 	}
 	else
-#endif
 	{
 		LoadHandler( formatdata, callbackdata, sizecallback, scanlinecallback, metainfopushcallback,
 			src, keyidx, mode);
 	}
 }
-void tTVPGraphicHandlerType::Save( const ttstr & storagename, const ttstr & mode, const iTVPBaseBitmap* image, iTJSDispatch2* meta )
+void tTVPGraphicHandlerType::Save( const ttstr & storagename, const ttstr & mode, const tTVPBaseBitmap* image, iTJSDispatch2* meta )
 {
 	if( SaveHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, mode );
 
 	tTJSBinaryStream *stream = TVPCreateStream(TVPNormalizeStorageName(storagename), TJS_BS_WRITE);
-#if 0
 	if( IsPlugin )
 	{
 		tTVPIStreamAdapter *istream = new tTVPIStreamAdapter(stream);
@@ -70,7 +69,6 @@ void tTVPGraphicHandlerType::Save( const ttstr & storagename, const ttstr & mode
 		istream->Release();
 	}
 	else
-#endif
 	{
 		try {
 			SaveHandler( FormatData, stream, image, mode, meta );
@@ -85,7 +83,6 @@ void tTVPGraphicHandlerType::Header( tTJSBinaryStream *src, iTJSDispatch2** dic 
 {
 	if( HeaderHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, TJS_W("unknown") );
 
-#if 0
 	if( IsPlugin )
 	{
 		tTVPIStreamAdapter *istream = new tTVPIStreamAdapter(src);
@@ -100,11 +97,11 @@ void tTVPGraphicHandlerType::Header( tTJSBinaryStream *src, iTJSDispatch2** dic 
 		istream->Release();
 	}
 	else
-#endif
 	{
 		HeaderHandler( FormatData, src, dic );
 	}
 }
+#endif
 #if 0
 /*
 	support of SPI for archive files is in StorageImpl.cpp

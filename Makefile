@@ -8,9 +8,6 @@ TVP_AUDIO_ENABLE_FFMPEG ?= 1
 TVP_ARCHIVE_ENABLE_XP3 ?= 1
 TVP_COMPRESSION_ENABLE_ZLIB ?= 1
 TVP_TJS_ENABLE_ONIG ?= 1
-TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION ?=
-TVP_RENDERER_ENABLE_OPENCV ?= 1
-TVP_RENDERER_ENABLE_FFMPEG ?=
 CC = clang
 CXX = clang++
 AR = 
@@ -49,13 +46,6 @@ ifdef TVP_COMPRESSION_ENABLE_ZLIB
 	CFLAGS += -I/usr/local/opt/zlib/include
 	LDFLAGS += -L/usr/local/opt/zlib/lib
 	LDLIBS += -lz
-endif
-
-ifdef TVP_RENDERER_ENABLE_OPENCV
-	CFLAGS += -DTVP_RENDERER_ENABLE_OPENCV
-	CFLAGS += -I/usr/local/opt/opencv/include/opencv4
-	LDFLAGS += -L/usr/local/opt/opencv/lib
-	LDLIBS += -lopencv_core -lopencv_imgproc
 endif
 
 CFLAGS += -I/usr/local/opt/sdl2/include/SDL2
@@ -97,23 +87,13 @@ ifdef TVP_AUDIO_ENABLE_VORBIS
 	LDLIBS += -lvorbis -lvorbisfile
 endif
 
-ifneq '$(TVP_AUDIO_ENABLE_FFMPEG)$(TVP_RENDERER_ENABLE_FFMPEG)' ''
+ifdef TVP_AUDIO_ENABLE_FFMPEG
 	CFLAGS += -I/usr/local/opt/ffmpeg/include
 	LDFLAGS += -L/usr/local/opt/ffmpeg/lib
 	LDLIBS += -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale
 endif
 ifdef TVP_AUDIO_ENABLE_FFMPEG
 	CFLAGS += -DTVP_AUDIO_ENABLE_FFMPEG
-endif
-ifdef TVP_RENDERER_ENABLE_FFMPEG
-	CFLAGS += -DTVP_RENDERER_ENABLE_FFMPEG
-endif
-
-ifdef TVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
-	CFLAGS += -DTVP_RENDERER_ENABLE_ADDITIONAL_COMPRESSION
-	CFLAGS += -I/usr/local/opt/xxhash/include -I/usr/local/opt/lz4/include
-	LDFLAGS += -L/usr/local/opt/xxhash/lib -L/usr/local/opt/lz4/lib
-	LDLIBS += -lxxhash -llz4
 endif
 
 ifdef TVP_ARCHIVE_ENABLE_XP3
@@ -240,7 +220,6 @@ SOURCES += src/core/visual/LayerManager.cpp
 SOURCES += src/core/visual/LayerTreeOwnerImpl.cpp
 SOURCES += src/core/visual/PrerenderedFont.cpp
 SOURCES += src/core/visual/RectItf.cpp
-SOURCES += src/core/visual/RenderManager.cpp
 SOURCES += src/core/visual/TransIntf.cpp
 SOURCES += src/core/visual/VideoOvlIntf.cpp
 SOURCES += src/core/visual/WindowIntf.cpp
@@ -260,13 +239,11 @@ SOURCES += src/core/visual/win32/TVPScreen.cpp
 SOURCES += src/core/visual/win32/VideoOvlImpl.cpp
 SOURCES += src/core/visual/win32/WindowImpl.cpp
 SOURCES += src/plugins/InternalPlugins.cpp
-SOURCES += src/plugins/LayerExBase.cpp
 SOURCES += src/plugins/addFont.cpp
 SOURCES += src/plugins/csvParser.cpp
 SOURCES += src/plugins/dirlist.cpp
 SOURCES += src/plugins/fftgraph.cpp
 SOURCES += src/plugins/getSample.cpp
-SOURCES += src/plugins/layerExPerspective.cpp
 SOURCES += src/plugins/ncbind/ncbind.cpp
 SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp

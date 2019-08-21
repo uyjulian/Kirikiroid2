@@ -19,8 +19,6 @@
 #include "tvpgl.h"
 #include "TickCount.h"
 #include "DebugIntf.h"
-#include "RenderManager.h"
-#include "Platform.h"
 
 
 // #define TVP_TRANS_SHOW_FPS
@@ -147,7 +145,7 @@ tjs_error TJS_INTF_METHOD tTVPSimpleImageProvider::LoadImage(
 {
 	if(bpp != 8 && bpp != 32) return TJS_E_FAIL; // invalid bitmap color depth
 
-	tTVPBaseTexture *bitmap = new tTVPBaseTexture(TVPGetInitialBitmap());
+	tTVPBaseBitmap *bitmap = new tTVPBaseBitmap(TVPGetInitialBitmap());
 
 	try
 	{
@@ -168,7 +166,6 @@ tTVPSimpleImageProvider TVPSimpleImageProvider;
 
 
 
-#if 0
 //---------------------------------------------------------------------------
 // Image Provider Service for other plug-ins
 //---------------------------------------------------------------------------
@@ -195,7 +192,6 @@ iTVPScanLineProvider * TVPSLPLoadImage(const ttstr &name, tjs_int bpp,
 	return pro;
 }
 //---------------------------------------------------------------------------
-#endif
 
 
 
@@ -204,7 +200,7 @@ iTVPScanLineProvider * TVPSLPLoadImage(const ttstr &name, tjs_int bpp,
 // iTVPScanLineProvider implementation for image provider ( holds tTVPBaseBitmap )
 //---------------------------------------------------------------------------
 tTVPScanLineProviderForBaseBitmap::
-	tTVPScanLineProviderForBaseBitmap(iTVPBaseBitmap *bmp, bool own)
+	tTVPScanLineProviderForBaseBitmap(tTVPBaseBitmap *bmp, bool own)
 {
 	RefCount = 1;
 	Own = own;
@@ -216,7 +212,7 @@ tTVPScanLineProviderForBaseBitmap::~tTVPScanLineProviderForBaseBitmap()
 	if(Own) if(Bitmap) delete Bitmap;
 }
 //---------------------------------------------------------------------------
-void tTVPScanLineProviderForBaseBitmap::Attach(iTVPBaseBitmap *bmp)
+void tTVPScanLineProviderForBaseBitmap::Attach(tTVPBaseBitmap *bmp)
 {
 	// attach bitmap
 	Bitmap = bmp;
@@ -250,7 +246,6 @@ tjs_error TJS_INTF_METHOD
 	if(height) *height = Bitmap->GetHeight();
 	return TJS_S_OK;
 }
-#if 0
 //---------------------------------------------------------------------------
 tjs_error TJS_INTF_METHOD
 	tTVPScanLineProviderForBaseBitmap::GetPixelFormat(/*out*/tjs_int *bpp)
@@ -296,17 +291,7 @@ tjs_error TJS_INTF_METHOD
 	return TJS_S_OK;
 }
 //---------------------------------------------------------------------------
-#endif
 
-iTVPTexture2D * tTVPScanLineProviderForBaseBitmap::GetTexture()
-{
-	return Bitmap->GetTexture();
-}
-
-iTVPTexture2D * tTVPScanLineProviderForBaseBitmap::GetTextureForRender()
-{
-	return Bitmap->GetTextureForRender(false, nullptr);
-}
 
 
 
@@ -365,14 +350,8 @@ iTVPTransHandlerProvider * TVPFindTransHandlerProvider(const ttstr &name)
 
 	tTVPTransHandlerProviderHolder *holder =
 		TVPTransHandlerProviders.Find(name);
-	if (!holder) {
-		static bool showed = false;
-		if (!showed) {
-			TVPAddLog(TVPFormatMessage(TVPCannotFindTransHander, name));
-			showed = true;
-		}
-		holder = TVPTransHandlerProviders.Find(TJS_W("crossfade"));
-	}
+	if(!holder)
+		TVPThrowExceptionMessage(TVPCannotFindTransHander, name);
 
 	iTVPTransHandlerProvider * pro = holder->GetObjectNoAddRef();
 	pro->AddRef();
@@ -480,70 +459,80 @@ public:
 	virtual void Blend(tTVPDivisibleData *data);
 };
 //---------------------------------------------------------------------------
-
-tTVPCrossFadeTransHandlerProvider::tTVPCrossFadeTransHandlerProvider()
+class tTVPCrossFadeTransHandlerProvider : public iTVPTransHandlerProvider
 {
-	RefCount = 1;
-}
+	tjs_int RefCount;
+public:
+	tTVPCrossFadeTransHandlerProvider() { RefCount = 1; }
+	virtual ~tTVPCrossFadeTransHandlerProvider() { };
 
-tTVPCrossFadeTransHandlerProvider::~tTVPCrossFadeTransHandlerProvider()
-{
-
-}
-
-tjs_error TJS_INTF_METHOD tTVPCrossFadeTransHandlerProvider::AddRef()
-{
-	RefCount++;
-	return TJS_S_OK;
-}
-
-tjs_error TJS_INTF_METHOD tTVPCrossFadeTransHandlerProvider::Release()
-{
-	if (RefCount == 1) delete this; else RefCount--;
-	return TJS_S_OK;
-}
-
-tjs_error TJS_INTF_METHOD tTVPCrossFadeTransHandlerProvider::GetName(/*out*/const tjs_char ** name)
-{
-	if (name)
+	tjs_error TJS_INTF_METHOD AddRef()
 	{
-		*name = TJS_W("crossfade"); return TJS_S_OK;
-	} else
-	{
-		return TJS_E_FAIL;
+		RefCount ++;
+		return TJS_S_OK;
 	}
-}
 
-tjs_error TJS_INTF_METHOD tTVPCrossFadeTransHandlerProvider::StartTransition(/*in*/iTVPSimpleOptionProvider *options, /* option provider */ /*in*/iTVPSimpleImageProvider *imagepro, /* image provider */ /*in*/tTVPLayerType layertype, /* destination layer type */ /*in*/tjs_uint src1w, tjs_uint src1h, /* source 1 size */ /*in*/tjs_uint src2w, tjs_uint src2h, /* source 2 size */ /*out*/tTVPTransType *type, /* transition type */ /*out*/tTVPTransUpdateType * updatetype, /* update typwe */ /*out*/iTVPBaseTransHandler ** handler /* transition handler */)
-{
-	if (type) *type = ttExchange; // transition type : exchange
-	if (updatetype) *updatetype = tutDivisibleFade;
-	// update type : divisible fade
-	if (!handler) return TJS_E_FAIL;
-	if (!options) return TJS_E_FAIL;
+	tjs_error TJS_INTF_METHOD Release()
+	{
+		if(RefCount == 1) delete this; else RefCount--;
+		return TJS_S_OK;
+	}
 
-	if (src1w != src2w || src1h != src2h)
-		TVPThrowExceptionMessage(TVPTransitionLayerSizeMismatch,
-		ttstr((tjs_int)src2w) + TJS_W("x") + ttstr((tjs_int)src2h),
-		ttstr((tjs_int)src1w) + TJS_W("x") + ttstr((tjs_int)src1h));
+	tjs_error TJS_INTF_METHOD GetName(
+			/*out*/const tjs_char ** name)
+	{
+		if(name)
+			{ *name = TJS_W("crossfade"); return TJS_S_OK; }
+		else
+			{ return TJS_E_FAIL; }
 
-	*handler = GetTransitionObject(options, imagepro, layertype, src1w, src1h,
-		src2w, src2h);
+	}
 
-	return TJS_S_OK;
-}
+	tjs_error TJS_INTF_METHOD StartTransition(
+			/*in*/iTVPSimpleOptionProvider *options, // option provider
+			/*in*/iTVPSimpleImageProvider *imagepro, // image provider
+			/*in*/tTVPLayerType layertype, // destination layer type
+			/*in*/tjs_uint src1w, tjs_uint src1h, // source 1 size
+			/*in*/tjs_uint src2w, tjs_uint src2h, // source 2 size
+			/*out*/tTVPTransType *type, // transition type
+			/*out*/tTVPTransUpdateType * updatetype, // update typwe
+			/*out*/iTVPBaseTransHandler ** handler // transition handler
+			)
+	{
+		if(type) *type = ttExchange; // transition type : exchange
+		if(updatetype) *updatetype = tutDivisibleFade;
+			// update type : divisible fade
+		if(!handler) return TJS_E_FAIL;
+		if(!options) return TJS_E_FAIL;
 
-iTVPBaseTransHandler * tTVPCrossFadeTransHandlerProvider::GetTransitionObject(/*in*/iTVPSimpleOptionProvider *options, /* option provider */ /*in*/iTVPSimpleImageProvider *imagepro, /* image provider */ /*in*/tTVPLayerType layertype, /*in*/tjs_uint src1w, tjs_uint src1h, /* source 1 size */ /*in*/tjs_uint src2w, tjs_uint src2h) // source 2 size
-{
-	tjs_int64 time;
-	tjs_error er = options->GetAsNumber(TJS_W("time"), (tjs_int64 *)&time);
-	if (TJS_FAILED(er)) TVPThrowExceptionMessage(TVPSpecifyOption, TJS_W("time"));
-	if (time < 2) time = 2; // too small time may cause problem
+		if(src1w != src2w || src1h != src2h)
+			TVPThrowExceptionMessage(TVPTransitionLayerSizeMismatch,
+				ttstr((tjs_int)src2w) + TJS_W("x") + ttstr((tjs_int)src2h),
+				ttstr((tjs_int)src1w) + TJS_W("x") + ttstr((tjs_int)src1h) );
 
-	return  (iTVPBaseTransHandler *)
-		(new tTVPCrossFadeTransHandler(options, layertype, time));
-}
+		*handler = GetTransitionObject(options, imagepro, layertype, src1w, src1h,
+			src2w, src2h);
 
+		return TJS_S_OK;
+	}
+
+
+	virtual iTVPBaseTransHandler * GetTransitionObject(
+			/*in*/iTVPSimpleOptionProvider *options, // option provider
+			/*in*/iTVPSimpleImageProvider *imagepro, // image provider
+			/*in*/tTVPLayerType layertype,
+			/*in*/tjs_uint src1w, tjs_uint src1h, // source 1 size
+			/*in*/tjs_uint src2w, tjs_uint src2h) // source 2 size
+	{
+		tjs_int64 time;
+		tjs_error er = options->GetAsNumber(TJS_W("time"), (tjs_int64 *)&time);
+		if(TJS_FAILED(er)) TVPThrowExceptionMessage(TVPSpecifyOption, TJS_W("time"));
+		if(time < 2) time = 2; // too small time may cause problem
+
+		return  (iTVPBaseTransHandler *)
+			(new tTVPCrossFadeTransHandler(options, layertype, time));
+	}
+};
 //---------------------------------------------------------------------------
 tjs_error TJS_INTF_METHOD tTVPCrossFadeTransHandler::
 	StartProcess(tjs_uint64 tick)
@@ -645,7 +634,6 @@ tjs_error TJS_INTF_METHOD tTVPCrossFadeTransHandler::Process(
 void tTVPCrossFadeTransHandler::Blend(tTVPDivisibleData *data)
 {
 	// blend
-#if 0
 	tjs_uint8 *dest;
 	const tjs_uint8 *src1;
 	const tjs_uint8 *src2;
@@ -694,30 +682,6 @@ void tTVPCrossFadeTransHandler::Blend(tTVPDivisibleData *data)
 			dest += destpitch, src1 += src1pitch, src2 += src2pitch;
 		}
 	}
-#endif
-	iTVPRenderMethod *method;
-	int opa_id;
-	if (TVPIsTypeUsingAlpha(DestLayerType)) {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("ConstAlphaBlend_SD_d");
-		static int _opa_id = _method->EnumParameterID("opacity");
-		method = _method; opa_id = _opa_id;
-	} else if (TVPIsTypeUsingAddAlpha(DestLayerType)) {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("ConstAlphaBlend_SD_a");
-		static int _opa_id = _method->EnumParameterID("opacity");
-		method = _method; opa_id = _opa_id;
-	} else {
-		static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("ConstAlphaBlend_SD");
-		static int _opa_id = _method->EnumParameterID("opacity");
-		method = _method; opa_id = _opa_id;
-	}
-	method->SetParameterOpa(opa_id, Phase);
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(data->Src1->GetTexture(), tTVPRect(data->Src1Left, data->Src1Top, data->Src1Left + data->Width, data->Src1Top + data->Height)),
-		tRenderTexRectArray::Element(data->Src2->GetTexture(), tTVPRect(data->Src2Left, data->Src2Top, data->Src2Left + data->Width, data->Src2Top + data->Height))
-	};
-	TVPGetRenderManager()->OperateRect(method, data->Dest->GetTextureForRender(),
-		nullptr, tTVPRect(data->DestLeft, data->DestTop, data->DestLeft + data->Width, data->DestTop + data->Height),
-		tRenderTexRectArray(src_tex));
 }
 //---------------------------------------------------------------------------
 tjs_error TJS_INTF_METHOD tTVPCrossFadeTransHandler::MakeFinalImage(
@@ -745,11 +709,7 @@ class tTVPUniversalTransHandler : public tTVPCrossFadeTransHandler
 
 	tjs_int Vague;
 	iTVPScanLineProvider * Rule;
-#if 0
 	tjs_uint32 BlendTable[256];
-#endif
-	iTVPRenderMethod *Method;
-	tjs_int MethodPhaseID, MethodVagueID;
 
 
 public:
@@ -762,21 +722,6 @@ public:
 		Vague = vague;
 		Rule = rule;
 		Rule->AddRef();
-
-		if (TVPIsTypeUsingAlpha(DestLayerType)) {
-			static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("UnivTransBlend_d");
-			static int phase_id = _method->EnumParameterID("phase"), vague_id = _method->EnumParameterID("vague");
-			Method = _method; MethodPhaseID = phase_id; MethodVagueID = vague_id;
-		} else if (TVPIsTypeUsingAddAlpha(DestLayerType)) {
-			static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("UnivTransBlend_a");
-			static int phase_id = _method->EnumParameterID("phase"), vague_id = _method->EnumParameterID("vague");
-			Method = _method; MethodPhaseID = phase_id; MethodVagueID = vague_id;
-		} else {
-			static iTVPRenderMethod *_method = TVPGetRenderManager()->GetRenderMethod("UnivTransBlend");
-			static int phase_id = _method->EnumParameterID("phase"), vague_id = _method->EnumParameterID("vague");
-			Method = _method; MethodPhaseID = phase_id; MethodVagueID = vague_id;
-		}
-		Method->SetParameterInt(MethodVagueID, vague);
 	}
 
 	~tTVPUniversalTransHandler()
@@ -865,9 +810,7 @@ tjs_error TJS_INTF_METHOD tTVPUniversalTransHandler::StartProcess(
 	if(TJS_FAILED(er)) return er;
 
 	// start one frame of the transition
-	Method->SetParameterInt(MethodPhaseID, Phase);
 
-#if 0
 	// create blend table
 	if(TVPIsTypeUsingAlpha(DestLayerType))
 		TVPInitUnivTransBlendTable_d(BlendTable, Phase, Vague);
@@ -875,7 +818,6 @@ tjs_error TJS_INTF_METHOD tTVPUniversalTransHandler::StartProcess(
 		TVPInitUnivTransBlendTable_a(BlendTable, Phase, Vague);
 	else
 		TVPInitUnivTransBlendTable(BlendTable, Phase, Vague);
-#endif
 
 	return er;
 }
@@ -883,7 +825,6 @@ tjs_error TJS_INTF_METHOD tTVPUniversalTransHandler::StartProcess(
 void tTVPUniversalTransHandler::Blend(tTVPDivisibleData *data)
 {
 	// blend the image according with the rule graphic
-#if 0
 	tjs_uint8 *dest;
 	const tjs_uint8 *src1;
 	const tjs_uint8 *src2;
@@ -982,16 +923,7 @@ void tTVPUniversalTransHandler::Blend(tTVPDivisibleData *data)
 			}
 		}
 	}
-#endif
 
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(data->Src1->GetTexture(), tTVPRect(data->Src1Left, data->Src1Top, data->Src1Left + data->Width, data->Src1Top + data->Height)),
-		tRenderTexRectArray::Element(data->Src2->GetTexture(), tTVPRect(data->Src2Left, data->Src2Top, data->Src2Left + data->Width, data->Src2Top + data->Height)),
-		tRenderTexRectArray::Element(Rule->GetTexture(), tTVPRect(data->Left, data->Top, data->Left + data->Width, data->Top + data->Height))
-	};
-	TVPGetRenderManager()->OperateRect(Method, data->Dest->GetTextureForRender(),
-		nullptr, tTVPRect(data->DestLeft, data->DestTop, data->DestLeft + data->Width, data->DestTop + data->Height),
-		tRenderTexRectArray(src_tex));
 }
 //---------------------------------------------------------------------------
 
@@ -1008,7 +940,6 @@ static void TVPSLPCopyRect(iTVPScanLineProvider *destimg, tjs_int x, tjs_int y,
 	// overlapped.
 	// destimg and srcimg must be 32bpp bitmap.
 
-#if 0
 	tjs_uint8 *dest;
 	const tjs_uint8 *src;
 	tjs_int destpitch;
@@ -1030,15 +961,6 @@ static void TVPSLPCopyRect(iTVPScanLineProvider *destimg, tjs_int x, tjs_int y,
 		memcpy(dest, src, bytes);
 		dest += destpitch, src += srcpitch;
 	}
-#endif
-	static iTVPRenderMethod *method = TVPGetRenderManager()->GetRenderMethod("Copy");
-
-	tRenderTexRectArray::Element src_tex[] = {
-		tRenderTexRectArray::Element(srcimg->GetTexture(), srcrect)
-	};
-
-	TVPGetRenderManager()->OperateRect(method, destimg->GetTextureForRender(), nullptr,
-		tTVPRect(x, y, x + srcrect.get_width(), y + srcrect.get_height()), tRenderTexRectArray(src_tex));
 }
 //---------------------------------------------------------------------------
 class tTVPScrollTransHandler : public tTVPCrossFadeTransHandler

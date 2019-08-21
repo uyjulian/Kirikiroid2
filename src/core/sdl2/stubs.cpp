@@ -9,7 +9,9 @@
 #include "TickCount.h"
 #include "Random.h"
 #include "UtilStreams.h"
-#include "vkdefine.h"
+#ifndef _WIN32
+#include "VirtualKey.h"
+#endif
 #include "Platform.h"
 #include "Application.h"
 #include "ScriptMgnIntf.h"
@@ -17,7 +19,6 @@
 #include "TVPWindow.h"
 #include "VelocityTracker.h"
 #include "SystemImpl.h"
-#include "RenderManager.h"
 #include "VideoOvlIntf.h"
 #include "Exception.h"
 #include <SDL.h>
@@ -260,6 +261,8 @@ public:
 	}
 	virtual void SetZoom(tjs_int numer, tjs_int denom) override {
 	}
+	//XXX: Fix!
+#if 0
 	virtual void UpdateDrawBuffer(iTVPTexture2D *tex) override {
 		if (!tex) return;
 		//TODO: Update and swap SDL
@@ -271,6 +274,7 @@ public:
 		SDL_RenderPresent(renderer);
 		hasDrawn = true;
 	}
+#endif
 	virtual void InvalidateClose() override {
 		isBeingDeleted = true;
 	}
@@ -601,7 +605,6 @@ bool sdlProcessEvents() {
 		}
 	}
 	::Application->Run();
-	iTVPTexture2D::RecycleProcess();
 	return true;
 }
 

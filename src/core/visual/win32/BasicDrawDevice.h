@@ -86,9 +86,7 @@ public:
 	virtual void TJS_INTF_METHOD AddLayerManager(iTVPLayerManager * manager);
 
 //---- 描画位置・サイズ関連
-#if 0
 	virtual void TJS_INTF_METHOD SetTargetWindow(HWND wnd, bool is_main);
-#endif
 	virtual void TJS_INTF_METHOD SetDestRectangle(const tTVPRect & rect);
 	virtual void TJS_INTF_METHOD NotifyLayerResize(iTVPLayerManager * manager);
 
@@ -101,18 +99,16 @@ public:
 //---- LayerManager からの画像受け渡し関連
 	virtual void TJS_INTF_METHOD StartBitmapCompletion(iTVPLayerManager * manager);
 	virtual void TJS_INTF_METHOD NotifyBitmapCompleted(iTVPLayerManager * manager,
-		tjs_int x, tjs_int y, tTVPBaseTexture * bmp,
+		tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 		const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity);
 	virtual void TJS_INTF_METHOD EndBitmapCompletion(iTVPLayerManager * manager);
 
 //---- デバッグ支援
 	virtual void TJS_INTF_METHOD SetShowUpdateRect(bool b);
 
-#if 0
 //---- フルスクリーン
 	virtual bool TJS_INTF_METHOD SwitchToFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution );
 	virtual void TJS_INTF_METHOD RevertFromFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color );
-#endif
 
 };
 //---------------------------------------------------------------------------

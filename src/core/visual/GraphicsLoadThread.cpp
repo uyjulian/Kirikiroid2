@@ -15,12 +15,12 @@
 #include "LayerIntf.h"
 
 tTVPTmpBitmapImage::tTVPTmpBitmapImage()
-	: MetaInfo(NULL)
+	: w(0), h(0), pitch(0), buf(NULL), MetaInfo(NULL)
 {}
 tTVPTmpBitmapImage::~tTVPTmpBitmapImage() {
-	if (bmp) {
-		delete bmp;
-		bmp = NULL;
+	if(buf) {
+		tTVPBitmapBitsAlloc::Free( buf );
+		buf = NULL;
 	}
 	if( MetaInfo ) {
 		delete MetaInfo;
@@ -40,32 +40,22 @@ tTVPImageLoadCommand::~tTVPImageLoadCommand() {
 	bmp_ = NULL;
 }
 
-static int TVPLoadGraphicAsync_SizeCallback(void *callbackdata, tjs_uint w, tjs_uint h, tTVPGraphicPixelFormat fmt)
+static void TVPLoadGraphicAsync_SizeCallback(void *callbackdata, tjs_uint w, tjs_uint h)
 {
 	tTVPTmpBitmapImage* img = (tTVPTmpBitmapImage*)callbackdata;
-	if (!img->bmp) {
-		img->bmp = new tTVPBitmap(w, h, 32);
-	} else if (img->bmp->GetWidth() != w || img->bmp->GetHeight() != h) {
-		img->bmp->Release();
-		img->bmp = new tTVPBitmap(w, h, 32);
-	}
-	switch (fmt) {
-	case gpfLuminance:
-	case gpfRGB:
-		img->bmp->IsOpaque = true; break;
-	case gpfPalette:
-	case gpfRGBA:
-		img->bmp->IsOpaque = false; break;
-	}
-	return img->bmp->GetPitch();
+	img->h = h;
+	img->w = w;
+	BitmapInfomation info( w, h, 32 );
+	img->buf = (tjs_uint32*)tTVPBitmapBitsAlloc::Alloc( info.GetImageSize(), w, h );
+	img->pitch = info.GetPitchBytes();
 }
 //---------------------------------------------------------------------------
 static void* TVPLoadGraphicAsync_ScanLineCallback(void *callbackdata, tjs_int y)
 {
 	tTVPTmpBitmapImage* img = (tTVPTmpBitmapImage*)callbackdata;
 	if( y >= 0 ) {
-		if( y < (tjs_int)img->bmp->GetHeight() ) {
-			return img->bmp->GetScanLine(y);
+		if( y < (tjs_int)img->h ) {
+			return (img->h - y -1 ) * img->pitch + (tjs_uint8*)img->buf;
 		} else {
 			return NULL;
 		}
@@ -146,7 +136,7 @@ void tTVPAsyncImageLoader::HandleLoadedImage() {
 				param[2] = 1; // true error
 				param[3] = cmd->result_; // error_mes
 				static ttstr eventname(TJS_W("onLoaded"));
-				if (cmd->owner_ && cmd->owner_->IsValid(0, NULL, NULL, cmd->owner_) == TJS_S_TRUE) {
+				if( cmd->owner_->IsValid(0,NULL,NULL,cmd->owner_) == TJS_S_TRUE ) {
 					TVPPostEvent(cmd->owner_, cmd->owner_, eventname, 0, TVP_EPT_IMMEDIATE, 4, param);
 				}
 
@@ -157,17 +147,16 @@ void tTVPAsyncImageLoader::HandleLoadedImage() {
 			} else {
 				iTJSDispatch2* metainfo = TVPMetaInfoPairsToDictionary(cmd->dest_->MetaInfo);
 
-				cmd->bmp_->SetSizeAndImageBuffer(cmd->dest_->bmp);
+				cmd->bmp_->SetSizeAndImageBuffer( cmd->dest_->w, cmd->dest_->h, cmd->dest_->buf );
+				cmd->dest_->buf = NULL;
 				// 読込み完了時にもキャッシュチェック(非同期なので完了前に読み込まれている可能性あり)
 				if( TVPHasImageCache( cmd->path_, glmNormal, 0, 0, TVP_clNone ) == false ) {
-					TVPPushGraphicCache( cmd->path_, cmd->dest_->bmp, cmd->dest_->MetaInfo );
+					TVPPushGraphicCache( cmd->path_, cmd->bmp_->GetBitmap(), cmd->dest_->MetaInfo );
 					cmd->dest_->MetaInfo = NULL;
 				} else {
 					delete cmd->dest_->MetaInfo;
 					cmd->dest_->MetaInfo = NULL;
 				}
-				cmd->dest_->bmp->Release();
-				cmd->dest_->bmp = NULL;
 
 				tTJSVariant param[4];
 				param[0] = tTJSVariant(metainfo,metainfo);
@@ -176,7 +165,7 @@ void tTVPAsyncImageLoader::HandleLoadedImage() {
 				param[2] = 0; // false error
 				param[3] = TJS_W(""); // error_mes
 				static ttstr eventname(TJS_W("onLoaded"));
-				if (cmd->owner_ && cmd->owner_->IsValid(0, NULL, NULL, cmd->owner_) == TJS_S_TRUE) {
+				if( cmd->owner_->IsValid(0,NULL,NULL,cmd->owner_) == TJS_S_TRUE ) {
 					TVPPostEvent(cmd->owner_, cmd->owner_, eventname, 0, TVP_EPT_IMMEDIATE, 4, param);
 				}
 			}
@@ -195,11 +184,9 @@ void tTVPAsyncImageLoader::LoadRequest( iTJSDispatch2 *owner, tTJSNI_Bitmap* bmp
 	ttstr nname = TVPNormalizeStorageName(name);
 	if( TVPCheckImageCache(nname,&dest,glmNormal,0,0,TVP_clNone,&metainfo) ) {
 		// キャッシュ内に発見、即座に読込みを完了する
-		if (bmp) {
-			bmp->CopyFrom(&dest);
-			bmp->SetLoading(false);
-		}
-		if (!owner) return;
+		bmp->CopyFrom( &dest );
+		bmp->SetLoading( false );
+
 		tTJSVariant param[4];
 		param[0] = tTJSVariant(metainfo,metainfo);
 		if( metainfo ) metainfo->Release();
@@ -227,7 +214,7 @@ void tTVPAsyncImageLoader::LoadRequest( iTJSDispatch2 *owner, tTJSNI_Bitmap* bmp
 void tTVPAsyncImageLoader::PushLoadQueue( iTJSDispatch2 *owner, tTJSNI_Bitmap *bmp, const ttstr &nname ) {
 	tTVPImageLoadCommand* cmd = new tTVPImageLoadCommand();
 	cmd->owner_ = owner;
-	if (owner) owner->AddRef();
+	owner->AddRef();
 	cmd->bmp_ = bmp;
 	cmd->path_ = nname;
 	cmd->dest_ = new tTVPTmpBitmapImage();

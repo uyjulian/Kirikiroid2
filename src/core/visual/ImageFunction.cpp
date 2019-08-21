@@ -125,7 +125,6 @@ TJS_END_NATIVE_CONSTRUCTOR_DECL(/*TJS class name*/ImageFunction)
 //-- methods
 
 //----------------------------------------------------------------------
-#if 0
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/copy9Patch)
 {
 	if(numparams < 2) return TJS_E_BADPARAMCOUNT;
@@ -158,7 +157,6 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/copy9Patch)
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/copy9Patch)
-#endif
 //----------------------------------------------------------------------
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/operateAffine)
 {

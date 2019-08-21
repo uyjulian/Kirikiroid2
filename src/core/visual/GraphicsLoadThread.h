@@ -10,7 +10,10 @@
 
 // BaseBitmap を使うとリエントラントではないので、別の構造体に独自にロードする必要がある
 struct tTVPTmpBitmapImage {
-	class tTVPBitmap* bmp = nullptr;
+	tjs_uint32 w;
+	tjs_uint32 h;
+	tjs_int pitch;
+	tjs_uint32* buf;
 	std::vector<tTVPGraphicMetaInfoPair> * MetaInfo;
 	tTVPTmpBitmapImage();
 	~tTVPTmpBitmapImage();
@@ -53,7 +56,6 @@ private:
 	 */
 	void HandleLoadedImage();
 
-public:
 	/**
 	 * 読込みを読込みスレッドに要求する(キューへ入れる)
 	 */

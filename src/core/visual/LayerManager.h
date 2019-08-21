@@ -202,7 +202,6 @@ public:
 //-- debug assist
 	//! @brief		(Window->DrawDevice) レイヤ構造をコンソールにダンプする
 	virtual void TJS_INTF_METHOD DumpLayerStructure() = 0;
-    virtual iTVPBaseBitmap *GetDrawBuffer() = 0;
 };
 //---------------------------------------------------------------------------
 /*]*/
@@ -214,22 +213,6 @@ struct tTVPTouchCaptureLayer {
 	tjs_uint32	TouchID;
 	tTJSNI_BaseLayer*	Owner;
 	tTVPTouchCaptureLayer( tjs_uint32 id, tTJSNI_BaseLayer* layer ) : TouchID(id), Owner(layer){}
-};
-
-// texture for last render target
-class tTVPDestTexture : public tTVPBaseTexture
-{
-	bool HoldAlpha = true;
-
-public:
-    tTVPDestTexture(tjs_uint w, tjs_uint h) : tTVPBaseTexture(w, h) {}
-
-//     bool Blt(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-// 		tTVPRect refrect, tTVPBBBltMethod method, tjs_int opa);
-	virtual bool CopyRect(tjs_int x, tjs_int y, const iTVPBaseBitmap *ref,
-		tTVPRect refrect, tjs_int plane = (TVP_BB_COPY_MAIN | TVP_BB_COPY_MASK));
-
-	void SetHoldAlpha(bool b) { HoldAlpha = b; }
 };
 
 //---------------------------------------------------------------------------
@@ -244,7 +227,7 @@ class tTVPLayerManager : public iTVPLayerManager, public tTVPDrawable
 
 	void * DrawDeviceData; //!< draw device specific information
 
-	tTVPBaseTexture * DrawBuffer;
+	tTVPBaseBitmap * DrawBuffer;
 	tTVPLayerType DesiredLayerType; //!< desired layer type by the draw device for this layer manager
 
 	tTJSNI_BaseLayer * CaptureOwner;
@@ -275,7 +258,6 @@ class tTVPLayerManager : public iTVPLayerManager, public tTVPDrawable
 
 	bool InNotifyingHintOrCursorChange;
 
-	bool HoldAlpha = true;
 public:
 	tTVPLayerManager(class iTVPLayerTreeOwner *owner);
 
@@ -294,19 +276,16 @@ public:
 
 public:
 	virtual void TJS_INTF_METHOD SetDesiredLayerType(tTVPLayerType type) { DesiredLayerType = type; }
-	void SetHoldAlpha(bool b);
 
 public: // methods from tTVPDrawable
-	virtual tTVPBaseTexture * GetDrawTargetBitmap(const tTVPRect &rect,
+	virtual tTVPBaseBitmap * GetDrawTargetBitmap(const tTVPRect &rect,
 		tTVPRect &cliprect);
 
 	virtual tTVPLayerType GetTargetLayerType();
 
 	virtual void DrawCompleted(const tTVPRect &destrect,
-		tTVPBaseTexture *bmp, const tTVPRect &cliprect,
-		tTVPLayerType type, tjs_int opacity) override;
-	virtual tTVPBaseTexture *GetDrawBuffer() { return DrawBuffer; }
-	tTVPBaseTexture* GetOrCreateDrawBuffer();
+		tTVPBaseBitmap *bmp, const tTVPRect &cliprect,
+		tTVPLayerType type, tjs_int opacity);
 
 public:
 	void AttachPrimary(tTJSNI_BaseLayer *pri); // attach primary layer to the manager

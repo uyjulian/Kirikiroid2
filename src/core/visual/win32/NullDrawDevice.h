@@ -15,9 +15,7 @@ public:
 	void TJS_INTF_METHOD SetWindowInterface(iTVPWindow * window) override {}
 	void TJS_INTF_METHOD AddLayerManager(iTVPLayerManager * manager) override {}
 	void TJS_INTF_METHOD RemoveLayerManager(iTVPLayerManager * manager) override {}
-#if 0
 	void TJS_INTF_METHOD SetTargetWindow(HWND wnd, bool is_main) override {}
-#endif
 	void TJS_INTF_METHOD SetDestRectangle(const tTVPRect & rect) override {}
 	void TJS_INTF_METHOD SetClipRectangle(const tTVPRect & rect) override {}
 	void TJS_INTF_METHOD GetSrcSize(tjs_int &w, tjs_int &h) override {}
@@ -60,13 +58,13 @@ public:
 	void TJS_INTF_METHOD Show() override {}
 	void TJS_INTF_METHOD StartBitmapCompletion(iTVPLayerManager * manager) override {}
 	void TJS_INTF_METHOD NotifyBitmapCompleted(iTVPLayerManager * manager,
-		tjs_int x, tjs_int y, tTVPBaseTexture * bmp,
+		tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 		const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity) override {}
 	void TJS_INTF_METHOD EndBitmapCompletion(iTVPLayerManager * manager) override {}
 	void TJS_INTF_METHOD DumpLayerStructure() override {}
 	void TJS_INTF_METHOD SetShowUpdateRect(bool b) override {}
-	bool TJS_INTF_METHOD SwitchToFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution ) override { return true; }
-	void TJS_INTF_METHOD RevertFromFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color ) override {}
+	bool TJS_INTF_METHOD SwitchToFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution ) override { return true; }
+	void TJS_INTF_METHOD RevertFromFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color ) override {}
 	bool TJS_INTF_METHOD WaitForVBlank( tjs_int* in_vblank, tjs_int* delayed ) { return false; }
 };
 

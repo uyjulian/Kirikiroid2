@@ -32,7 +32,7 @@ extern bool TVPFreeUnusedLayerCache;
 //---------------------------------------------------------------------------
 // initial bitmap holder ( since tTVPBaseBitmap cannot create empty bitmap )
 //---------------------------------------------------------------------------
-const tTVPBaseTexture & TVPGetInitialBitmap();
+const tTVPBaseBitmap & TVPGetInitialBitmap();
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
@@ -185,7 +185,6 @@ class tTJSNI_BaseLayer :
 	friend class tTVPLayerManager;
 	friend iTJSDispatch2 * TVPGetObjectFrom_NI_BaseLayer(tTJSNI_BaseLayer * layer);
 
-protected:
 	iTJSDispatch2 *Owner;
 	tTJSVariantClosure ActionOwner;
 
@@ -338,7 +337,7 @@ public:
 
 
 	//--------------------------------------------- layer type management --
-protected:
+private:
 	tTVPLayerType Type; // user set Type
 	tTVPLayerType DisplayType; // actual Type
 		// note that Type and DisplayType are different when Type = {ltEffect|ltFilter}
@@ -359,7 +358,7 @@ public:
 	void ConvertLayerType(tTVPDrawFace fromtype);
 
 	//-------------------------------------------- geographical management --
-protected:
+private:
 	tTVPRect Rect;
 	bool ExposedRegionValid;
 	tTVPComplexRect ExposedRegion; // exposed region (no-children-overlapped-region)
@@ -405,8 +404,8 @@ public:
 	void FromPrimaryCoordinates(tjs_real &x, tjs_real &y) const;
 
 	//-------------------------------------------- image buffer management --
-	tTVPBaseTexture *MainImage;
-protected:
+private:
+	tTVPBaseBitmap *MainImage;
 	bool CanHaveImage; // whether the layer can have image
 	tTVPBaseBitmap *ProvinceImage;
 	tjs_uint32 NeutralColor; // Neutral Color (which can be set by the user)
@@ -426,17 +425,15 @@ protected:
 public:
 	void AssignImages(tTJSNI_BaseLayer *src); // assign image content
 
-    void AssignMainImage(iTVPBaseBitmap *bmp);
+	void AssignMainImage(tTVPBaseBitmap *bmp);
 		// assign single main bitmap image. the image size assigned must be
 		// identical to the destination layer bitmap.
 
-	void AssignMainImageWithUpdate(iTVPBaseBitmap *bmp);
+	void AssignMainImageWithUpdate(tTVPBaseBitmap *bmp);
 	void CopyFromMainImage( class tTJSNI_Bitmap* bmp );
-#ifndef TVP_REVRGB
-#define TVP_REVRGB(v) ((v & 0xFF00FF00) | ((v >> 16) & 0xFF) | ((v & 0xFF) << 16))
-#endif
-	void SetNeutralColor(tjs_uint32 color) { NeutralColor = TVP_REVRGB(color); }
-	tjs_uint32 GetNeutralColor() const { return TVP_REVRGB(NeutralColor); }
+
+	void SetNeutralColor(tjs_uint32 color) { NeutralColor = color; }
+	tjs_uint32 GetNeutralColor() const { return NeutralColor; }
 
 	void SetHasImage(bool b);
 	bool GetHasImage() const;
@@ -459,7 +456,7 @@ public:
 private:
 	void ImageLayerSizeChanged(); // called from geographical management
 public:
-	tTVPBaseTexture * GetMainImage() { ApplyFont(); return MainImage; }
+	tTVPBaseBitmap * GetMainImage() { ApplyFont(); return MainImage; }
 	tTVPBaseBitmap * GetProvinceImage() { ApplyFont(); return ProvinceImage; }
 		// exporting of these two members is a bit dangerous
 		// in the manner of protecting
@@ -470,7 +467,6 @@ public:
 
 	void SaveLayerImage(const ttstr &name, const ttstr &type);
 
-	void AssignTexture(class iTVPTexture2D *tex);
 	iTJSDispatch2 * LoadImages(const ttstr &name, tjs_uint32 colorkey);
 
 	void LoadProvinceImage(const ttstr &name);
@@ -668,10 +664,8 @@ public:
 
 	//--------------------------------------------------- cache management --
 private:
-	tTVPBaseTexture *CacheBitmap;
-#if 0
+	tTVPBaseBitmap *CacheBitmap;
 	tTVPComplexRect CachedRegion;
-#endif
 
 	void AllocateCache();
 	void ResizeCache();
@@ -694,7 +688,7 @@ public:
 	bool GetCached() const { return Cached; }
 
 	//--------------------------------------------- drawing function stuff --
-protected:
+private:
 	tTVPDrawFace DrawFace; // (actual) current drawing layer face
 	tTVPDrawFace Face; // (outward) current drawing layer face
 
@@ -708,7 +702,7 @@ public:
 	void SetHoldAlpha(bool b)  { HoldAlpha = b; }
 	bool GetHoldAlpha() const  { return HoldAlpha; }
 
-protected:
+private:
 	bool ImageModified; // flag to know modification of layer image
 	tTVPRect ClipRect; // clipping rectangle
 public:
@@ -722,7 +716,6 @@ public:
 	void SetClipWidth(tjs_int width);
 	tjs_int GetClipHeight() const { return ClipRect.bottom - ClipRect.top; }
 	void SetClipHeight(tjs_int height);
-    const tTVPRect& GetClip() const { return ClipRect; }
 
 private:
 	bool ClipDestPointAndSrcRect(tjs_int &dx, tjs_int &dy,
@@ -750,63 +743,33 @@ public:
 	void PiledCopy(tjs_int dx, tjs_int dy, tTJSNI_BaseLayer *src,
 		const tTVPRect &rect);
 
-	void CopyRect(tjs_int dx, tjs_int dy, iTVPBaseBitmap *src, iTVPBaseBitmap *provincesrc,
+	void CopyRect(tjs_int dx, tjs_int dy, tTVPBaseBitmap *src, tTVPBaseBitmap *provincesrc,
 		const tTVPRect &rect);
 	
-	bool Copy9Patch( const iTVPBaseBitmap *src, tTVPRect &margin );
+	bool Copy9Patch( const tTVPBaseBitmap *src, tTVPRect &margin );
 
-	void StretchCopy(const tTVPRect &destrect, iTVPBaseBitmap *src,
+	void StretchCopy(const tTVPRect &destrect, tTVPBaseBitmap *src,
 		const tTVPRect &rect, tTVPBBStretchType mode = stNearest, tjs_real typeopt = 0.0);
 
-	void AffineCopy(const t2DAffineMatrix &matrix, iTVPBaseBitmap *src,
+	void AffineCopy(const t2DAffineMatrix &matrix, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBBStretchType mode = stNearest, bool clear = false);
 
-	void AffineCopy(const tTVPPointD *points, iTVPBaseBitmap *src,
+	void AffineCopy(const tTVPPointD *points, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBBStretchType mode = stNearest, bool clear = false);
 
-	void PileRect(tjs_int dx, tjs_int dy, tTJSNI_BaseLayer *src,
-		const tTVPRect &rect, tjs_int opacity = 255);
-
-	void BlendRect(tjs_int dx, tjs_int dy, tTJSNI_BaseLayer *src,
-		const tTVPRect &rect, tjs_int opacity = 255);
-
-	void OperateRect(tjs_int dx, tjs_int dy, iTVPBaseBitmap *src,
+	void OperateRect(tjs_int dx, tjs_int dy, tTVPBaseBitmap *src,
 		const tTVPRect &rect, tTVPBlendOperationMode mode = omAuto,
 			tjs_int opacity = 255);
 
-	void StretchPile(const tTVPRect &destrect, tTJSNI_BaseLayer *src,
-		const tTVPRect &srcrect, tjs_int opacity = 255,
-			tTVPBBStretchType type = stNearest);
-
-	void StretchBlend(const tTVPRect &destrect, tTJSNI_BaseLayer *src,
-		const tTVPRect &srcrect, tjs_int opacity = 255,
-			tTVPBBStretchType type = stNearest);
-
-	void OperateStretch(const tTVPRect &destrect, iTVPBaseBitmap *src,
+	void OperateStretch(const tTVPRect &destrect, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBlendOperationMode mode = omAuto, tjs_int opacity = 255,
 			tTVPBBStretchType type = stNearest, tjs_real typeopt = 0.0);
 
-	void AffinePile(const t2DAffineMatrix &matrix, tTJSNI_BaseLayer *src,
-		const tTVPRect &srcrect, tjs_int opacity = 255,
-		tTVPBBStretchType type = stNearest);
-
-	void AffinePile(const tTVPPointD *points, tTJSNI_BaseLayer *src,
-		const tTVPRect &srcrect, tjs_int opacity = 255,
-		tTVPBBStretchType type = stNearest);
-
-	void AffineBlend(const t2DAffineMatrix &matrix, tTJSNI_BaseLayer *src,
-		const tTVPRect &srcrect, tjs_int opacity = 255,
-		tTVPBBStretchType type = stNearest);
-
-	void AffineBlend(const tTVPPointD *points, tTJSNI_BaseLayer *src,
-		const tTVPRect &srcrect, tjs_int opacity = 255,
-		tTVPBBStretchType type = stNearest);
-
-	void OperateAffine(const t2DAffineMatrix &matrix, iTVPBaseBitmap *src,
+	void OperateAffine(const t2DAffineMatrix &matrix, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBlendOperationMode mode = omAuto, tjs_int opacity = 255,
 		tTVPBBStretchType type = stNearest);
 
-	void OperateAffine(const tTVPPointD *points, iTVPBaseBitmap *src,
+	void OperateAffine(const tTVPPointD *points, tTVPBaseBitmap *src,
 		const tTVPRect &srcrect, tTVPBlendOperationMode mode = omAuto, tjs_int opacity = 255,
 		tTVPBBStretchType type = stNearest);
 
@@ -868,13 +831,13 @@ public:
 
 
 	//------------------------------------------------ updating management --
-protected:
+private:
 	tjs_int UpdateOfsX, UpdateOfsY;
 	tTVPRect UpdateRectForChild; // to be used in tTVPDrawable::GetDrawTargetBitmap
 	tjs_int UpdateRectForChildOfsX;
 	tjs_int UpdateRectForChildOfsY;
 	tTVPDrawable * CurrentDrawTarget; // set by Draw
-	tTVPBaseTexture *UpdateBitmapForChild; // to be used in tTVPDrawable::GetDrawTargetBitmap
+	tTVPBaseBitmap *UpdateBitmapForChild; // to be used in tTVPDrawable::GetDrawTargetBitmap
 	tTVPRect UpdateExcludeRect; // rectangle whose update is not be needed
 
 	tTVPComplexRect CacheRecalcRegion; // region that must be reconstructed for cache
@@ -904,8 +867,6 @@ public:
 	void SetCallOnPaint(bool b) { CallOnPaint = b; }
 	bool GetCallOnPaint() const { return CallOnPaint; }
 
-    void InternalDrawNoCache_CPU(tTVPDrawable *target, const tTVPRect &rect);
-
 private:
 	void ParentUpdate();  // called when layer moves
 
@@ -917,35 +878,35 @@ private:
 	void QueryUpdateExcludeRect(tTVPRect &rect, bool parentvisible);
 		// query update exclude rect ( checks completely opaque area )
 
-    static void BltImage(iTVPBaseBitmap *dest, tTVPLayerType targettype, tjs_int destx,
-        tjs_int desty, iTVPBaseBitmap *src, const tTVPRect &srcrect,
-		tTVPLayerType drawtype, tjs_int opacity, bool hda = false);
+	static void BltImage(tTVPBaseBitmap *dest, tTVPLayerType targettype, tjs_int destx,
+		tjs_int desty, tTVPBaseBitmap *src, const tTVPRect &srcrect,
+		tTVPLayerType drawtype, tjs_int opacity);
 
 	void DrawSelf(tTVPDrawable *target, tTVPRect &pr, 
 		tTVPRect &cr);
-	void CopySelfForRect(iTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
+	void CopySelfForRect(tTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
 		const tTVPRect &srcrect);
-	void CopySelf(iTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
+	void CopySelf(tTVPBaseBitmap *dest, tjs_int destx, tjs_int desty,
 		const tTVPRect &r);
-	void EffectImage(iTVPBaseBitmap *dest, const tTVPRect & destrect);
+	void EffectImage(tTVPBaseBitmap *dest, const tTVPRect & destrect);
 
 	void Draw(tTVPDrawable *target, const tTVPRect &r, bool visiblecheck = true);
 
 	// these 3 below are methods from tTVPDrawable
-	tTVPBaseTexture * GetDrawTargetBitmap(const tTVPRect &rect,
+	tTVPBaseBitmap * GetDrawTargetBitmap(const tTVPRect &rect,
 		tTVPRect &cliprect);
 	tTVPLayerType GetTargetLayerType();
-	void DrawCompleted(const tTVPRect&destrect, tTVPBaseTexture *bmp,
+	void DrawCompleted(const tTVPRect&destrect, tTVPBaseBitmap *bmp,
 		const tTVPRect &cliprect,
-		tTVPLayerType type, tjs_int opacity) override;
+		tTVPLayerType type, tjs_int opacity);
 
 	void InternalComplete2(tTVPComplexRect & updateregion, tTVPDrawable *drawable);
 	void InternalComplete(tTVPComplexRect & updateregion, tTVPDrawable *drawable);
 	void CompleteForWindow(tTVPDrawable *drawable);
 public:
 private:
-	tTVPBaseTexture * Complete(const tTVPRect & rect);
-	tTVPBaseTexture * Complete(); // complete entire area of the layer
+	tTVPBaseBitmap * Complete(const tTVPRect & rect);
+	tTVPBaseBitmap * Complete(); // complete entire area of the layer
 
 
 	//---------------------------------------------- transition management --
@@ -989,19 +950,19 @@ private:
 
 	void InvokeTransition(tjs_uint64 tick); // called frequanctly
 
-    void DoDivisibleTransition(iTVPBaseBitmap *dest, tjs_int dx, tjs_int dy,
+	void DoDivisibleTransition(tTVPBaseBitmap *dest, tjs_int dx, tjs_int dy,
 		const tTVPRect &srcrect);
 
 	struct tTransDrawable : public tTVPDrawable
 	{
 		// tTVPDrawable class for Transition pipe line rearrangement
 		tTJSNI_BaseLayer * Owner;
-		tTVPBaseTexture * Target;
+		tTVPBaseBitmap * Target;
 		tTVPRect TargetRect;
 		tTVPDrawable *OrgDrawable;
 
-		tTVPBaseTexture *Src1Bmp; // tutDivisible
-		tTVPBaseTexture *Src2Bmp; // tutDivisible
+		tTVPBaseBitmap *Src1Bmp; // tutDivisible
+		tTVPBaseBitmap *Src2Bmp; // tutDivisible
 
 		void Init(tTJSNI_BaseLayer *owner, tTVPDrawable *org)
 		{
@@ -1010,12 +971,12 @@ private:
 			Target = NULL;
 		}
 
-		tTVPBaseTexture * GetDrawTargetBitmap(const tTVPRect &rect,
-			tTVPRect &cliprect) override;
+		tTVPBaseBitmap * GetDrawTargetBitmap(const tTVPRect &rect,
+			tTVPRect &cliprect);
 		tTVPLayerType GetTargetLayerType();
-		void DrawCompleted(const tTVPRect&destrect, tTVPBaseTexture *bmp,
+		void DrawCompleted(const tTVPRect&destrect, tTVPBaseBitmap *bmp,
 			const tTVPRect &cliprect,
-			tTVPLayerType type, tjs_int opacity) override;
+			tTVPLayerType type, tjs_int opacity);
 	} TransDrawable;
 	friend struct tTransDrawable;
 

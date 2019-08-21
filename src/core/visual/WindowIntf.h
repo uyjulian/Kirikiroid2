@@ -28,7 +28,6 @@
 extern void TVPClearAllWindowInputEvents();
 extern bool TVPIsWaitVSync();
 //---------------------------------------------------------------------------
-class TTVPWindowForm;
 
 
 
@@ -131,7 +130,6 @@ public:
 	//! @brief		WindowのiTJSDispatch2インターフェースを取得する
 	virtual iTJSDispatch2 * GetWindowDispatch() = 0;
 
-	virtual TTVPWindowForm* GetForm() const = 0;
 };
 //---------------------------------------------------------------------------
 /*]*/

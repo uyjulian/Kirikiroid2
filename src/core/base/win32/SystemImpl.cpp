@@ -37,7 +37,9 @@
 #if 0
 #include "PluginImpl.h"
 #endif
-#include "vkdefine.h"
+#ifndef _WIN32
+#include "VirtualKey.h"
+#endif
 #include "ScriptMgnIntf.h"
 #include "tjsArray.h"
 #include "Platform.h"

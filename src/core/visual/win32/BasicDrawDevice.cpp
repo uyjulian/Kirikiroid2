@@ -499,15 +499,15 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::AddLayerManager(iTVPLayerManager * man
 	manager->SetDesiredLayerType(ltOpaque); // ltOpaque な出力を受け取りたい
 }
 //---------------------------------------------------------------------------
-#if 0
 void TJS_INTF_METHOD tTVPBasicDrawDevice::SetTargetWindow(HWND wnd, bool is_main)
 {
+#if 0
 	TVPInitBasicDrawDeviceOptions();
 	DestroyD3DDevice();
 	TargetWindow = wnd;
 	IsMainWindow = is_main;
-}
 #endif
+}
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPBasicDrawDevice::SetDestRectangle(const tTVPRect & rect)
 {
@@ -556,6 +556,8 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyLayerResize(iTVPLayerManager * m
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPBasicDrawDevice::Show()
 {
+	//XXX: Fix!
+#if 0
 	if (Window) {
 		TTVPWindowForm *form = Window->GetForm();
 		if (form && !Managers.empty()) {
@@ -564,6 +566,7 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::Show()
 				form->UpdateDrawBuffer(buf->GetTexture());
 		}
 	}
+#endif
 #if 0
 	if(!TargetWindow) return;
 	if(!Texture) return;
@@ -668,7 +671,7 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::StartBitmapCompletion(iTVPLayerManager
 }
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyBitmapCompleted(iTVPLayerManager * manager,
-	tjs_int x, tjs_int y, tTVPBaseTexture * bmp,
+	tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 	const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity)
 {
 #if 0
@@ -855,10 +858,10 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::SetShowUpdateRect(bool b)
 {
 	DrawUpdateRectangle = b;
 }
-#if 0
 //---------------------------------------------------------------------------
 bool TJS_INTF_METHOD tTVPBasicDrawDevice::SwitchToFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution )
 {
+#if 0
 	// フルスクリーン化の処理はなにも行わない、互換性のためにウィンドウを全画面化するのみで処理する
 	// Direct3D9 でフルスクリーン化するとフォーカスを失うとデバイスをロストするので、そのたびにリセットor作り直しが必要になる。
 	// モーダルウィンドウを使用するシステムでは、これは困るので常にウィンドウモードで行う。
@@ -866,17 +869,19 @@ bool TJS_INTF_METHOD tTVPBasicDrawDevice::SwitchToFullScreen( HWND window, tjs_u
 	BackBufferDirty = true;
 	ShouldShow = true;
 	CheckMonitorMoved();
+#endif
 	return true;
 }
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPBasicDrawDevice::RevertFromFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color )
 {
+#if 0
 	BackBufferDirty = true;
 	ShouldShow = true;
 	CheckMonitorMoved();
+#endif
 }
 //---------------------------------------------------------------------------
-#endif
 
 
 

@@ -30,16 +30,94 @@
 #include <cstdlib>
 #include <cmath>
 #include "StorageImpl.h"
-#include "RenderManager.h"
-#include "Application.h"
-#include "BitmapIntf.h"
-#include "GraphicsLoadThread.h"
-#include <complex>
-#include <list>
 
 //---------------------------------------------------------------------------
 
-#ifdef TVP_IMAGE_ENABLE_BMP
+void tTVPGraphicHandlerType::Load( void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback, tTVPGraphicScanLineCallback scanlinecallback,
+	tTVPMetaInfoPushCallback metainfopushcallback, tTJSBinaryStream *src, tjs_int32 keyidx, tTVPGraphicLoadMode mode)
+{
+	if( LoadHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, TJS_W("unknown"));
+
+#ifdef _WIN32
+	if( IsPlugin )
+	{
+		tTVPIStreamAdapter *istream = new tTVPIStreamAdapter(src);
+		try {
+			LoadHandlerPlugin( formatdata, callbackdata, sizecallback, scanlinecallback, metainfopushcallback,
+				istream, keyidx, mode);
+		} catch(...) {
+			istream->ClearStream();
+			istream->Release();
+			throw;
+		}
+		istream->ClearStream();
+		istream->Release();
+	}
+	else
+#endif
+	{
+		LoadHandler( formatdata, callbackdata, sizecallback, scanlinecallback, metainfopushcallback,
+			src, keyidx, mode);
+	}
+}
+void tTVPGraphicHandlerType::Save( const ttstr & storagename, const ttstr & mode, const tTVPBaseBitmap* image, iTJSDispatch2* meta )
+{
+	if( SaveHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, mode );
+
+	tTJSBinaryStream *stream = TVPCreateStream(TVPNormalizeStorageName(storagename), TJS_BS_WRITE);
+#ifdef _WIN32
+	if( IsPlugin )
+	{
+		tTVPIStreamAdapter *istream = new tTVPIStreamAdapter(stream);
+		try {
+			tjs_uint h = image->GetHeight();
+			tjs_uint w = image->GetWidth();
+			SaveHandlerPlugin( FormatData, (void*)image, istream, mode, w, h, tTVPBitmapScanLineCallbackForSave, meta );
+		} catch(...) {
+			istream->Release();
+			throw;
+		}
+		istream->Release();
+	}
+	else
+#endif
+	{
+		try {
+			SaveHandler( FormatData, stream, image, mode, meta );
+		} catch(...) {
+			delete stream;
+			throw;
+		}
+		delete stream;
+	}
+}
+void tTVPGraphicHandlerType::Header( tTJSBinaryStream *src, iTJSDispatch2** dic )
+{
+	if( HeaderHandler == NULL ) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, TJS_W("unknown") );
+
+#ifdef _WIN32
+	if( IsPlugin )
+	{
+		tTVPIStreamAdapter *istream = new tTVPIStreamAdapter(src);
+		try {
+			HeaderHandlerPlugin( FormatData, istream, dic );
+		} catch(...) {
+			istream->ClearStream();
+			istream->Release();
+			throw;
+		}
+		istream->ClearStream();
+		istream->Release();
+	}
+	else
+#endif
+	{
+		HeaderHandler( FormatData, src, dic );
+	}
+}
+
+//---------------------------------------------------------------------------
+
 bool TVPAcceptSaveAsBMP( void* formatdata, const ttstr & type, class iTJSDispatch2** dic )
 {
 	bool result = false;
@@ -60,7 +138,6 @@ bool TVPAcceptSaveAsBMP( void* formatdata, const ttstr & type, class iTJSDispatc
 	}
 	return result;
 }
-#endif
 //---------------------------------------------------------------------------
 // Graphics Format Management
 //---------------------------------------------------------------------------
@@ -76,12 +153,10 @@ public:
 	tTVPGraphicType()
 	{
 		// register some native-supported formats
-#ifdef TVP_IMAGE_ENABLE_BMP
 		Handlers.push_back(tTVPGraphicHandlerType(
 			TJS_W(".bmp"), TVPLoadBMP, TVPLoadHeaderBMP, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
 		Handlers.push_back(tTVPGraphicHandlerType(
 			TJS_W(".dib"), TVPLoadBMP, TVPLoadHeaderBMP, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
-#endif
 		ReCreateHash();
 		Avail = true;
 	}
@@ -218,7 +293,7 @@ void TVPLoadImageHeader( const ttstr & storagename, iTJSDispatch2** dic )
 	handler->Header( holder.Get(), dic );
 }
 //---------------------------------------------------------------------------
-void TVPSaveImage( const ttstr & storagename, const ttstr & mode, const iTVPBaseBitmap* image, iTJSDispatch2* meta )
+void TVPSaveImage( const ttstr & storagename, const ttstr & mode, const tTVPBaseBitmap* image, iTJSDispatch2* meta )
 {
 	if(!image->Is32BPP())
 		TVPThrowInternalError;
@@ -258,7 +333,6 @@ bool TVPGetSaveOption( const ttstr & type, iTJSDispatch2** dic )
 //---------------------------------------------------------------------------
 
 
-#ifdef TVP_IMAGE_ENABLE_BMP
 //---------------------------------------------------------------------------
 // BMP loading handler
 //---------------------------------------------------------------------------
@@ -361,15 +435,7 @@ void TVPInternalLoadBMP(void *callbackdata,
 	height = bi.biHeight<0?-bi.biHeight:bi.biHeight;
 		// positive value of bi.biHeight indicates top-down DIB
 
-	tTVPGraphicPixelFormat pixfmt;
-	switch (orgbitcount) {
-	case 32: pixfmt = gpfRGBA; break;
-	case 24: case 16: case 15:
-		pixfmt = gpfRGB; break;
-	default:
-		pixfmt = gpfPalette; break;
-	}
-	sizecallback(callbackdata, bi.biWidth, height, pixfmt);
+	sizecallback(callbackdata, bi.biWidth, height);
 
 	tjs_int pitch;
 	pitch = (((bi.biWidth * orgbitcount) + 31) & ~31) /8;
@@ -540,7 +606,6 @@ void TVPInternalLoadBMP(void *callbackdata,
 			buf += pitch;
 			bufremain--;
 		}
-#if 0
 		if(mode == glmNormalRGBA)
 		{
 			for(tjs_int y = 0; y < height; y++)
@@ -549,7 +614,6 @@ void TVPInternalLoadBMP(void *callbackdata,
 				TVPRedBlueSwap( current, bi.biWidth );
 			}
 		}
-#endif
 	}
 	catch(...)
 	{
@@ -670,13 +734,11 @@ static void TVPWriteLE32(tTJSBinaryStream * stream, tjs_uint32 number)
 	stream->WriteBuffer(data, 4);
 }
 //---------------------------------------------------------------------------
-void TVPSaveTextureAsBMP(tTJSBinaryStream* dst, iTVPTexture2D* bmp, const ttstr & mode, iTJSDispatch2* meta)
+void TVPSaveAsBMP( void* formatdata, tTJSBinaryStream* dst, const tTVPBaseBitmap* bmp, const ttstr & mode, iTJSDispatch2* meta )
 {
 	tjs_int pixelbytes;
 
-	if (bmp->GetFormat() == TVPTextureFormat::Gray)
-		pixelbytes = 1;
-	else if(mode == TJS_W("bmp32") || mode == TJS_W("bmp"))
+	if(mode == TJS_W("bmp32") || mode == TJS_W("bmp"))
 		pixelbytes = 4;
 	else if(mode == TJS_W("bmp24"))
 		pixelbytes = 3;
@@ -739,60 +801,45 @@ void TVPSaveTextureAsBMP(tTJSBinaryStream* dst, iTVPTexture2D* bmp, const ttstr 
 		{
 			tjs_uint8 palette[1024];
 			tjs_uint8 * p = palette;
-			if (bmp->GetFormat() == TVPTextureFormat::Gray) {
-				for(tjs_int i = 0; i < 256; i++)
-				{
-					p[0] = i;
-					p[1] = i;
-					p[2] = i;
-					p[3] = 0;
-					p += 4;
-				}
-			} else {
-				for(tjs_int i = 0; i < 256; i++)
-				{
-					p[0] = TVP252DitherPalette[0][i];
-					p[1] = TVP252DitherPalette[1][i];
-					p[2] = TVP252DitherPalette[2][i];
-					p[3] = 0;
-					p += 4;
-				}
+			for(tjs_int i = 0; i < 256; i++)
+			{
+				p[0] = TVP252DitherPalette[0][i];
+				p[1] = TVP252DitherPalette[1][i];
+				p[2] = TVP252DitherPalette[2][i];
+				p[3] = 0;
+				p += 4;
 			}
 			stream->WriteBuffer(palette, 1024);
 		}
 
 		// write bitmap body
-		if (bmp->GetFormat() == TVPTextureFormat::Gray) {
-			for(tjs_int y = bmp->GetHeight() - 1; y >= 0; y--)
+		for(tjs_int y = bmp->GetHeight() - 1; y >= 0; y --)
+		{
+			if(!buf) buf = new tjs_uint8[bmppitch];
+			if(pixelbytes == 4)
 			{
-				if (!buf) buf = new tjs_uint8[bmppitch];
-				memcpy(buf, bmp->GetScanLineForRead(y), bmp->GetWidth());
-				stream->WriteBuffer(buf, bmppitch);
+				memcpy(buf, bmp->GetScanLine(y), bmppitch);
 			}
-		} else {
-			for(tjs_int y = bmp->GetHeight() - 1; y >= 0; y--)
+			else if(pixelbytes == 1)
 			{
-				if (!buf) buf = new tjs_uint8[bmppitch];
-				if (pixelbytes == 4) {
-					//TVPReverseRGB((tjs_uint32 *)buf, (const tjs_uint32 *)bmp->GetScanLineForRead(y), bmp->GetWidth());
-				} else if (pixelbytes == 1) {
-					TVPDither32BitTo8Bit(buf, (const tjs_uint32*)bmp->GetScanLineForRead(y),
-						bmp->GetWidth(), 0, y);
-				} else {
-					const tjs_uint8 *src = (const tjs_uint8 *)bmp->GetScanLineForRead(y);
-					tjs_uint8 *dest = buf;
-					tjs_int w = bmp->GetWidth();
-					for (tjs_int x = 0; x < w; x++)
-					{
-						dest[0] = src[2];
-						dest[1] = src[1];
-						dest[2] = src[0];
-						dest += 3;
-						src += 4;
-					}
+				TVPDither32BitTo8Bit(buf, (const tjs_uint32*)bmp->GetScanLine(y),
+					bmp->GetWidth(), 0, y);  
+			}
+			else
+			{
+				const tjs_uint8 *src = (const tjs_uint8 *)bmp->GetScanLine(y);
+				tjs_uint8 *dest = buf;
+				tjs_int w = bmp->GetWidth();
+				for(tjs_int x = 0; x < w; x++)
+				{
+					dest[0] = src[0];
+					dest[1] = src[1];
+					dest[2] = src[2];
+					dest += 3;
+					src += 4;
 				}
-				stream->WriteBuffer(buf, bmppitch);
 			}
+			stream->WriteBuffer(buf, bmppitch);
 		}
 	}
 	catch(...)
@@ -801,18 +848,6 @@ void TVPSaveTextureAsBMP(tTJSBinaryStream* dst, iTVPTexture2D* bmp, const ttstr 
 		throw;
 	}
 	if(buf) delete [] buf;
-}
-
-void TVPSaveTextureAsBMP(const ttstr &path, iTVPTexture2D* tex, const ttstr &mode, iTJSDispatch2* meta)
-{
-	tTJSBinaryStream *dst = TVPCreateStream(path, TJS_BS_WRITE);
-	TVPSaveTextureAsBMP(dst, tex, mode, meta);
-	delete dst;
-}
-
-void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const iTVPBaseBitmap* bmp, const ttstr & mode, iTJSDispatch2* meta)
-{
-	TVPSaveTextureAsBMP(dst, bmp->GetTexture(), mode, meta);
 }
 //---------------------------------------------------------------------------
 
@@ -881,7 +916,6 @@ void TVPLoadHeaderBMP( void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** 
 	(*dic)->PropSet(TJS_MEMBERENSURE, TJS_W("palette"), 0, &val, (*dic) );
 }
 
-#endif
 //---------------------------------------------------------------------------
 // TVPLoadGraphic related
 //---------------------------------------------------------------------------
@@ -894,7 +928,7 @@ enum tTVPLoadGraphicType
 struct tTVPLoadGraphicData
 {
 	ttstr Name;
-	tTVPBitmap *Dest;
+	tTVPBaseBitmap *Dest;
 	tTVPLoadGraphicType Type;
 	tjs_int ColorKey;
 	tjs_uint8 *Buffer;
@@ -906,11 +940,12 @@ struct tTVPLoadGraphicData
 	tjs_uint BufW;
 	tjs_uint BufH;
 	bool NeedMetaInfo;
+	bool Unpadding;
 	std::vector<tTVPGraphicMetaInfoPair> * MetaInfo;
 };
 //---------------------------------------------------------------------------
-static int TVPLoadGraphic_SizeCallback(void *callbackdata, tjs_uint w,
-	tjs_uint h, tTVPGraphicPixelFormat fmt)
+static void TVPLoadGraphic_SizeCallback(void *callbackdata, tjs_uint w,
+	tjs_uint h)
 {
 	tTVPLoadGraphicData * data = (tTVPLoadGraphicData *)callbackdata;
 
@@ -933,30 +968,11 @@ static int TVPLoadGraphic_SizeCallback(void *callbackdata, tjs_uint w,
 
 		// allocate line buffer
 		data->Buffer = new tjs_uint8 [w];
-		data->Dest->IsOpaque = false;
-		return w;
 	}
 	else
 	{
 		// normal load or province load
-		if (!data->Dest) {
-			data->Dest = new tTVPBitmap(w, h, data->Type == lgtFullColor ? 32 : 8);
-		} else if (data->Dest->GetWidth() != w || data->Dest->GetHeight() != h) {
-			data->Dest->Release();
-			data->Dest = new tTVPBitmap(w, h, data->Type == lgtFullColor ? 32 : 8);
-		}
-		switch(fmt) {
-		case gpfLuminance:
-		case gpfRGB:
-			data->Dest->IsOpaque = true; break;
-		case gpfPalette:
-		case gpfRGBA:
-			data->Dest->IsOpaque = false; break;
-		}
-#if 0
-		data->Dest->Recreate(w, h, data->Type!=lgtFullColor?8:32);
-#endif
-		return data->Dest->GetPitch();
+		data->Dest->Recreate(w, h, data->Type!=lgtFullColor?8:32, data->Unpadding);
 	}
 }
 //---------------------------------------------------------------------------
@@ -977,7 +993,7 @@ static void * TVPLoadGraphic_ScanLineCallback(void *callbackdata, tjs_int y)
 		else
 		{
 			// return the scanline for writing
-			return data->Dest->GetScanLine(y);
+			return data->Dest->GetScanLineForWrite(y);
 		}
 	}
 	else
@@ -988,54 +1004,54 @@ static void * TVPLoadGraphic_ScanLineCallback(void *callbackdata, tjs_int y)
 		{
 			// mask
 
-				// tile for horizontal direction
-				tjs_uint i;
+			// tile for horizontal direction
+			tjs_uint i;
 			for(i = data->OrgW; i<data->BufW; i+=data->OrgW)
-				{
-					tjs_uint w = data->BufW - i;
-					w = w > data->OrgW ? data->OrgW : w;
+			{
+				tjs_uint w = data->BufW - i;
+				w = w > data->OrgW ? data->OrgW : w;
 				memcpy(data->Buffer + i, data->Buffer, w);
-				}
-
-				// bind mask buffer to main image buffer ( and tile for vertical )
-			for(i = data->ScanLineNum; i<data->BufH; i+=data->OrgH)
-				{
-					TVPBindMaskToMain(
-					(tjs_uint32*)data->Dest->GetScanLine(i),
-					data->Buffer, data->BufW);
-				}
-			return NULL;
 			}
+
+			// bind mask buffer to main image buffer ( and tile for vertical )
+			for(i = data->ScanLineNum; i<data->BufH; i+=data->OrgH)
+			{
+				TVPBindMaskToMain(
+					(tjs_uint32*)data->Dest->GetScanLineForWrite(i),
+					data->Buffer, data->BufW);
+			}
+			return NULL;
+		}
 		else if(data->Type == lgtFullColor)
 		{
 			tjs_uint32 * sl =
-				(tjs_uint32*)data->Dest->GetScanLine(data->ScanLineNum);
+				(tjs_uint32*)data->Dest->GetScanLineForWrite(data->ScanLineNum);
 			if((data->ColorKey & 0xff000000) == 0x00000000)
 			{
-					// make alpha from color key
-					TVPMakeAlphaFromKey(
+				// make alpha from color key
+				TVPMakeAlphaFromKey(
 					sl,
-						data->BufW,
-						data->ColorKey);
-				}
+					data->BufW,
+					data->ColorKey);
+			}
 
-					// tile for horizontal direction
-					tjs_uint i;
+			// tile for horizontal direction
+			tjs_uint i;
 			for(i = data->OrgW; i<data->BufW; i+=data->OrgW)
-					{
-						tjs_uint w = data->BufW - i;
-						w = w > data->OrgW ? data->OrgW : w;
-						memcpy(sl + i, sl, w * sizeof(tjs_uint32));
-					}
+			{
+				tjs_uint w = data->BufW - i;
+				w = w > data->OrgW ? data->OrgW : w;
+				memcpy(sl + i, sl, w * sizeof(tjs_uint32));
+			}
 
-					// tile for vertical direction
+			// tile for vertical direction
 			for(i = data->ScanLineNum + data->OrgH; i<data->BufH; i+=data->OrgH)
-					{
-						memcpy(
-							(tjs_uint32*)data->Dest->GetScanLine(i),
-							sl,
+			{
+				memcpy(
+					(tjs_uint32*)data->Dest->GetScanLineForWrite(i),
+					sl,
 					data->BufW * sizeof(tjs_uint32) );
-					}
+			}
 
 			return NULL;
 		}
@@ -1044,27 +1060,27 @@ static void * TVPLoadGraphic_ScanLineCallback(void *callbackdata, tjs_int y)
 			// nothing to do
 			if(data->OrgW < data->BufW || data->OrgH < data->BufH)
 			{
-					tjs_uint8 * sl =
-						(tjs_uint8*)data->Dest->GetScanLine(data->ScanLineNum);
-					tjs_uint i;
+				tjs_uint8 * sl =
+					(tjs_uint8*)data->Dest->GetScanLineForWrite(data->ScanLineNum);
+				tjs_uint i;
 
-					// tile for horizontal direction
+				// tile for horizontal direction
 				for(i = data->OrgW; i<data->BufW; i+=data->OrgW)
-					{
-						tjs_uint w = data->BufW - i;
-						w = w > data->OrgW ? data->OrgW : w;
-						memcpy(sl + i, sl, w * sizeof(tjs_uint8));
-					}
-
-					// tile for vertical direction
-				for(i = data->ScanLineNum + data->OrgH; i<data->BufH; i+=data->OrgH)
-					{
-						memcpy(
-							(tjs_uint8*)data->Dest->GetScanLine(i),
-							sl,
-							data->BufW * sizeof(tjs_uint8));
-					}
+				{
+					tjs_uint w = data->BufW - i;
+					w = w > data->OrgW ? data->OrgW : w;
+					memcpy(sl + i, sl, w * sizeof(tjs_uint8));
 				}
+
+				// tile for vertical direction
+				for(i = data->ScanLineNum + data->OrgH; i<data->BufH; i+=data->OrgH)
+				{
+					memcpy(
+						(tjs_uint8*)data->Dest->GetScanLineForWrite(i),
+						sl,
+						data->BufW * sizeof(tjs_uint8));
+				}
+			}
 
 			return NULL;
 		}
@@ -1080,7 +1096,7 @@ static void TVPLoadGraphic_MetaInfoPushCallback(void *callbackdata,
 	if(data->NeedMetaInfo)
 	{
 		if(!data->MetaInfo) data->MetaInfo = new std::vector<tTVPGraphicMetaInfoPair>();
-		data->MetaInfo->emplace_back(name, value);
+		data->MetaInfo->push_back(tTVPGraphicMetaInfoPair(name, value));
 	}
 }
 //---------------------------------------------------------------------------
@@ -1095,16 +1111,16 @@ static int TVPColorCompareFunc(const void *_a, const void *_b)
 	return 1;
 }
 //---------------------------------------------------------------------------
-static void TVPMakeAlphaFromAdaptiveColor(tTVPBitmap *dest)
+static void TVPMakeAlphaFromAdaptiveColor(tTVPBaseBitmap *dest)
 {
 	// make adaptive color key and make alpha from it.
 	// adaptive color key is most used(popular) color at first line of the
 	// graphic.
-	if(!dest->Is32bit()) return;
+	if(!dest->Is32BPP()) return;
 
 	// copy first line to buffer
 	tjs_int w = dest->GetWidth();
-	tjs_int pitch = std::abs(dest->GetPitch());
+	tjs_int pitch =  std::abs(dest->GetPitchBytes());
 	tjs_uint32 * buffer = new tjs_uint32[pitch];
 
 	try
@@ -1152,7 +1168,7 @@ static void TVPMakeAlphaFromAdaptiveColor(tTVPBitmap *dest)
 		tjs_int h;
 		for(h = dest->GetHeight()-1; h>=0; h--)
 		{
-			TVPMakeAlphaFromKey((tjs_uint32*)dest->GetScanLine(h),
+			TVPMakeAlphaFromKey((tjs_uint32*)dest->GetScanLineForWrite(h),
 				w, maxlencolor);
 
 		}
@@ -1167,21 +1183,21 @@ static void TVPMakeAlphaFromAdaptiveColor(tTVPBitmap *dest)
 	delete [] buffer;
 }
 //---------------------------------------------------------------------------
-static void TVPDoAlphaColorMat(tTVPBitmap *dest, tjs_uint32 color)
+static void TVPDoAlphaColorMat(tTVPBaseBitmap *dest, tjs_uint32 color)
 {
 	// Do alpha matting.
 	// 'mat' means underlying color of the image. This function piles
 	// specified color under the image, then blend. The output image
 	// will be totally opaque. This function always assumes the image
 	// has pixel value for alpha blend mode, not additive alpha blend mode.
-	if(!dest->Is32bit()) return;
+	if(!dest->Is32BPP()) return;
 
 	tjs_int w = dest->GetWidth();
 	tjs_int h = dest->GetHeight();
 
 	for(tjs_int y = 0; y < h; y++)
 	{
-		tjs_uint32 * buffer = (tjs_uint32*)dest->GetScanLine(y);
+		tjs_uint32 * buffer = (tjs_uint32*)dest->GetScanLineForWrite(y);
 		TVPAlphaColorMat(buffer, color, w);
 	}
 }
@@ -1259,8 +1275,7 @@ public:
 class tTVPGraphicImageData
 {
 private:
-    tTVPBitmap *Bitmap;
-    iTVPTexture2D *Texture = nullptr;
+	tTVPBaseBitmap *Bitmap;
 	tjs_uint8 * RawData;
 	tjs_int Width;
 	tjs_int Height;
@@ -1279,32 +1294,29 @@ public:
 	tTVPGraphicImageData()
 	{
 		RefCount = 1; Size = 0; Bitmap = NULL; RawData = NULL;
-		MetaInfo = nullptr;
+		MetaInfo = NULL;
 	}
 	~tTVPGraphicImageData()
 	{
-		if (Bitmap) Bitmap->Release();
-		if (Texture) Texture->Release();
+		if(Bitmap) delete Bitmap;
 		if(RawData) delete [] RawData;
 		if(MetaInfo) delete MetaInfo;
 	}
 
-	void AssignBitmap(tTVPBitmap *bmp)
+	void AssignBitmap(const tTVPBaseBitmap *bmp)
 	{
 		if(Bitmap) delete Bitmap, Bitmap = NULL;
 		if(RawData) delete [] RawData, RawData = NULL;
-		if (Texture) Texture->Release(), Texture = nullptr;
 
 		Width = bmp->GetWidth();
 		Height = bmp->GetHeight();
-		PixelSize = bmp->GetBPP() / 8;
+		PixelSize = bmp->Is32BPP()?4:1;
 		Size =  Width*Height*PixelSize;
 
 		if(!TVPAllocGraphicCacheOnHeap)
 		{
 			// simply assin to Bitmap
-			Bitmap = bmp;
-            Bitmap->AddRef();
+			Bitmap = new tTVPBaseBitmap(*bmp);
 		}
 		else
 		{
@@ -1321,26 +1333,12 @@ public:
 		}
 	}
 
-	void AssignTexture(iTVPTexture2D *tex) {
-		if (Bitmap) delete Bitmap, Bitmap = NULL;
-		if (RawData) delete[] RawData, RawData = NULL;
-		if (Texture) Texture->Release(), Texture = nullptr;
-
-		Width = tex->GetWidth();
-		Height = tex->GetHeight();
-		PixelSize = (int)tex->GetFormat();
-		Size = Width*Height*PixelSize;
-
-		Texture = tex;
-		Texture->AddRef();
-	}
-
 	void AssignToBitmap(tTVPBaseBitmap *bmp) const
 	{
 		if(!TVPAllocGraphicCacheOnHeap)
 		{
 			// simply assign to Bitmap
-			if(Bitmap) bmp->AssignBitmap(Bitmap);
+			if(Bitmap) bmp->AssignBitmap(*Bitmap);
 		}
 		else
 		{
@@ -1359,33 +1357,6 @@ public:
 			}
 		}
 	}
-
-	void AssignToTexture(iTVPBaseBitmap *dst)
-    {
-        if(!Texture && Bitmap) {
-            int bmpw = Bitmap->GetWidth(), bmph = Bitmap->GetHeight();
-            TVPTextureFormat::e format;
-            switch(PixelSize) {
-            case 1:
-                format = TVPTextureFormat::Gray;
-                break;
-            case 3:
-                format = TVPTextureFormat::RGB;
-                break;
-            case 4:
-                format = TVPTextureFormat::RGBA;
-                break;
-            default:
-                return;
-            }
-			Texture = TVPGetRenderManager()->CreateTexture2D(Bitmap);
-			if (Bitmap) Bitmap->Release(), Bitmap = nullptr;
-			if (RawData) delete[] RawData, RawData = nullptr;
-        }
-
-        if (Texture)
-            dst->AssignTexture(Texture);
-    }
 
 	tjs_uint GetSize() const { return Size; }
 
@@ -1455,7 +1426,7 @@ struct tTVPClearGraphicCacheCallback : public tTVPCompactEventCallbackIntf
 } static TVPClearGraphicCacheCallback;
 static bool TVPClearGraphicCacheCallbackInit = false;
 //---------------------------------------------------------------------------
-void TVPPushGraphicCache( const ttstr& nname, tTVPBitmap* bmp, std::vector<tTVPGraphicMetaInfoPair>* meta )
+void TVPPushGraphicCache( const ttstr& nname, tTVPBaseBitmap* bmp, std::vector<tTVPGraphicMetaInfoPair>* meta )
 {
 	if( TVPGraphicCacheEnabled ) {
 		// graphic compact initialization
@@ -1556,9 +1527,20 @@ bool TVPHasImageCache( const ttstr& nname, tTVPGraphicLoadMode mode, tjs_uint dw
 	return false;
 }
 //---------------------------------------------------------------------------
-tTVPGraphicHandlerType* TVPFindGraphicLoadHandler(ttstr &_name, ttstr *maskname, ttstr *provincename) {
+static bool TVPInternalLoadGraphic(tTVPBaseBitmap *dest, const ttstr &_name,
+	tjs_uint32 keyidx, tjs_uint desw, tjs_int desh, std::vector<tTVPGraphicMetaInfoPair> * * MetaInfo,
+		tTVPGraphicLoadMode mode, ttstr *provincename, bool unpadding=false)
+{
+	// name must be normalized.
+	// if "provincename" is non-null, this function set it to province storage
+	// name ( with _p suffix ) for convinience.
+	// desw and desh are desired size. if the actual picture is smaller than
+	// the given size, the graphic is to be tiled. give 0,0 to obtain default
+	// size graphic.
+
+
 	// graphic compact initialization
-	if (!TVPClearGraphicCacheCallbackInit)
+	if(!TVPClearGraphicCacheCallbackInit)
 	{
 		TVPAddCompactEventHook(&TVPClearGraphicCacheCallback);
 		TVPClearGraphicCacheCallbackInit = true;
@@ -1596,105 +1578,28 @@ tTVPGraphicHandlerType* TVPFindGraphicLoadHandler(ttstr &_name, ttstr *maskname,
 		}
 
 		handler = & i.GetValue();
-	} else {
+	}
+	else
+	{
 		handler = TVPGraphicType.Hash.Find(ext);
-		if (!handler) {
-			static const ttstr ext_bmp(TJS_W(".bmp"));
-			handler = TVPGraphicType.Hash.Find(ext_bmp);
-		}
 	}
 
-	if (!handler) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, name);
-	ttstr retname(name);
+	if(!handler) TVPThrowExceptionMessage(TVPUnknownGraphicFormat, name);
 
-	if (maskname) {
-		// mask image handling ( addding _m suffix with the filename )
-		while (true) {
-			name = ttstr(_name, namelen - extlen) + TJS_W("_m") + ext;
-			if (ext.IsEmpty()) {
-				// missing extension
-				// suggest registered extensions
-				tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
-				for (i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/) {
-					ttstr newname = name;
-					newname += i.GetKey();
-					if (TVPIsExistentStorage(newname))
-					{
-						// file found
-						name = newname;
-						break;
-					}
-					i++;
-				}
-				if (i.IsNull()) {
-					// not found
-					maskname->Clear();
-					break;
-				}
-				*maskname = name;
-				break;
-			} else {
-				if (!TVPIsExistentStorage(name)) {
-					// not found
-					ext.Clear();
-					continue; // retry searching
-				}
-				*maskname = name;
-				break;
-			}
-		}
-	}
-	if (provincename) {
-		// set province name
-		*provincename = ttstr(_name, namelen - extlen) + TJS_W("_p");
 
-		// search extensions
-		tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
-		for (i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/) {
-			ttstr newname = *provincename + i.GetKey();
-			if (TVPIsExistentStorage(newname))
-			{
-				// file found
-				*provincename = newname;
-				break;
-			}
-			i++;
-		}
-		if (i.IsNull()) {
-			// not found
-			provincename->Clear();
-		}
-	}
-
-	_name = retname;
-	return handler;
-}
-//---------------------------------------------------------------------------
-static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
-	tjs_uint32 keyidx, tjs_uint desw, tjs_int desh, std::vector<tTVPGraphicMetaInfoPair> * * MetaInfo,
-		tTVPGraphicLoadMode mode, ttstr *provincename)
-{
-	// name must be normalized.
-	// if "provincename" is non-null, this function set it to province storage
-	// name ( with _p suffix ) for convinience.
-	// desw and desh are desired size. if the actual picture is smaller than
-	// the given size, the graphic is to be tiled. give 0,0 to obtain default
-	// size graphic.
-
-	ttstr name(_name), maskname;
-	tTVPGraphicHandlerType * handler = TVPFindGraphicLoadHandler(name, &maskname, mode == glmNormal ? provincename : nullptr);
 	tTVPStreamHolder holder(name); // open a storage named "name"
 
 	// load the image
 	tTVPLoadGraphicData data;
-	data.Dest = nullptr;
+	data.Dest = dest;
 	data.ColorKey = keyidx;
-	data.Type = mode == glmNormal? lgtFullColor : lgtPalGray;
+	data.Type = (mode == glmNormal || mode == glmNormalRGBA) ? lgtFullColor : lgtPalGray;
 	data.Name = name;
 	data.DesW = desw;
 	data.DesH = desh;
 	data.NeedMetaInfo = true;
 	data.MetaInfo = NULL;
+	data.Unpadding = unpadding;
 
 	bool keyadapt = (keyidx == TVP_clAdapt);
 	bool doalphacolormat = TVP_Is_clAlphaMat(keyidx);
@@ -1720,21 +1625,89 @@ static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
 	if(keyadapt && mode == glmNormal)
 	{
 		// adaptive color key
-		TVPMakeAlphaFromAdaptiveColor(data.Dest);
+		TVPMakeAlphaFromAdaptiveColor(dest);
 	}
 
-	if(mode != glmNormal) return data.Dest;
 
-	if(!maskname.IsEmpty() && (handler = TVPFindGraphicLoadHandler(maskname, nullptr, nullptr)))
+	if(mode != glmNormal) return true;
+
+	if(provincename)
+	{
+		// set province name
+		*provincename = ttstr(_name, namelen-extlen) + TJS_W("_p");
+
+		// search extensions
+		tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
+		for(i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/)
+		{
+			ttstr newname = *provincename + i.GetKey();
+			if(TVPIsExistentStorage(newname))
+			{
+				// file found
+				*provincename = newname;
+				break;
+			}
+			i++;
+		}
+		if(i.IsNull())
+		{
+			// not found
+			provincename->Clear();
+		}
+	}
+
+	// mask image handling ( addding _m suffix with the filename )
+	while(true)
+	{
+		name = ttstr(_name, namelen-extlen) + TJS_W("_m") + ext;
+		if(ext.IsEmpty())
+		{
+			// missing extension
+			// suggest registered extensions
+			tTJSHashTable<ttstr, tTVPGraphicHandlerType>::tIterator i;
+			for(i = TVPGraphicType.Hash.GetFirst(); !i.IsNull(); /*i++*/)
+			{
+				ttstr newname = name;
+				newname += i.GetKey();
+				if(TVPIsExistentStorage(newname))
+				{
+					// file found
+					name = newname;
+					break;
+				}
+				i++;
+			}
+			if(i.IsNull())
+			{
+				// not found
+				handler = NULL;
+				break;
+			}
+
+			handler = & i.GetValue();
+			break;
+		}
+		else
+		{
+			if(!TVPIsExistentStorage(name))
+			{
+				// not found
+				ext.Clear();
+				continue; // retry searching
+			}
+			handler = TVPGraphicType.Hash.Find(ext);
+			break;
+		}
+	}
+
+	if(handler)
 	{
 		// open the mask file
-		holder.Open(maskname);
+		holder.Open(name);
 
 		// fill "data"'s member
 	    data.Type = lgtMask;
-#if 0
 	    data.Name = name;
-#endif
 		data.Buffer = NULL;
 		data.DesW = desw;
 		data.DesH = desh;
@@ -1751,7 +1724,6 @@ static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
 		catch(...)
 	    {
 			if(data.Buffer) delete [] data.Buffer;
-            if(data.Dest) data.Dest->Release();
 			throw;
 		}
 
@@ -1762,83 +1734,23 @@ static tTVPBitmap* TVPInternalLoadBitmap(const ttstr &_name,
 	if(doalphacolormat)
 	{
 		// alpha color mat
-		TVPDoAlphaColorMat(data.Dest, alphamatcolor);
+		TVPDoAlphaColorMat(dest, alphamatcolor);
 	}
 
-	return data.Dest;
+	return true;
 }
 //---------------------------------------------------------------------------
 
-void TVPLoadGraphicProvince(tTVPBaseBitmap *dest, const ttstr &name, tjs_int keyidx,
-    tjs_uint desw, tjs_uint desh)
-{
-    tjs_uint32 hash;
-    ttstr nname = TVPNormalizeStorageName(name);
-    tTVPGraphicsSearchData searchdata;
-	if (TVPGraphicCacheEnabled) {
-        searchdata.Name = nname;
-        searchdata.KeyIdx = keyidx;
-        searchdata.Mode = glmPalettized;
-        searchdata.DesW = desw;
-        searchdata.DesH = desh;
 
-        hash = tTVPGraphicCache::MakeHash(searchdata);
 
-        tTVPGraphicImageHolder * ptr =
-            TVPGraphicCache.FindAndTouchWithHash(searchdata, hash);
-        if (ptr) {
-            // found in cache
-            ptr->GetObjectNoAddRef()->AssignToBitmap(dest);
-            return;
-        }
-    }
-    // not found
 
-    // load into dest
-	tTVPGraphicImageData * data = nullptr;
-
-    ttstr pn;
-	std::vector<tTVPGraphicMetaInfoPair> * mi = nullptr;
-    try {
-        tTVPBitmap *bmp = TVPInternalLoadBitmap(nname, keyidx, desw, desh, &mi, glmPalettized, &pn);
-        dest->AssignBitmap(bmp);
-        if (TVPGraphicCacheEnabled) {
-            data = new tTVPGraphicImageData();
-            data->AssignBitmap(bmp);
-            data->ProvinceName = pn;
-            data->MetaInfo = mi; // now mi is managed under tTVPGraphicImageData
-			mi = nullptr;
-
-            // check size limit
-            TVPCheckGraphicCacheLimit();
-
-            // push into hash table
-            tjs_uint datasize = data->GetSize();
-            //			if(datasize < TVPGraphicCacheLimit)
-            //			{
-            TVPGraphicCacheTotalBytes += datasize;
-            tTVPGraphicImageHolder holder(data);
-            TVPGraphicCache.AddWithHash(searchdata, hash, holder);
-            //			}
-        }
-        bmp->Release();
-    }
-    catch (...) {
-        if (mi) delete mi;
-        if (data) data->Release();
-        throw;
-    }
-
-    if (mi) delete mi;
-    if (data) data->Release();
-}
 
 //---------------------------------------------------------------------------
-// TVPLoadGraphic (to texture), return size
+// TVPLoadGraphic
 //---------------------------------------------------------------------------
-int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
+void TVPLoadGraphic(tTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 	tjs_uint desw, tjs_uint desh,
-	tTVPGraphicLoadMode mode, ttstr *provincename, iTJSDispatch2 ** metainfo)
+	tTVPGraphicLoadMode mode, ttstr *provincename, iTJSDispatch2 ** metainfo, bool unpadding)
 {
 	// loading with cache management
 	ttstr nname = TVPNormalizeStorageName(name);
@@ -1860,12 +1772,11 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 		if(ptr)
 		{
 			// found in cache
-			if (dest)
-				ptr->GetObjectNoAddRef()->AssignToTexture(dest);
+			ptr->GetObjectNoAddRef()->AssignToBitmap(dest);
 			if(provincename) *provincename = ptr->GetObjectNoAddRef()->ProvinceName;
 			if(metainfo)
 				*metainfo = TVPMetaInfoPairsToDictionary(ptr->GetObjectNoAddRef()->MetaInfo);
-            return ptr->GetObjectNoAddRef()->GetSize();
+			return;
 		}
 	}
 
@@ -1876,14 +1787,9 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 
 	ttstr pn;
 	std::vector<tTVPGraphicMetaInfoPair> * mi = NULL;
-    int ret = 0;
 	try
 	{
-		tTVPBitmap *bmp = nullptr;
-		iTVPTexture2D *texture = nullptr;
-		if (!texture) {
-			bmp = TVPInternalLoadBitmap(nname, keyidx, desw, desh, &mi, mode, &pn);
-		}
+		TVPInternalLoadGraphic(dest, nname, keyidx, desw, desh, &mi, mode, &pn, unpadding);
 
 		if(provincename) *provincename = pn;
 		if(metainfo)
@@ -1892,14 +1798,7 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 		if(TVPGraphicCacheEnabled)
 		{
 			data = new tTVPGraphicImageData();
-			if (texture) {
-				data->AssignTexture(texture);
-			} else {
-				data->AssignBitmap(bmp);
-			}
-            if(dest) {
-                data->AssignToTexture(dest);
-            }
+			data->AssignBitmap(dest);
 			data->ProvinceName = pn;
 			data->MetaInfo = mi; // now mi is managed under tTVPGraphicImageData
 			mi = NULL;
@@ -1915,21 +1814,6 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 				tTVPGraphicImageHolder holder(data);
 				TVPGraphicCache.AddWithHash(searchdata, hash, holder);
 //			}
-		} else if(dest) {
-			tTVPGraphicImageData data;
-			if (texture) {
-				data.AssignTexture(texture);
-			} else {
-				data.AssignBitmap(bmp);
-			}
-			data.AssignToTexture(dest);
-		}
-		if (texture) {
-			ret = texture->GetInternalWidth() * texture->GetInternalHeight() * 4; // assume that always RGBA
-			texture->Release();
-		} else {
-			ret = bmp->GetWidth() * bmp->GetHeight() * bmp->GetBPP() / 8;
-			bmp->Release();
 		}
 	}
 	catch(...)
@@ -1941,27 +1825,9 @@ int TVPLoadGraphic(iTVPBaseBitmap *dest, const ttstr &name, tjs_int32 keyidx,
 
 	if(mi) delete mi;
 	if(data) data->Release();
-
-    return ret;
 }
 //---------------------------------------------------------------------------
 
-class tBitmapForAsyncTouch : public tTJSNI_Bitmap {
-	typedef tTJSNI_Bitmap inherit;
-public:
-	tBitmapForAsyncTouch() {
-		Construct(0, nullptr, nullptr);
-	}
-	virtual void SetLoading(bool load) override {
-		inherit::SetLoading(load);
-		if (!load) {
-			::Application->PostUserMessage([this](){
-				Invalidate();
-				Destruct();
-			});
-		}
-	}
-};
 
 
 //---------------------------------------------------------------------------
@@ -1976,7 +1842,7 @@ void TVPTouchImages(const std::vector<ttstr> & storages, tjs_int64 limit,
 	// currently this function only loads normal graphics.
 	// (univ.trans rule graphics nor province image may not work properly)
 
-	if(!TVPGraphicCacheLimit || !TVPGraphicCacheEnabled) return;
+	if(!TVPGraphicCacheLimit) return;
 
 	tjs_uint64 limitbytes;
 	if(limit >= 0)
@@ -1992,38 +1858,12 @@ void TVPTouchImages(const std::vector<ttstr> & storages, tjs_int64 limit,
 		if((tjs_uint64)-limit >= TVPGraphicCacheLimit) return;
 		limitbytes = TVPGraphicCacheLimit + limit;
 	}
-	if (/*!timeout &&*/ storages.size()/* > 1*/) { // using async touching for multi images
-		for (const ttstr &name : storages) {
-			ttstr nname = TVPNormalizeStorageName(name);
-			tjs_uint32 hash;
-			tTVPGraphicsSearchData searchdata;
-			if (TVPGraphicCacheEnabled) {
-				searchdata.Name = nname;
-				searchdata.KeyIdx = TVP_clNone;
-				searchdata.Mode = glmNormal;
-				searchdata.DesW = 0;
-				searchdata.DesH = 0;
 
-				hash = tTVPGraphicCache::MakeHash(searchdata);
-
-				tTVPGraphicImageHolder * ptr =
-					TVPGraphicCache.FindAndTouchWithHash(searchdata, hash);
-				if (ptr) {
-					// found in cache
-					continue;
-				}
-			}
-			Application->GetAsyncImageLoader()->PushLoadQueue(nullptr, new tBitmapForAsyncTouch(), nname);
-		}
-		return;
-	}
 	tjs_int count = 0;
 	tjs_uint64 bytes = 0;
 	tjs_uint64 starttime = TVPGetTickCount();
 	tjs_uint64 limittime = starttime + timeout;
-#if 0
 	tTVPBaseBitmap tmp(32, 32, 32);
-#endif
  	ttstr statusstr( (const tjs_char*)TVPInfoTouching );
 	bool first = true;
 	while((tjs_uint)count < storages.size())
@@ -2045,8 +1885,22 @@ void TVPTouchImages(const std::vector<ttstr> & storages, tjs_int64 limit,
 			first = false;
 			statusstr += storages[count];
 
-			bytes += TVPLoadGraphic(nullptr, storages[count++], TVP_clNone,
+			TVPLoadGraphic(&tmp, storages[count++], TVP_clNone,
 				0, 0, glmNormal, NULL); // load image
+
+			// get image size
+			tTVPGraphicImageData * data = new tTVPGraphicImageData();
+			try
+			{
+				data->AssignBitmap(&tmp);
+				bytes += data->GetSize();
+			}
+			catch(...)
+			{
+				data->Release();
+				throw;
+			}
+			data->Release();
 		}
 		catch(eTJS &e)
 		{

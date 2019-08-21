@@ -18,11 +18,9 @@
 class iTVPWindow;
 class tTJSNI_BaseLayer;
 
-#if 0
 #ifndef _WIN32
 typedef void* HWND;
 struct BITMAPINFO;
-#endif
 #endif
 
 /*[*/
@@ -74,9 +72,7 @@ public:
 	//!				されたあと、再び有効なウィンドウハンドルを伴ってこのメソッドが呼ばれる。
 	//!				このメソッドは、ウィンドウが作成された直後に呼ばれる保証はない。
 	//!				たいてい、一番最初にウィンドウが表示された直後に呼ばれる。
-#if 0
 	virtual void TJS_INTF_METHOD SetTargetWindow(HWND wnd, bool is_main) = 0;
-#endif
 
 	//! @brief		(Window->DrawDevice) 描画矩形の設定
 	//! @note		ウィンドウから、描画先となる矩形を設定するために呼ばれる。
@@ -378,7 +374,7 @@ public:
 	//!				示される矩形を x, y 位置に転送すればよいが、描画矩形の大きさに合わせた
 	//!				拡大や縮小などは描画デバイス側で面倒を見る必要がある。
 	virtual void TJS_INTF_METHOD NotifyBitmapCompleted(iTVPLayerManager * manager,
-		tjs_int x, tjs_int y, tTVPBaseTexture * bmp,
+		tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 		const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity) = 0;
 
 	//! @brief		(LayerManager->DrawDevice) ビットマップの描画を終了する
@@ -403,7 +399,7 @@ public:
 	//! @param		bpp			Bit per pixels
 	//! @param		color		16bpp の時 565 か 555を指定
 	//! @param		changeresolution	解像度変更を行うかどうか
-	virtual bool TJS_INTF_METHOD SwitchToFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution ) = 0;
+	virtual bool TJS_INTF_METHOD SwitchToFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution ) = 0;
 	
 	//! @brief		(Window->DrawDevice) フルスクリーンを解除する
 	//! @param		window		ウィンドウハンドル
@@ -411,7 +407,7 @@ public:
 	//! @param		h			要求する高さ
 	//! @param		bpp			元々のBit per pixels
 	//! @param		color		16bpp の時 565 か 555を指定
-	virtual void TJS_INTF_METHOD RevertFromFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color ) = 0;
+	virtual void TJS_INTF_METHOD RevertFromFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color ) = 0;
 
 	//! @brief		(Window->DrawDevice) VBlank待ちを行う
 	//! @param		in_vblank	待たなくてもVBlank内だったかどうかを返す( !0 : 内、0: 外 )
@@ -432,9 +428,6 @@ protected:
 	size_t PrimaryLayerManagerIndex; //!< プライマリレイヤマネージャ
 	std::vector<iTVPLayerManager *> Managers; //!< レイヤマネージャの配列
 	tTVPRect DestRect; //!< 描画先位置
-    tjs_int SrcWidth, SrcHeight;
-    tjs_int WinWidth, WinHeight;
-	tjs_int LockedWidth = 0, LockedHeight = 0;
 	tTVPRect ClipRect; //!< クリッピング矩形
 
 protected:
@@ -539,8 +532,8 @@ public:
 	virtual void TJS_INTF_METHOD SetShowUpdateRect(bool b);
 
 //---- フルスクリーン
-	virtual bool TJS_INTF_METHOD SwitchToFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution );
-	virtual void TJS_INTF_METHOD RevertFromFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color );
+	virtual bool TJS_INTF_METHOD SwitchToFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution );
+	virtual void TJS_INTF_METHOD RevertFromFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color );
 
 // ほかのメソッドについては実装しない
 };

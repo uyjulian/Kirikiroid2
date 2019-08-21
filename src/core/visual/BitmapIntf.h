@@ -5,7 +5,6 @@
 
 #include "tjsNative.h"
 
-class tTVPBitmap;
 class tTVPBaseBitmap;
 class tTJSNI_Bitmap : public tTJSNativeInstance
 {
@@ -43,7 +42,7 @@ public:
 	void SetSize(tjs_uint width, tjs_uint height, bool keepimage = true);
 	// for async load
 	// @param bits : tTVPBitmapBitsAlloc::Allocで確保したものを使用すること
-	void SetSizeAndImageBuffer(tTVPBitmap* bmp);
+	void SetSizeAndImageBuffer( tjs_uint width, tjs_uint height, void* bits );
 
 	void SetWidth(tjs_uint width);
 	tjs_uint GetWidth() const;
@@ -60,8 +59,8 @@ public:
 	bool IsLoading() const { return Loading; }
 
 	// for internal
-	void CopyFrom( const class iTVPBaseBitmap* src );
-	virtual void SetLoading( bool load ) { Loading = load; }
+	void CopyFrom( const tTVPBaseBitmap* src );
+	void SetLoading( bool load ) { Loading = load; }
 };
 
 

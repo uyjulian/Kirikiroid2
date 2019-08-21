@@ -122,14 +122,14 @@ void tTJSNI_Bitmap::SetSize(tjs_uint width, tjs_uint height, bool keepimage) {
 	}
 }
 //----------------------------------------------------------------------
-void tTJSNI_Bitmap::SetSizeAndImageBuffer(tTVPBitmap* bmp) {
+void tTJSNI_Bitmap::SetSizeAndImageBuffer( tjs_uint width, tjs_uint height, void* bits ) {
 	if(!Bitmap) TVPThrowExceptionMessage(TVPNotDrawableLayerType);
 	
 	// be called from geographical management
-	if (!bmp->GetWidth() || !bmp->GetHeight())
+	if(!width || !height)
 		TVPThrowExceptionMessage(TVPCannotCreateEmptyLayerImage);
 
-	Bitmap->SetSizeAndImageBuffer( bmp );
+	Bitmap->SetSizeAndImageBuffer( width, height, bits );
 }
 //----------------------------------------------------------------------
 void tTJSNI_Bitmap::SetWidth(tjs_uint width) {
@@ -180,7 +180,7 @@ void tTJSNI_Bitmap::CopyFrom( const tTJSNI_Bitmap* src ) {
 	Bitmap->Assign(*src->GetBitmap());
 }
 //----------------------------------------------------------------------
-void tTJSNI_Bitmap::CopyFrom( const  iTVPBaseBitmap* src ) {
+void tTJSNI_Bitmap::CopyFrom( const  tTVPBaseBitmap* src ) {
 	Bitmap->Assign(*src);
 }
 //----------------------------------------------------------------------

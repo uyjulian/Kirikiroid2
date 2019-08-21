@@ -25,7 +25,6 @@
 #include "DebugIntf.h"
 #include "Application.h"
 #include "TVPScreen.h"
-#include "TickCount.h"
 
 //---------------------------------------------------------------------------
 // DirectInput management
@@ -35,16 +34,14 @@
 	DirectX/Windows bug which prevents wheel messages when the window is
 	full-screened.
 */
+#if 0
 tTVPWheelDetectionType TVPWheelDetectionType = wdtWindowMessage/*wdtDirectInput*/;
 tTVPJoyPadDetectionType TVPJoyPadDetectionType = jdtNone/*jdtDirectInput*/;
 static bool TVPDirectInputInit = false;
 static tjs_int TVPDirectInputLibRefCount = 0;
-#if 0
 static HMODULE TVPDirectInputLibHandle = NULL; // module handle for dinput.dll
 static IDirectInput *TVPDirectInput = NULL; // DirectInput object
-#endif
 //---------------------------------------------------------------------------
-#if 0
 struct tTVPDIWheelData { LONG delta; }; // data structure for DirectInput(Mouse)
 static DIOBJECTDATAFORMAT TVPWheelDIODF[] =
 { { &GUID_ZAxis, 0, DIDFT_AXIS | DIDFT_ANYINSTANCE, 0 } };
@@ -53,14 +50,12 @@ static DIDATAFORMAT TVPWheelDIDF =
 	sizeof(DIDATAFORMAT), sizeof(DIOBJECTDATAFORMAT), DIDF_RELAXIS,
 	sizeof(tTVPDIWheelData), 1, TVPWheelDIODF
 };
-#endif
 
 // Joystick (pad) related codes are contributed by Mr. Kiyobee @ TYPE-MOON.
 // Say thanks to him.
 
 //	in http://www.mediawars.ne.jp/~freemage/progs/other03.htm
 const static tjs_uint32 q = 0x80000000;
-#if 0
 static DIOBJECTDATAFORMAT _c_rgodf[ ] = {
 	{ &GUID_XAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lX), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
 	{ &GUID_YAxis, (DWORD)FIELD_OFFSET(DIJOYSTATE, lY), q | DIDFT_AXIS | DIDFT_ANYINSTANCE, 256, },
@@ -117,24 +112,20 @@ static DIDATAFORMAT c_dfPad =
 	numObjects, 				//	count of objects オブジェクト数
 	_c_rgodf,					//	position 位置
 };
-#endif
 static const tjs_int   PadAxisMax = +32767;
 static const tjs_int   PadAxisMin = -32768;
 static const tjs_int   PadAxisThreshold   = 95; // Assumes 95% value can turn input on. 95%の入力でOK
 static const tjs_int   PadAxisUpperThreshold  = PadAxisMax * PadAxisThreshold / 100;
 static const tjs_int   PadAxisLowerThreshold  = PadAxisMin * PadAxisThreshold / 100;
-#if 0
 static bool CALLBACK EnumJoySticksCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef);
-#endif
 static tjs_uint32	PadLastTrigger;
-static tjs_uint32 /*__fastcall*/ PadState();
+static tjs_uint32 __fastcall PadState();
 
 
 
 
 
 
-#if 0
 //---------------------------------------------------------------------------
 // pad virtual key code map
 //---------------------------------------------------------------------------
@@ -179,7 +170,6 @@ static tTVPPadKeyFlag TVPVirtualKeyToPadCode(WORD vk)
 	return (tTVPPadKeyFlag)-1;
 }
 //---------------------------------------------------------------------------
-#endif
 
 
 
@@ -187,8 +177,8 @@ static tTVPPadKeyFlag TVPVirtualKeyToPadCode(WORD vk)
 //---------------------------------------------------------------------------
 // tTVPKeyRepeatEmulator : A class for emulating keyboard key repeats.
 //---------------------------------------------------------------------------
-tjs_int32 tTVPKeyRepeatEmulator::HoldTime = 500; // keyboard key-repeats hold-time
-tjs_int32 tTVPKeyRepeatEmulator::IntervalTime = 30; // keyboard key-repeats interval-time
+INT32 tTVPKeyRepeatEmulator::HoldTime = 500; // keyboard key-repeats hold-time
+INT32 tTVPKeyRepeatEmulator::IntervalTime = 30; // keyboard key-repeats interval-time
 //---------------------------------------------------------------------------
 void tTVPKeyRepeatEmulator::GetKeyRepeatParam()
 {
@@ -220,7 +210,7 @@ tTVPKeyRepeatEmulator::~tTVPKeyRepeatEmulator()
 void tTVPKeyRepeatEmulator::Down()
 {
 	Pressed = true;
-	PressedTick = TVPGetRoughTickCount32();
+	PressedTick = GetTickCount();
 	LastRepeatCount = 0;
 }
 //---------------------------------------------------------------------------
@@ -238,7 +228,7 @@ tjs_int tTVPKeyRepeatEmulator::GetRepeatCount()
 	if(HoldTime<0) return 0;
 	if(IntervalTime<=0) return 0;
 
-	tjs_int elapsed = (tjs_int)(TVPGetRoughTickCount32() - PressedTick);
+	tjs_int elapsed = (tjs_int)(GetTickCount() - PressedTick);
 
 	elapsed -= HoldTime;
 	if(elapsed < 0) return 0; // still in hold time
@@ -257,7 +247,6 @@ tjs_int tTVPKeyRepeatEmulator::GetRepeatCount()
 
 
 
-#if 0
 //---------------------------------------------------------------------------
 // DirectInput management
 //---------------------------------------------------------------------------

@@ -84,8 +84,8 @@ public:
 
 	const BitmapInfomation* GetBitmapInfomation() const { return BitmapInfo; }
 #ifdef _WIN32
-	const TVPBITMAPINFO * GetBITMAPINFO() const { return BitmapInfo->GetBITMAPINFO(); }
-	const TVPBITMAPINFOHEADER * GetBITMAPINFOHEADER() const { return (const TVPBITMAPINFOHEADER*)(BitmapInfo->GetBITMAPINFO()); }
+	const BITMAPINFO * GetBITMAPINFO() const { return BitmapInfo->GetBITMAPINFO(); }
+	const BITMAPINFOHEADER * GetBITMAPINFOHEADER() const { return (const BITMAPINFOHEADER*)( BitmapInfo->GetBITMAPINFO() ); }
 #endif
 
 	const void * GetBits() const { return Bits; }
@@ -93,8 +93,6 @@ public:
 	tjs_uint* GetPalette() { return Palette; };
 	tjs_uint GetPaletteCount() const { return ActualPalCount; };
 	void SetPaletteCount( tjs_uint count );
-
-	bool IsOpaque = false;
 };
 //---------------------------------------------------------------------------
 
@@ -104,7 +102,7 @@ public:
 //---------------------------------------------------------------------------
 // tTVPNativeBaseBitmap
 //---------------------------------------------------------------------------
-class iTVPTexture2D;
+class tTVPBitmap;
 class tTVPComplexRect;
 class tTVPCharacterData;
 struct tTVPDrawTextData;
@@ -112,7 +110,7 @@ class tTVPPrerenderedFont;
 class tTVPNativeBaseBitmap
 {
 public:
-	tTVPNativeBaseBitmap(/*tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding=false*/);
+	tTVPNativeBaseBitmap(tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding=false);
 	tTVPNativeBaseBitmap(const tTVPNativeBaseBitmap & r);
 	virtual ~tTVPNativeBaseBitmap();
 
@@ -125,19 +123,17 @@ public:
 	void SetSize(tjs_uint w, tjs_uint h, bool keepimage = true);
 	// for async load
 	// @param bits : tTVPBitmapBitsAlloc::Allocで確保したものを使用すること
-	void SetSizeAndImageBuffer(tTVPBitmap* bmp);
+	void SetSizeAndImageBuffer( tjs_uint width, tjs_uint height, void* bits );
 
 	/* color depth */
 	tjs_uint GetBPP() const;
 
 	bool Is32BPP() const;
 	bool Is8BPP() const;
-	bool IsOpaque() const;
 
 	/* assign */
 	bool Assign(const tTVPNativeBaseBitmap &rhs) ;
 	bool AssignBitmap(const tTVPNativeBaseBitmap &rhs) ; // assigns only bitmap
-	bool AssignTexture(iTVPTexture2D *tex);
 
 	/* scan line */
 	const void * GetScanLine(tjs_uint l) const;
@@ -151,15 +147,13 @@ public:
 	void Recreate();
 	void Recreate(tjs_uint w, tjs_uint h, tjs_uint bpp, bool unpadding=false);
 
-	bool IsIndependent() const;
+	bool IsIndependent() const { return Bitmap->IsIndependent(); }
 
 	/* other utilities */
-	iTVPTexture2D * GetTexture() const { return Bitmap; }
-	virtual iTVPTexture2D *GetTextureForRender(bool isBlendTarget, const tTVPRect *rc);
-#if 0
+	tTVPBitmap * GetBitmap() const { return Bitmap; }
+
 	tjs_uint GetPalette( tjs_uint index ) const;
 	void SetPalette( tjs_uint index, tjs_uint color );
-#endif
 
 	/* font and text functions */
 private:
@@ -187,8 +181,6 @@ public:
 	void UnmapPrerenderedFont();
 
 private:
-    bool InternalBlendText(tTVPCharacterData *data, tTVPDrawTextData *dtdata, tjs_uint32 color, const tTVPRect &srect, tTVPRect &drect);
-
 	bool InternalDrawText(tTVPCharacterData *data, tjs_int x,
 		tjs_int y, tjs_uint32 shadowcolor,tTVPDrawTextData *dtdata, tTVPRect &drect);
 
@@ -254,13 +246,10 @@ public:
 	void GetFontGlyphDrawRect( const ttstr & text, struct tTVPRect& area );
 
 protected:
-#if 0
+private:
 	tTVPBitmap *Bitmap;
-#endif
-	iTVPTexture2D *Bitmap;
 public:
 	void operator =(const tTVPNativeBaseBitmap &rhs) { Assign(rhs); }
-	virtual class iTVPRenderManager* GetRenderManager() = 0;
 };
 //---------------------------------------------------------------------------
 

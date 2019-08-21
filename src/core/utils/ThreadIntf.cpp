@@ -14,7 +14,6 @@
 #include "ThreadIntf.h"
 #include "MsgIntf.h"
 
-#if 0
 #ifdef _WIN32
 #include <process.h>
 #endif
@@ -25,8 +24,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #endif
-#endif
-#include <SDL.h>
 
 
 //---------------------------------------------------------------------------
@@ -35,30 +32,18 @@
 tTVPThread::tTVPThread()
  : Thread(nullptr), Terminated(false), ThreadStarting(false)
 {
-	Mtx = SDL_CreateMutex();
-	Cond = SDL_CreateCond();
 }
 //---------------------------------------------------------------------------
 tTVPThread::~tTVPThread()
 {
 	if( Thread != nullptr ) {
-#if 0
 		if( Thread->joinable() ) Thread->detach();
 		delete Thread;
-#endif
-		SDL_DetachThread(Thread);
-		Thread = nullptr;
 	}
-	SDL_DestroyCond(Cond);
-	SDL_DestroyMutex(Mtx);
 }
 //---------------------------------------------------------------------------
-#if 0
 void tTVPThread::StartProc()
-#endif
-int tTVPThread::StartProc(void * arg)
 {
-#if 0
 	{	// スレッドが開始されたのでフラグON
 		std::lock_guard<std::mutex> lock( Mtx );
 		ThreadStarting = true;
@@ -66,24 +51,11 @@ int tTVPThread::StartProc(void * arg)
 	Cond.notify_all();
 	Execute();
 	// return 0;
-#endif
-	// スレッドが開始されたのでフラグON
-	tTVPThread* _this = (tTVPThread*)arg;
-	_this->ThreadId = SDL_ThreadID();
-	SDL_LockMutex(_this->Mtx);
-	_this->ThreadStarting = true;
-	SDL_CondBroadcast(_this->Cond);
-	SDL_UnlockMutex(_this->Mtx);
-	(_this)->Execute();
-
-	// Execute();
-	return 0;
 }
 //---------------------------------------------------------------------------
 void tTVPThread::StartTread()
 {
 	if( Thread == nullptr ) {
-#if 0
 		try {
 			Thread = new std::thread( &tTVPThread::StartProc, this );
 
@@ -93,22 +65,11 @@ void tTVPThread::StartTread()
 		} catch( std::system_error & ) {
 			TVPThrowInternalError;
 		}
-#endif
-		Thread = SDL_CreateThread(tTVPThread::StartProc, "tTVPThread", this);
-		if (Thread == nullptr) {
-			TVPThrowInternalError;
-		}
-		SDL_LockMutex(Mtx);
-		while (!ThreadStarting) {
-        	SDL_CondWait(Cond, Mtx);
-    	}
-    	SDL_UnlockMutex(Mtx);
 	}
 }
 //---------------------------------------------------------------------------
 tTVPThreadPriority tTVPThread::GetPriority()
 {
-#if 0
 #ifdef _WIN32
 	int n = ::GetThreadPriority( GetHandle());
 	switch(n)
@@ -158,21 +119,10 @@ tTVPThreadPriority tTVPThread::GetPriority()
 	}
 	return ttpNormal;
 #endif
-#endif
-
-	switch(_Priority)
-	{
-	case SDL_THREAD_PRIORITY_LOW:			return ttpIdle;
-	case SDL_THREAD_PRIORITY_NORMAL:		return ttpNormal;
-	case SDL_THREAD_PRIORITY_HIGH:			return ttpTimeCritical;
-	}
-
-	return ttpNormal;
 }
 //---------------------------------------------------------------------------
 void tTVPThread::SetPriority(tTVPThreadPriority pri)
 {
-#if 0
 #ifdef _WIN32
 	int npri = THREAD_PRIORITY_NORMAL;
 	switch(pri)
@@ -209,24 +159,6 @@ void tTVPThread::SetPriority(tTVPThreadPriority pri)
 	}
 	err = pthread_setschedparam( GetHandle(), policy, &param );
 #endif
-#endif
-
-	SDL_ThreadPriority npri = SDL_THREAD_PRIORITY_NORMAL;
-	switch(pri)
-	{
-	case ttpIdle:			npri = SDL_THREAD_PRIORITY_LOW;			break;
-	case ttpLowest:			npri = SDL_THREAD_PRIORITY_LOW;			break;
-	case ttpLower:			npri = SDL_THREAD_PRIORITY_LOW;			break;
-	case ttpNormal:			npri = SDL_THREAD_PRIORITY_NORMAL;		break;
-	case ttpHigher:			npri = SDL_THREAD_PRIORITY_NORMAL;		break;
-	case ttpHighest:		npri = SDL_THREAD_PRIORITY_NORMAL;		break;
-	case ttpTimeCritical:	npri = SDL_THREAD_PRIORITY_HIGH;		break;
-	}
-	if(SDL_SetThreadPriority(npri) < 0)
-	{
-		printf("SetThreadPriority error:%s\n",SDL_GetError());
-	}
-	_Priority = npri;
 }
 //---------------------------------------------------------------------------
 
@@ -235,22 +167,18 @@ tjs_int TVPDrawThreadNum = 1;
 //---------------------------------------------------------------------------
 tjs_int TVPGetProcessorNum( void )
 {
-#if 0
 	return std::thread::hardware_concurrency();
-#endif
-	return SDL_GetCPUCount();
 }
 //---------------------------------------------------------------------------
 tjs_int TVPGetThreadNum( void )
 {
-	tjs_int threadNum = TVPDrawThreadNum ? TVPDrawThreadNum : TVPGetProcessorNum();
+	tjs_int threadNum = TVPDrawThreadNum ? TVPDrawThreadNum : std::thread::hardware_concurrency();
 	threadNum = std::min( threadNum, TVPMaxThreadNum );
 	return threadNum;
 }
 //---------------------------------------------------------------------------
 static void TJS_USERENTRY DummyThreadTask( void * ) {}
 //---------------------------------------------------------------------------
-#if 0
 class DrawThreadPool;
 class DrawThread : public tTVPThread {
 	std::mutex mtx;
@@ -362,6 +290,9 @@ void DrawThreadPool::PoolThread( tjs_int taskNum ) {
 		th->StartTread();
 #ifdef _WIN32
 		::SetThreadIdealProcessor( th->GetHandle(), processor_ids[workers.size() % processor_ids.size()] );
+#elif defined( __MACH__ )
+		thread_affinity_policy_data_t policy = { static_cast<int>(workers.size()) };
+		thread_policy_set( pthread_mach_thread_np( th->GetHandle() ), THREAD_AFFINITY_POLICY, (thread_policy_t)&policy, 1);
 #elif !defined( ANDROID )
 		// for pthread(!android)
 		cpu_set_t cpuset;
@@ -395,18 +326,6 @@ void TVPExecThreadTask( TVP_THREAD_TASK_FUNC func, TVP_THREAD_PARAM param ) {
 //---------------------------------------------------------------------------
 void TVPEndThreadTask( void ) {
 	TVPTheadPool.WaitForTask();
-}
-#endif
-//---------------------------------------------------------------------------
-void TVPExecThreadTask(int numThreads, TVP_THREAD_TASK_FUNC func)
-{
-  if (numThreads == 1) {
-    func(0);
-    return;
-  }
-#pragma omp parallel for schedule(static)
-  for (int i = 0; i < numThreads; ++i)
-	  func(i);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

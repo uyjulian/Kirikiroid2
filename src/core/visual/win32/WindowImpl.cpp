@@ -1317,7 +1317,7 @@ void TJS_INTF_METHOD tTJSNI_Window::SetAttentionPoint(tTJSNI_BaseLayer *layer,
 		const tTVPFont * font = NULL;
 		if(layer)
 		{
-			iTVPBaseBitmap *bmp = layer->GetMainImage();
+			tTVPBaseBitmap *bmp = layer->GetMainImage();
 			if(bmp) {
 				//font = bmp->GetFontCanvas()->GetFont(); =
 				// font = bmp->GetFontCanvas();
@@ -2003,14 +2003,11 @@ void TJS_INTF_METHOD tTJSNI_Window::StartBitmapCompletion(iTVPLayerManager * man
 }
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTJSNI_Window::NotifyBitmapCompleted(class iTVPLayerManager * manager,
-	tjs_int x, tjs_int y, tTVPBaseTexture * bmp,
+	tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 	const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity)
 {
 	if( DrawDevice ) {
-#if 0
 		DrawDevice->NotifyBitmapCompleted(manager,x,y,bits,bitmapinfo, cliprect, type, opacity );
-#endif
-		DrawDevice->NotifyBitmapCompleted(manager, x, y, bmp, cliprect, type, opacity);
 	}
 }
 //---------------------------------------------------------------------------

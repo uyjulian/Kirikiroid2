@@ -48,8 +48,10 @@ class tTJSNI_VideoOverlay : public tTJSNI_BaseVideoOverlay
 	tTVPVideoOverlayMode	Mode;	//!< Modeの動的な変更は出来ない。open前にセットしておくこと
 	bool	Loop;
 
-	class tTVPBaseTexture	*Bitmap[2];	//!< Layer描画用バッファ用Bitmap
-	uint8_t			*BmpBits[2];
+#if 0
+	class tTVPBaseBitmap	*Bitmap[2];	//!< Layer描画用バッファ用Bitmap
+	BYTE			*BmpBits[2];
+#endif
 
 	bool	IsPrepare;			//!< 準備モードかどうか
 

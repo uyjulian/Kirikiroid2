@@ -9,7 +9,6 @@
 //---------------------------------------------------------------------------
 #ifndef LayerTreeOwner_H
 #define LayerTreeOwner_H
-#include "drawable.h"
 
 
 class iTVPLayerTreeOwner
@@ -21,7 +20,7 @@ public:
 
 	virtual void TJS_INTF_METHOD StartBitmapCompletion(iTVPLayerManager * manager) = 0;
 	virtual void TJS_INTF_METHOD NotifyBitmapCompleted(class iTVPLayerManager * manager,
-		tjs_int x, tjs_int y, class tTVPBaseTexture *bmp,
+		tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 		const struct tTVPRect &cliprect, enum tTVPLayerType type, tjs_int opacity) = 0;
 	virtual void TJS_INTF_METHOD EndBitmapCompletion(iTVPLayerManager * manager) = 0;
 

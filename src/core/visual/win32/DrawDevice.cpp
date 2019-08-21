@@ -95,7 +95,6 @@ bool tTVPDrawDevice::TransformToPrimaryLayerManager(tjs_int &x, tjs_int &y)
 	iTVPLayerManager * manager = GetLayerManagerAt(PrimaryLayerManagerIndex);
 	if(!manager) return false;
 
-#if 0
 	// プライマリレイヤマネージャのプライマリレイヤのサイズを得る
 	tjs_int pl_w, pl_h;
 	if(!manager->GetPrimaryLayerSize(pl_w, pl_h)) return false;
@@ -105,7 +104,6 @@ bool tTVPDrawDevice::TransformToPrimaryLayerManager(tjs_int &x, tjs_int &y)
 	tjs_int h = DestRect.get_height();
 	x = w ? (x * pl_w / w) : 0;
 	y = h ? (y * pl_h / h) : 0;
-#endif
 
 	return true;
 }
@@ -117,7 +115,6 @@ bool tTVPDrawDevice::TransformFromPrimaryLayerManager(tjs_int &x, tjs_int &y)
 {
 	iTVPLayerManager * manager = GetLayerManagerAt(PrimaryLayerManagerIndex);
 	if(!manager) return false;
-#if 0
 
 	// プライマリレイヤマネージャのプライマリレイヤのサイズを得る
 	tjs_int pl_w, pl_h;
@@ -127,7 +124,6 @@ bool tTVPDrawDevice::TransformFromPrimaryLayerManager(tjs_int &x, tjs_int &y)
 	x = pl_w ? (x * DestRect.get_width()  / pl_w) : 0;
 	y = pl_h ? (y * DestRect.get_height() / pl_h) : 0;
 
-#endif
 	return true;
 }
 //---------------------------------------------------------------------------
@@ -199,7 +195,6 @@ void TJS_INTF_METHOD tTVPDrawDevice::SetDestRectangle(const tTVPRect & rect)
 //---------------------------------------------------------------------------
 
 
-
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPDrawDevice::SetClipRectangle(const tTVPRect & rect)
 {
@@ -211,9 +206,6 @@ void TJS_INTF_METHOD tTVPDrawDevice::SetClipRectangle(const tTVPRect & rect)
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPDrawDevice::GetSrcSize(tjs_int &w, tjs_int &h)
 {
-	w = LockedWidth;
-	h = LockedHeight;
-	if (w > 0 && h > 0) return;
 	iTVPLayerManager * manager = GetLayerManagerAt(PrimaryLayerManagerIndex);
 	if(!manager) return;
 	if(!manager->GetPrimaryLayerSize(w, h))
@@ -681,10 +673,8 @@ void TJS_INTF_METHOD tTVPDrawDevice::SetShowUpdateRect(bool b)
 	// なにもしない
 }
 //---------------------------------------------------------------------------
-bool TJS_INTF_METHOD tTVPDrawDevice::SwitchToFullScreen( int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution )
+bool TJS_INTF_METHOD tTVPDrawDevice::SwitchToFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color, bool changeresolution )
 {
-	return true;
-#if 0
 	// ChangeDisplaySettings を使用したフルスクリーン化
 	bool success = false;
 #ifdef _WIN32
@@ -726,10 +716,9 @@ bool TJS_INTF_METHOD tTVPDrawDevice::SwitchToFullScreen( int window, tjs_uint w,
 	}
 #endif
 	return success;
-#endif
 }
 //---------------------------------------------------------------------------
-void TJS_INTF_METHOD tTVPDrawDevice::RevertFromFullScreen(int window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color)
+void TJS_INTF_METHOD tTVPDrawDevice::RevertFromFullScreen( HWND window, tjs_uint w, tjs_uint h, tjs_uint bpp, tjs_uint color )
 {
 #ifdef _WIN32
 	// ChangeDisplaySettings を使用したフルスクリーン解除
