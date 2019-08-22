@@ -1,7 +1,5 @@
 
 ##### OPTIONS #####
-TVP_AUDIO_ENABLE_OPUS ?= 1
-TVP_AUDIO_ENABLE_VORBIS ?= 1
 TVP_AUDIO_ENABLE_FFMPEG ?= 1
 CC = clang
 CXX = clang++
@@ -51,20 +49,6 @@ LDLIBS += -lonig
 CFLAGS += -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2
 LDFLAGS += -L/usr/local/opt/freetype/lib
 LDLIBS += -lfreetype
-
-ifdef TVP_AUDIO_ENABLE_OPUS
-	CFLAGS += -DTVP_AUDIO_ENABLE_OPUS
-	CFLAGS += -I/usr/local/opt/opus/include/opus -I/usr/local/opt/opusfile/include/opus
-	LDFLAGS += -L/usr/local/opt/opus/lib -L/usr/local/opt/opusfile/lib
-	LDLIBS += -lopus -lopusfile
-endif
-
-ifdef TVP_AUDIO_ENABLE_VORBIS
-	CFLAGS += -DTVP_AUDIO_ENABLE_VORBIS
-	CFLAGS += -I/usr/local/opt/libvorbis/include/vorbis
-	LDFLAGS += -L/usr/local/opt/libvorbis/lib
-	LDLIBS += -lvorbis -lvorbisfile
-endif
 
 ifdef TVP_AUDIO_ENABLE_FFMPEG
 	CFLAGS += -I/usr/local/opt/ffmpeg/include
@@ -224,9 +208,6 @@ SOURCES += src/plugins/wutcwf.cpp
 SOURCES += src/core/base/XP3Archive.cpp
 ifdef TVP_AUDIO_ENABLE_FFMPEG
 SOURCES += src/core/sound/FFWaveDecoder.cpp
-endif
-ifneq '$(TVP_AUDIO_ENABLE_OPUS)$(TVP_AUDIO_ENABLE_VORBIS)' ''
-SOURCES += src/core/sound/VorbisWaveDecoder.cpp
 endif
 OBJECTS := $(SOURCES:.c=.o)
 OBJECTS := $(OBJECTS:.cpp=.o)

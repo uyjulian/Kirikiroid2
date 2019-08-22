@@ -18,9 +18,6 @@
 #include "UtilStreams.h"
 #include "WaveLoopManager.h"
 #include "tjsDictionary.h"
-#if defined(TVP_AUDIO_ENABLE_OPUS) || defined(TVP_AUDIO_ENABLE_VORBIS)
-#include "VorbisWaveDecoder.h"
-#endif
 #ifdef TVP_AUDIO_ENABLE_FFMPEG
 #include "FFWaveDecoder.h"
 #endif
@@ -729,14 +726,8 @@ struct tTVPWaveDecoderManager
 {
 	std::vector<tTVPWaveDecoderCreator *> Creators;
 	tTVPWDC_RIFFWave RIFFWaveDecoderCreator;
-#ifdef TVP_AUDIO_ENABLE_VORBIS
-	VorbisWaveDecoderCreator vorbisWaveDecoderCreator;
-#endif
 #ifdef TVP_AUDIO_ENABLE_FFMPEG
 	FFWaveDecoderCreator ffWaveDecoderCreator;
-#endif
-#ifdef TVP_AUDIO_ENABLE_OPUS
-	OpusWaveDecoderCreator opusWaveDecoderCreator;
 #endif
 
 	tTVPWaveDecoderManager()
@@ -745,13 +736,7 @@ struct tTVPWaveDecoderManager
 #ifdef TVP_AUDIO_ENABLE_FFMPEG
 		TVPRegisterWaveDecoderCreator(&ffWaveDecoderCreator);
 #endif
-#ifdef TVP_AUDIO_ENABLE_OPUS
-		TVPRegisterWaveDecoderCreator(&opusWaveDecoderCreator);
-#endif
 		TVPRegisterWaveDecoderCreator(&RIFFWaveDecoderCreator);
-#ifdef TVP_AUDIO_ENABLE_VORBIS
-		TVPRegisterWaveDecoderCreator(&vorbisWaveDecoderCreator);
-#endif
 	}
 
 	~tTVPWaveDecoderManager()
