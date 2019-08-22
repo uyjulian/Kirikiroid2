@@ -18,9 +18,6 @@
 #include "UtilStreams.h"
 #include "WaveLoopManager.h"
 #include "tjsDictionary.h"
-#ifdef TVP_AUDIO_ENABLE_FFMPEG
-#include "FFWaveDecoder.h"
-#endif
 
 
 
@@ -726,16 +723,10 @@ struct tTVPWaveDecoderManager
 {
 	std::vector<tTVPWaveDecoderCreator *> Creators;
 	tTVPWDC_RIFFWave RIFFWaveDecoderCreator;
-#ifdef TVP_AUDIO_ENABLE_FFMPEG
-	FFWaveDecoderCreator ffWaveDecoderCreator;
-#endif
 
 	tTVPWaveDecoderManager()
 	{
 		TVPWaveDecoderManagerAvail = true;
-#ifdef TVP_AUDIO_ENABLE_FFMPEG
-		TVPRegisterWaveDecoderCreator(&ffWaveDecoderCreator);
-#endif
 		TVPRegisterWaveDecoderCreator(&RIFFWaveDecoderCreator);
 	}
 

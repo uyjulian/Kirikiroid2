@@ -1,6 +1,5 @@
 
 ##### OPTIONS #####
-TVP_AUDIO_ENABLE_FFMPEG ?= 1
 CC = clang
 CXX = clang++
 AR = 
@@ -50,15 +49,6 @@ CFLAGS += -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/fr
 LDFLAGS += -L/usr/local/opt/freetype/lib
 LDLIBS += -lfreetype
 
-ifdef TVP_AUDIO_ENABLE_FFMPEG
-	CFLAGS += -I/usr/local/opt/ffmpeg/include
-	LDFLAGS += -L/usr/local/opt/ffmpeg/lib
-	LDLIBS += -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale
-endif
-ifdef TVP_AUDIO_ENABLE_FFMPEG
-	CFLAGS += -DTVP_AUDIO_ENABLE_FFMPEG
-endif
-
 %.o: %.c
 	@echo -e "\tCC  $<"
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -78,6 +68,7 @@ SOURCES += src/core/base/SysInitIntf.cpp
 SOURCES += src/core/base/SystemIntf.cpp
 SOURCES += src/core/base/TextStream.cpp
 SOURCES += src/core/base/UtilStreams.cpp
+SOURCES += src/core/base/XP3Archive.cpp
 SOURCES += src/core/base/android/GetLocalFileListAt.cpp
 SOURCES += src/core/base/android/StorageImpl.cpp
 SOURCES += src/core/base/win32/EventImpl.cpp
@@ -205,10 +196,6 @@ SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
 SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
-SOURCES += src/core/base/XP3Archive.cpp
-ifdef TVP_AUDIO_ENABLE_FFMPEG
-SOURCES += src/core/sound/FFWaveDecoder.cpp
-endif
 OBJECTS := $(SOURCES:.c=.o)
 OBJECTS := $(OBJECTS:.cpp=.o)
 OBJECTS := $(OBJECTS:.asm=.o)
