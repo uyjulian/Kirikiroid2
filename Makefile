@@ -229,7 +229,6 @@ SOURCES += src/core/visual/tvpgl.c
 SOURCES += src/core/visual/win32/BasicDrawDevice.cpp
 SOURCES += src/core/visual/win32/BitmapBitsAlloc.cpp
 SOURCES += src/core/visual/win32/BitmapInfomation.cpp
-SOURCES += src/core/visual/win32/DInputMgn.cpp
 SOURCES += src/core/visual/win32/DrawDevice.cpp
 SOURCES += src/core/visual/win32/GraphicsLoaderImpl.cpp
 SOURCES += src/core/visual/win32/LayerBitmapImpl.cpp
