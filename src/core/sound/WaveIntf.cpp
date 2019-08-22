@@ -413,7 +413,6 @@ void TVPConvertPCMToFloat(float *output, const void *input,
 
 
 
-#ifdef TVP_AUDIO_ENABLE_WAVE
 //---------------------------------------------------------------------------
 // tTVPWD_RIFFWave
 //---------------------------------------------------------------------------
@@ -721,7 +720,6 @@ tTVPWaveDecoder * tTVPWDC_RIFFWave::Create(const ttstr & storagename,
 	}
 }
 //---------------------------------------------------------------------------
-#endif
 
 //---------------------------------------------------------------------------
 // tTVPWaveDecoder interface management
@@ -730,9 +728,7 @@ bool TVPWaveDecoderManagerAvail = false;
 struct tTVPWaveDecoderManager
 {
 	std::vector<tTVPWaveDecoderCreator *> Creators;
-#ifdef TVP_AUDIO_ENABLE_WAVE
 	tTVPWDC_RIFFWave RIFFWaveDecoderCreator;
-#endif
 #ifdef TVP_AUDIO_ENABLE_VORBIS
 	VorbisWaveDecoderCreator vorbisWaveDecoderCreator;
 #endif
@@ -752,9 +748,7 @@ struct tTVPWaveDecoderManager
 #ifdef TVP_AUDIO_ENABLE_OPUS
 		TVPRegisterWaveDecoderCreator(&opusWaveDecoderCreator);
 #endif
-#ifdef TVP_AUDIO_ENABLE_WAVE
 		TVPRegisterWaveDecoderCreator(&RIFFWaveDecoderCreator);
-#endif
 #ifdef TVP_AUDIO_ENABLE_VORBIS
 		TVPRegisterWaveDecoderCreator(&vorbisWaveDecoderCreator);
 #endif

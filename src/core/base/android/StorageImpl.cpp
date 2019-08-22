@@ -517,11 +517,7 @@ bool TVPCheckExistentLocalFolder(const ttstr &name)
 //---------------------------------------------------------------------------
 tTVPArchive * TVPOpenArchive(const ttstr & name)
 {
-#ifdef TVP_ARCHIVE_ENABLE_XP3
 	return new tTVPXP3Archive(name);
-#else
-	return nullptr;
-#endif
 }
 //---------------------------------------------------------------------------
 

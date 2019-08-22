@@ -33,13 +33,9 @@
 #if 0
 #include "DetectCPU.h"
 #endif
-#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
-#endif
 #include "ScriptMgnIntf.h"
-#ifdef TVP_ARCHIVE_ENABLE_XP3
 #include "XP3Archive.h"
-#endif
 #if 0
 #include "EmergencyExit.h"
 #endif

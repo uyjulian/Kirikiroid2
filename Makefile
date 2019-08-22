@@ -1,13 +1,8 @@
 
 ##### OPTIONS #####
-TVP_IMAGE_ENABLE_BMP ?= 1
-TVP_AUDIO_ENABLE_WAVE ?= 1
 TVP_AUDIO_ENABLE_OPUS ?= 1
 TVP_AUDIO_ENABLE_VORBIS ?= 1
 TVP_AUDIO_ENABLE_FFMPEG ?= 1
-TVP_ARCHIVE_ENABLE_XP3 ?= 1
-TVP_COMPRESSION_ENABLE_ZLIB ?= 1
-TVP_TJS_ENABLE_ONIG ?= 1
 CC = clang
 CXX = clang++
 AR = 
@@ -41,37 +36,21 @@ CFLAGS += -Isrc/core/visual/gl
 CFLAGS += -Isrc/core/visual/win32
 CFLAGS += -Isrc/plugins
 
-ifdef TVP_COMPRESSION_ENABLE_ZLIB
-	CFLAGS += -DTVP_COMPRESSION_ENABLE_ZLIB
-	CFLAGS += -I/usr/local/opt/zlib/include
-	LDFLAGS += -L/usr/local/opt/zlib/lib
-	LDLIBS += -lz
-endif
+CFLAGS += -I/usr/local/opt/zlib/include
+LDFLAGS += -L/usr/local/opt/zlib/lib
+LDLIBS += -lz
 
 CFLAGS += -I/usr/local/opt/sdl2/include/SDL2
 LDFLAGS += -L/usr/local/opt/sdl2/lib
 LDLIBS += -lSDL2
 
-ifdef TVP_TJS_ENABLE_ONIG
-	CFLAGS += -I/usr/local/opt/oniguruma/include
-	LDFLAGS += -L/usr/local/opt/oniguruma/lib
-	LDLIBS += -lonig
-endif
-ifndef TVP_TJS_ENABLE_ONIG
-	CFLAGS += -DTJS_NO_REGEXP
-endif
+CFLAGS += -I/usr/local/opt/oniguruma/include
+LDFLAGS += -L/usr/local/opt/oniguruma/lib
+LDLIBS += -lonig
 
 CFLAGS += -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/freetype2
 LDFLAGS += -L/usr/local/opt/freetype/lib
 LDLIBS += -lfreetype
-
-ifdef TVP_IMAGE_ENABLE_BMP
-	CFLAGS += -DTVP_IMAGE_ENABLE_BMP
-endif
-
-ifdef TVP_AUDIO_ENABLE_WAVE
-	CFLAGS += -DTVP_AUDIO_ENABLE_WAVE
-endif
 
 ifdef TVP_AUDIO_ENABLE_OPUS
 	CFLAGS += -DTVP_AUDIO_ENABLE_OPUS
@@ -94,10 +73,6 @@ ifdef TVP_AUDIO_ENABLE_FFMPEG
 endif
 ifdef TVP_AUDIO_ENABLE_FFMPEG
 	CFLAGS += -DTVP_AUDIO_ENABLE_FFMPEG
-endif
-
-ifdef TVP_ARCHIVE_ENABLE_XP3
-	CFLAGS += -DTVP_ARCHIVE_ENABLE_XP3
 endif
 
 %.o: %.c
@@ -175,9 +150,7 @@ SOURCES += src/core/tjs2/tjsObject.cpp
 SOURCES += src/core/tjs2/tjsObjectExtendable.cpp
 SOURCES += src/core/tjs2/tjsOctPack.cpp
 SOURCES += src/core/tjs2/tjsRandomGenerator.cpp
-ifdef TVP_TJS_ENABLE_ONIG
 SOURCES += src/core/tjs2/tjsRegExp.cpp
-endif
 SOURCES += src/core/tjs2/tjsScriptBlock.cpp
 SOURCES += src/core/tjs2/tjsScriptCache.cpp
 SOURCES += src/core/tjs2/tjsSnprintf.cpp
@@ -248,9 +221,7 @@ SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
 SOURCES += src/plugins/win32dialog.cpp
 SOURCES += src/plugins/wutcwf.cpp
-ifdef TVP_ARCHIVE_ENABLE_XP3
 SOURCES += src/core/base/XP3Archive.cpp
-endif
 ifdef TVP_AUDIO_ENABLE_FFMPEG
 SOURCES += src/core/sound/FFWaveDecoder.cpp
 endif
