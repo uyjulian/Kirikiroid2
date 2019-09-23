@@ -557,16 +557,12 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyLayerResize(iTVPLayerManager * m
 void TJS_INTF_METHOD tTVPBasicDrawDevice::Show()
 {
 	//XXX: Fix!
-#if 0
 	if (Window) {
 		TTVPWindowForm *form = Window->GetForm();
-		if (form && !Managers.empty()) {
-			iTVPBaseBitmap *buf = Managers.back()->GetDrawBuffer();
-			if (buf);
-				form->UpdateDrawBuffer(buf->GetTexture());
+		if (form) {
+
 		}
 	}
-#endif
 #if 0
 	if(!TargetWindow) return;
 	if(!Texture) return;
@@ -674,16 +670,22 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyBitmapCompleted(iTVPLayerManager
 	tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 	const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity)
 {
+	//XXX: Fix!
+	if (Window) {
+		TTVPWindowForm *form = Window->GetForm();
+		if (form) {
+			form->NotifyBitmapCompleted(manager, x, y, bits, bitmapinfo, cliprect, type, opacity);
+		}
+	}
 #if 0
 	const BITMAPINFO *bitmapinfo = bmpinfo->GetBITMAPINFO();
-#endif
 
 	// bits, bitmapinfo で表されるビットマップの cliprect の領域を、x, y に描画
 	// する。
 	// opacity と type は無視するしかないので無視する
 	tjs_int w, h;
 	GetSrcSize( w, h );
-#if 0
+
 	if( TextureBuffer && TargetWindow &&
 		!(x < 0 || y < 0 ||
 			x + cliprect.get_width() > w ||

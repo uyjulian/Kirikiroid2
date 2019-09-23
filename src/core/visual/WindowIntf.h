@@ -21,6 +21,7 @@
 #include "LayerTreeOwner.h"
 
 #include <memory>
+class TTVPWindowForm;
 
 //---------------------------------------------------------------------------
 // Window List Management
@@ -129,6 +130,9 @@ public:
 
 	//! @brief		WindowのiTJSDispatch2インターフェースを取得する
 	virtual iTJSDispatch2 * GetWindowDispatch() = 0;
+
+	//! @brief		Retrieve the window form.
+	virtual TTVPWindowForm* GetForm() const = 0;
 
 };
 //---------------------------------------------------------------------------

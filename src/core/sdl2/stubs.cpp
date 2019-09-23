@@ -275,6 +275,14 @@ public:
 		hasDrawn = true;
 	}
 #endif
+	virtual void NotifyBitmapCompleted(iTVPLayerManager * manager,
+			tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
+			const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity) override {
+
+	}
+	virtual void Show() override {
+
+	}
 	virtual void InvalidateClose() override {
 		isBeingDeleted = true;
 	}

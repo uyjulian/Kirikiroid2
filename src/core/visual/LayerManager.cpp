@@ -117,10 +117,8 @@ void tTVPLayerManager::DrawCompleted(const tTVPRect &destrect,
 		tTVPBaseBitmap *bmp, const tTVPRect &cliprect,
 		tTVPLayerType type, tjs_int opacity)
 {
-#if 0
 	LayerTreeOwner->NotifyBitmapCompleted(this, destrect.left, destrect.top,
 		bmp->GetBitmap()->GetBits(), bmp->GetBitmap()->GetBitmapInfomation(), cliprect, type, opacity);
-#endif
 }
 //---------------------------------------------------------------------------
 void tTVPLayerManager::AttachPrimary(tTJSNI_BaseLayer *pri)
