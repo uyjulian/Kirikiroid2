@@ -33,7 +33,6 @@ class TVPWindowLayer;
 static TVPWindowLayer *_lastWindowLayer, *_currentWindowLayer;
 
 bool sdlProcessEvents();
-bool sdlProcessEventsForFrames(int frames);
 
 class TVPWindowLayer : public TTVPWindowForm {
 protected:
@@ -541,12 +540,6 @@ bool sdlProcessEvents() {
 	}
 	::Application->Run();
 	return true;
-}
-
-bool sdlProcessEventsForFrames(int frames) {
-	for (int i = 0; i < frames; ++i) {
-		sdlProcessEvents();
-	}
 }
 
 int main(int argc, char **argv) {
