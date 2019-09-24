@@ -94,7 +94,6 @@ public:
 	}
 	virtual bool GetFormEnabled() override {
 		return SDL_GetWindowFlags(window) & SDL_WINDOW_SHOWN;
-
 	}
 	virtual void SetDefaultMouseCursor() override {
 	}
@@ -367,15 +366,6 @@ public:
 		return ::imDisable;
 	}
 	virtual void SetImeMode(tTVPImeMode mode) override {
-		switch (mode) {
-		case ::imDisable:
-		case ::imClose:
-			break;
-		case ::imOpen:
-
-		default:
-			break;
-		}
 	}
 	virtual void ResetImeMode() override {
 	}
@@ -406,8 +396,6 @@ public:
 	}
 	virtual void TickBeat() override {
 	}
-	Sint32 mouseLastX = 0;
-	Sint32 mouseLastY = 0;
 	void sdlRecvEvent(SDL_Event event) {
 		if (isBeingDeleted) {
 			delete this;
@@ -455,57 +443,37 @@ public:
 			if (TJSNativeInstance->CanDeliverEvents()) {
 				switch (event.type) { 
 					case SDL_MOUSEMOTION: {
-						mouseLastX = event.motion.x;
-						mouseLastY = event.motion.y;
 						TVPPostInputEvent(new tTVPOnMouseMoveInputEvent(TJSNativeInstance, event.motion.x, event.motion.y, 0));
 						break;
 					}
-					case SDL_MOUSEBUTTONDOWN: {
-						tTVPMouseButton btn;
-						bool hasbtn = false;
-						switch(event.button.button) {
-							case SDL_BUTTON_RIGHT:
-								btn = tTVPMouseButton::mbRight;
-								hasbtn = true;
-								break;
-							case SDL_BUTTON_MIDDLE:
-								btn = tTVPMouseButton::mbMiddle;
-								hasbtn = true;
-								break;
-							case SDL_BUTTON_LEFT:
-								btn = tTVPMouseButton::mbLeft;
-								hasbtn = true;
-								break;
-						}
-						if (hasbtn) {
-							mouseLastX = event.button.x;
-							mouseLastY = event.button.y;
-							TVPPostInputEvent(new tTVPOnMouseDownInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
-						}
-						break;
-					}
+					case SDL_MOUSEBUTTONDOWN:
 					case SDL_MOUSEBUTTONUP: {
 						tTVPMouseButton btn;
-						bool hasbtn = false;
+						bool hasbtn = true;
 						switch(event.button.button) {
 							case SDL_BUTTON_RIGHT:
 								btn = tTVPMouseButton::mbRight;
-								hasbtn = true;
 								break;
 							case SDL_BUTTON_MIDDLE:
 								btn = tTVPMouseButton::mbMiddle;
-								hasbtn = true;
 								break;
 							case SDL_BUTTON_LEFT:
 								btn = tTVPMouseButton::mbLeft;
-								hasbtn = true;
+								break;
+							default:
+								hasbtn = false;
 								break;
 						}
 						if (hasbtn) {
-							mouseLastX = event.button.x;
-							mouseLastY = event.button.y;
-							TVPPostInputEvent(new tTVPOnClickInputEvent(TJSNativeInstance, event.button.x, event.button.y));
-							TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+							switch (event.type) {
+								case SDL_MOUSEBUTTONDOWN:
+									TVPPostInputEvent(new tTVPOnMouseDownInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+									break;
+								case SDL_MOUSEBUTTONUP:
+									TVPPostInputEvent(new tTVPOnClickInputEvent(TJSNativeInstance, event.button.x, event.button.y));
+									TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+									break;
+							}
 						}
 						break;
 					}
@@ -518,7 +486,9 @@ public:
 						break;
 					}
 					case SDL_MOUSEWHEEL: {
-						TVPPostInputEvent(new tTVPOnMouseWheelInputEvent(TJSNativeInstance, 0, event.wheel.y, mouseLastX, mouseLastY));
+						int x, y;
+						SDL_GetMouseState(&x, &y);
+						TVPPostInputEvent(new tTVPOnMouseWheelInputEvent(TJSNativeInstance, event.wheel.x, event.wheel.y, x, y));
 						break;
 					}
 					case SDL_WINDOWEVENT_CLOSE:
