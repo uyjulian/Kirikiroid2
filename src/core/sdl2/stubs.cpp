@@ -1,33 +1,13 @@
 
 #include "tjsCommHead.h"
-#include "StorageIntf.h"
-#include "EventIntf.h"
-#include "SysInitImpl.h"
 #include "WindowImpl.h"
-#include "LayerBitmapIntf.h"
-#include "LayerBitmapImpl.h"
-#include "TickCount.h"
-#include "Random.h"
-#include "UtilStreams.h"
 #ifndef _WIN32
 #include "VirtualKey.h"
 #endif
-#include "Platform.h"
 #include "Application.h"
-#include "ScriptMgnIntf.h"
-#include "WindowIntf.h"
-#include "TVPWindow.h"
-#include "VelocityTracker.h"
 #include "SystemImpl.h"
-#include "VideoOvlIntf.h"
-#include "Exception.h"
+#include "TVPWindow.h"
 #include <SDL.h>
-#include <stdio.h>
-#include <limits.h>
-#include <wchar.h>
-#include <string>
-#include <locale>
-#include <iostream>
 
 class TVPWindowLayer;
 static TVPWindowLayer *_lastWindowLayer, *_currentWindowLayer;
@@ -83,11 +63,6 @@ public:
 		renderer = NULL;
 		SDL_DestroyWindow(window);
 		window = NULL;
-	}
-
-	static TVPWindowLayer *create(tTJSNI_Window *w) {
-		TVPWindowLayer *ret = new TVPWindowLayer (w);
-		return ret;
 	}
 
 	virtual void SetPaintBoxSize(tjs_int w, tjs_int h) override {
@@ -603,31 +578,8 @@ void TVPRelinquishCPU() {
 	SDL_Delay(0);
 }
 
-#include <string.h>
-
 TTVPWindowForm *TVPCreateAndAddWindow(tTJSNI_Window *w) {
-	TVPWindowLayer* ret = TVPWindowLayer::create(w);
-	return ret;
-}
-
-void TVPConsoleLog(const ttstr &l, bool important) {
-	fprintf(stderr, "%s", l.AsNarrowStdString().c_str());
-}
-
-namespace TJS {
-	static const int MAX_LOG_LENGTH = 16 * 1024;
-	void TVPConsoleLog(const tjs_char *l) {
-		fprintf(stderr, "%s", ttstr(l).AsNarrowStdString().c_str());
-	}
-
-	void TVPConsoleLog(const tjs_nchar *format, ...) {
-		va_list args;
-		va_start(args, format);
-		char buf[MAX_LOG_LENGTH];
-		vsnprintf(buf, MAX_LOG_LENGTH - 3, format, args);
-		fprintf(stderr, "%s", buf);
-		va_end(args);
-	}
+	return new TVPWindowLayer(w);
 }
 
 tjs_uint32 TVPGetCurrentShiftKeyState()
