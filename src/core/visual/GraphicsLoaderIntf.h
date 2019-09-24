@@ -152,6 +152,22 @@ TJS_EXP_FUNC_DEF( void, TVPUnregisterGraphicLoadingHandler, (const ttstr & name,
 extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
 	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
 	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+
+extern void TVPLoadJPEG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
+	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
+	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+
+extern void TVPLoadPNG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
+	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
+	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+
+extern void TVPLoadJXR(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
+	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
+	tTJSBinaryStream *src, tjs_int keyidx,  tTVPGraphicLoadMode mode);
+
+extern void TVPLoadTLG(void* formatdata, void *callbackdata, tTVPGraphicSizeCallback sizecallback,
+	tTVPGraphicScanLineCallback scanlinecallback, tTVPMetaInfoPushCallback metainfopushcallback,
+	tTJSBinaryStream *src, tjs_int keyidx, tTVPGraphicLoadMode mode);
 //---------------------------------------------------------------------------
 
 
@@ -168,6 +184,10 @@ extern void TVPLoadBMP(void* formatdata, void *callbackdata, tTVPGraphicSizeCall
 // ]
 //---------------------------------------------------------------------------
 extern void TVPLoadHeaderBMP(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+extern void TVPLoadHeaderJPG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+extern void TVPLoadHeaderPNG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+extern void TVPLoadHeaderJXR(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
+extern void TVPLoadHeaderTLG(void* formatdata, tTJSBinaryStream *src, iTJSDispatch2** dic );
 //---------------------------------------------------------------------------
 
 
@@ -175,6 +195,10 @@ extern void TVPLoadHeaderBMP(void* formatdata, tTJSBinaryStream *src, iTJSDispat
 // Image saving handler
 //---------------------------------------------------------------------------
 extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const tTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
+extern void TVPSaveAsPNG(void* formatdata, tTJSBinaryStream* dst, const tTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
+extern void TVPSaveAsJPG(void* formatdata, tTJSBinaryStream* dst, const tTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
+extern void TVPSaveAsJXR(void* formatdata, tTJSBinaryStream* dst, const tTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
+extern void TVPSaveAsTLG(void* formatdata, tTJSBinaryStream* dst, const tTVPBaseBitmap* image, const ttstr & mode, iTJSDispatch2* meta );
 //---------------------------------------------------------------------------
 
 
@@ -182,6 +206,24 @@ extern void TVPSaveAsBMP(void* formatdata, tTJSBinaryStream* dst, const tTVPBase
 // is accept
 //---------------------------------------------------------------------------
 extern bool TVPAcceptSaveAsBMP(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+extern bool TVPAcceptSaveAsPNG(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+extern bool TVPAcceptSaveAsJPG(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+extern bool TVPAcceptSaveAsJXR(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+extern bool TVPAcceptSaveAsTLG(void* formatdata, const ttstr & type, iTJSDispatch2** dic );
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+// JPEG loading handler
+//---------------------------------------------------------------------------
+enum tTVPJPEGLoadPrecision
+{
+	jlpLow,
+	jlpMedium,
+	jlpHigh
+};
+
+extern tTVPJPEGLoadPrecision TVPJPEGLoadPrecision;
 //---------------------------------------------------------------------------
 
 

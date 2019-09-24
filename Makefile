@@ -49,6 +49,14 @@ CFLAGS += -I/usr/local/opt/freetype/include -I/usr/local/opt/freetype/include/fr
 LDFLAGS += -L/usr/local/opt/freetype/lib
 LDLIBS += -lfreetype
 
+CFLAGS += -I/usr/local/opt/libjpeg-turbo/include
+LDFLAGS += -L/usr/local/opt/libjpeg-turbo/lib
+LDLIBS += -lturbojpeg
+
+CFLAGS += -I/usr/local/opt/libpng/include -I/usr/local/opt/libpng/include/libpng16
+LDFLAGS += -L/usr/local/opt/libpng/lib
+LDLIBS += -lpng
+
 %.o: %.c
 	@echo -e "\tCC  $<"
 	$(CC) -c $(CFLAGS) -o $@ $<
@@ -165,8 +173,13 @@ SOURCES += src/core/visual/LayerBitmapIntf.cpp
 SOURCES += src/core/visual/LayerIntf.cpp
 SOURCES += src/core/visual/LayerManager.cpp
 SOURCES += src/core/visual/LayerTreeOwnerImpl.cpp
+SOURCES += src/core/visual/LoadJPEG.cpp
+SOURCES += src/core/visual/LoadPNG.cpp
+SOURCES += src/core/visual/LoadTLG.cpp
 SOURCES += src/core/visual/PrerenderedFont.cpp
 SOURCES += src/core/visual/RectItf.cpp
+SOURCES += src/core/visual/SaveTLG5.cpp
+SOURCES += src/core/visual/SaveTLG6.cpp
 SOURCES += src/core/visual/TransIntf.cpp
 SOURCES += src/core/visual/VideoOvlIntf.cpp
 SOURCES += src/core/visual/WindowIntf.cpp

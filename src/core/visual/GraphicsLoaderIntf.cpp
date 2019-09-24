@@ -157,6 +157,24 @@ public:
 			TJS_W(".bmp"), TVPLoadBMP, TVPLoadHeaderBMP, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
 		Handlers.push_back(tTVPGraphicHandlerType(
 			TJS_W(".dib"), TVPLoadBMP, TVPLoadHeaderBMP, TVPSaveAsBMP, TVPAcceptSaveAsBMP, NULL));
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".jpeg"), TVPLoadJPEG, TVPLoadHeaderJPG, TVPSaveAsJPG, TVPAcceptSaveAsJPG, NULL));
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".jpg"), TVPLoadJPEG, TVPLoadHeaderJPG, TVPSaveAsJPG, TVPAcceptSaveAsJPG, NULL));
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".jif"), TVPLoadJPEG, TVPLoadHeaderJPG, TVPSaveAsJPG, TVPAcceptSaveAsJPG, NULL));
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".png"), TVPLoadPNG, TVPLoadHeaderPNG, TVPSaveAsPNG, TVPAcceptSaveAsPNG, NULL));
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".tlg"), TVPLoadTLG, TVPLoadHeaderTLG, TVPSaveAsTLG, TVPAcceptSaveAsTLG, NULL));
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".tlg5"), TVPLoadTLG, TVPLoadHeaderTLG, TVPSaveAsTLG, TVPAcceptSaveAsTLG, NULL));
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".tlg6"), TVPLoadTLG, TVPLoadHeaderTLG, TVPSaveAsTLG, TVPAcceptSaveAsTLG, NULL));
+#if 0 && defined(_WIN32)
+		Handlers.push_back(tTVPGraphicHandlerType(
+			TJS_W(".jxr"), TVPLoadJXR, TVPLoadHeaderJXR, TVPSaveAsJXR, TVPAcceptSaveAsJXR, NULL));
+#endif
 		ReCreateHash();
 		Avail = true;
 	}
