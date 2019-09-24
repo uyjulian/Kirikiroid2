@@ -261,27 +261,15 @@ public:
 	}
 	virtual void SetZoom(tjs_int numer, tjs_int denom) override {
 	}
-	//XXX: Fix!
-#if 0
-	virtual void UpdateDrawBuffer(iTVPTexture2D *tex) override {
-		if (!tex) return;
-		//TODO: Update and swap SDL
-		// SDL_LockTexture(framebuffer, NULL, NULL, NULL);
-		SDL_UpdateTexture(framebuffer, NULL, tex->GetPixelData(), tex->GetPitch());
-		// SDL_UnlockTexture(framebuffer);
-		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, framebuffer, NULL, NULL);
-		SDL_RenderPresent(renderer);
-		hasDrawn = true;
-	}
-#endif
 	virtual void NotifyBitmapCompleted(iTVPLayerManager * manager,
-			tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
-			const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity) override {
-
+		tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
+		const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity) override {
+		SDL_UpdateTexture(framebuffer, NULL, bits, bitmapinfo->GetBITMAPINFO()->bmiHeader.biWidth * 4);
 	}
 	virtual void Show() override {
-
+		SDL_RenderCopyEx(renderer, framebuffer, NULL, NULL, 0, 0, SDL_FLIP_VERTICAL);
+		SDL_RenderPresent(renderer);
+		hasDrawn = true;
 	}
 	virtual void InvalidateClose() override {
 		isBeingDeleted = true;

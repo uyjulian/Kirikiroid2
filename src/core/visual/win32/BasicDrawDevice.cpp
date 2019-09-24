@@ -556,11 +556,10 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyLayerResize(iTVPLayerManager * m
 //---------------------------------------------------------------------------
 void TJS_INTF_METHOD tTVPBasicDrawDevice::Show()
 {
-	//XXX: Fix!
 	if (Window) {
 		TTVPWindowForm *form = Window->GetForm();
 		if (form) {
-
+			form->Show();
 		}
 	}
 #if 0
@@ -670,7 +669,6 @@ void TJS_INTF_METHOD tTVPBasicDrawDevice::NotifyBitmapCompleted(iTVPLayerManager
 	tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
 	const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity)
 {
-	//XXX: Fix!
 	if (Window) {
 		TTVPWindowForm *form = Window->GetForm();
 		if (form) {
