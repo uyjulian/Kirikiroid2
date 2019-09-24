@@ -29,16 +29,11 @@
 #include <locale>
 #include <iostream>
 
-
 class TVPWindowLayer;
-
-static tjs_uint8 _scancode[0x200];
 static TVPWindowLayer *_lastWindowLayer, *_currentWindowLayer;
 
 bool sdlProcessEvents();
 bool sdlProcessEventsForFrames(int frames);
-
-
 
 class TVPWindowLayer : public TTVPWindowForm {
 protected:
@@ -598,23 +593,32 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-
-
-
 bool TVPGetKeyMouseAsyncState(tjs_uint keycode, bool getcurrent)
 {
-	// if (keycode >= sizeof(_scancode) / sizeof(_scancode[0])) return false;
-	// tjs_uint8 code = _scancode[keycode];
-	// _scancode[keycode] &= 1;
-	// return code & (getcurrent ? 1 : 0x10);
-	return false;
+	if(keycode >= VK_LBUTTON && keycode <= VK_XBUTTON2 && keycode != VK_CANCEL)
+	{
+		Uint32 state = SDL_GetMouseState(NULL, NULL);
+		switch (keycode) {
+			case VK_LBUTTON:
+				return state & SDL_BUTTON(SDL_BUTTON_LEFT);
+			case VK_RBUTTON:
+				return state & SDL_BUTTON(SDL_BUTTON_RIGHT);
+			case VK_MBUTTON:
+				return state & SDL_BUTTON(SDL_BUTTON_MIDDLE);
+			case VK_XBUTTON1:
+				return state & SDL_BUTTON(SDL_BUTTON_X1);
+			case VK_XBUTTON2:
+				return state & SDL_BUTTON(SDL_BUTTON_X2);
+			default:
+				return false;
+		}
+	}
+	const Uint8 *state = SDL_GetKeyboardState(NULL);
+	return state[SDL_GetScancodeFromKey(keycode)];
 }
 
 bool TVPGetJoyPadAsyncState(tjs_uint keycode, bool getcurrent)
 {
-	// if (keycode >= sizeof(_scancode) / sizeof(_scancode[0])) return false;
-	// tjs_uint8 code = _scancode[keycode];
-	// _scancode[keycode] &= 1;
 	return false;
 }
 
