@@ -429,8 +429,6 @@ public:
 	bool GetEnableTouch() const { return false; }
 	void SetHintDelay(tjs_int delay) { HintDelay = delay; }
 	tjs_int GetHintDelay() const { return HintDelay; }
-	void SetInnerSunken(bool b) {}
-	bool GetInnerSunken() const { return false; }
 
 	// TODO
 	void SetMouseCursor(tjs_int handle) {}
@@ -449,6 +447,9 @@ public:
 	tjs_int GetTouchPointCount() const { return 0; }
 	bool GetTouchVelocity(tjs_int id, float& x, float& y, float& speed) const { return false; }
 	void ResetDrawDevice() {}
+#ifdef USE_OBSOLETE_FUNCTIONS
+	void SetInnerSunken(bool b) {}
+	bool GetInnerSunken() const { return false; }
 	void BeginMove() {}
 	void SetLayerLeft(tjs_int l) {}
 	tjs_int GetLayerLeft() const { return 0; }
@@ -457,6 +458,7 @@ public:
 	void SetLayerPosition(tjs_int l, tjs_int t) {}
 	void SetShowScrollBars(bool b) {}
 	bool GetShowScrollBars() const { return true; }
+#endif
 };
 
 #endif // __TVP_WINDOW_H__

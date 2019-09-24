@@ -32,14 +32,7 @@
 
 class TVPWindowLayer;
 
-static float _touchMoveThresholdSq;
-static float _mouseCursorScale;
-static tTVPMouseButton _mouseBtn;
-static int _touchBeginTick;
-static bool _virutalMouseMode = false;
-static bool _mouseMoved, _mouseClickedDown;
 static tjs_uint8 _scancode[0x200];
-static tjs_uint16 _keymap[0x200];
 static TVPWindowLayer *_lastWindowLayer, *_currentWindowLayer;
 
 bool sdlProcessEvents();
@@ -49,35 +42,9 @@ bool sdlProcessEventsForFrames(int frames);
 
 class TVPWindowLayer : public TTVPWindowForm {
 protected:
-	tTVPMouseCursorState MouseCursorState = mcsVisible;
-	tjs_int HintDelay = 500;
-	tjs_int ZoomDenom = 1; // Zooming factor denominator (setting)
-	tjs_int ZoomNumer = 1; // Zooming factor numerator (setting)
-	double TouchScaleThreshold = 5, TouchRotateThreshold = 5;
 	SDL_Window *window;
 
-	
-	tjs_int ActualZoomDenom; // Zooming factor denominator (actual)
-	tjs_int ActualZoomNumer; // Zooming factor numerator (actual)
-	int LayerWidth = 0, LayerHeight = 0;
 	TVPWindowLayer *_prevWindow, *_nextWindow;
-	friend class TVPWindowManagerOverlay;
-	friend class TVPMainScene;
-	int _LastMouseX = 0, _LastMouseY = 0;
-	std::string _caption;
-	float _drawSpriteScaleX = 1.0f, _drawSpriteScaleY = 1.0f;
-	float _drawTextureScaleX = 1.f, _drawTextureScaleY = 1.f;
-	bool UseMouseKey = false, MouseLeftButtonEmulatedPushed = false, MouseRightButtonEmulatedPushed = false;
-	bool LastMouseMoved = false, Visible = false;
-	tjs_uint32 LastMouseKeyTick = 0;
-	tjs_int MouseKeyXAccel = 0;
-	tjs_int MouseKeyYAccel = 0;
-	int LastMouseDownX = 0, LastMouseDownY = 0;
-	VelocityTrackers TouchVelocityTracker;
-	VelocityTracker MouseVelocityTracker;
-	static const int TVP_MOUSE_MAX_ACCEL = 30;
-	static const int TVP_MOUSE_SHIFT_ACCEL = 40;
-	static const int TVP_TOOLTIP_SHOW_DELAY = 500;
 	SDL_Texture* framebuffer;
 	SDL_Renderer* renderer;
 	tTJSNI_Window *TJSNativeInstance;
@@ -113,7 +80,6 @@ public:
 		if (_lastWindowLayer == this) _lastWindowLayer = _prevWindow;
 		if (_nextWindow) _nextWindow->_prevWindow = _prevWindow;
 		if (_prevWindow) _prevWindow->_nextWindow = _nextWindow;
-
 		if (_currentWindowLayer == this) {
 			_currentWindowLayer = _lastWindowLayer;
 		}
@@ -123,51 +89,34 @@ public:
 		renderer = NULL;
 		SDL_DestroyWindow(window);
 		window = NULL;
-
-	}
-
-	bool init() {
-		return true;
 	}
 
 	static TVPWindowLayer *create(tTJSNI_Window *w) {
 		TVPWindowLayer *ret = new TVPWindowLayer (w);
-		ret->init();
 		return ret;
 	}
 
 	virtual void SetPaintBoxSize(tjs_int w, tjs_int h) override {
-		// LayerWidth = w; LayerHeight = h;
-		// RecalcPaintBox();
 	}
 	virtual bool GetFormEnabled() override {
 		return SDL_GetWindowFlags(window) & SDL_WINDOW_SHOWN;
 
 	}
 	virtual void SetDefaultMouseCursor() override {
-
 	}
 	virtual void GetCursorPos(tjs_int &x, tjs_int &y) override {
 		SDL_GetMouseState(&x, &y);
-		// x = _LastMouseX;
-		// y = _LastMouseY;
 	}
 	virtual void SetCursorPos(tjs_int x, tjs_int y) override {
 		SDL_WarpMouseInWindow(window, x, y);
-		// _LastMouseX = x;
-		// _LastMouseY = y;
 	}
 	virtual void SetHintText(const ttstr &text) override {
-
 	}
-	// tjs_int _textInputPosY;
 	virtual void SetAttentionPoint(tjs_int left, tjs_int top, const struct tTVPFont * font) override {
-		// _textInputPosY = top;
 	}
 	virtual void ZoomRectangle(
 		tjs_int & left, tjs_int & top,
 		tjs_int & right, tjs_int & bottom) override {
-
 	}
 	virtual void BringToFront() override {
 		if (_currentWindowLayer != this) {
@@ -206,11 +155,9 @@ public:
 				_currentWindowLayer = _prevWindow ? _prevWindow : _nextWindow;
 			}
 		}
-
 	}
 	virtual const char *GetCaption() override {
 		return SDL_GetWindowTitle(window);
-
 	}
 	virtual void SetCaption(const tjs_string & ws) override {
 		SDL_SetWindowTitle(window, ttstr(ws).AsNarrowStdString().c_str());
@@ -422,10 +369,8 @@ public:
 	}
 	virtual void OnKeyPress(tjs_uint16 vk, int repeat, bool prevkeystate, bool convertkey) override {
 	}
-	tTVPImeMode LastSetImeMode = ::imDisable;
-	tTVPImeMode DefaultImeMode = ::imDisable;
 	virtual tTVPImeMode GetDefaultImeMode() const override {
-		return DefaultImeMode;
+		return ::imDisable;
 	}
 	virtual void SetImeMode(tTVPImeMode mode) override {
 		switch (mode) {
@@ -433,8 +378,7 @@ public:
 		case ::imClose:
 			break;
 		case ::imOpen:
-			//TVPMainScene::GetInstance()->attachWithIME();
-			//break;
+
 		default:
 			break;
 		}
@@ -703,10 +647,6 @@ namespace TJS {
 		fprintf(stderr, "%s", buf);
 		va_end(args);
 	}
-}
-
-bool TVPGetScreenSize(tjs_int idx, tjs_int &w, tjs_int &h) {
-	return true;
 }
 
 tjs_uint32 TVPGetCurrentShiftKeyState()
