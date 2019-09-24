@@ -576,6 +576,20 @@ bool TVPGetKeyMouseAsyncState(tjs_uint keycode, bool getcurrent)
 				return false;
 		}
 	}
+	if(keycode >= VK_SHIFT && keycode <= VK_MENU)
+	{
+		Uint32 state = SDL_GetModState();
+		switch (keycode) {
+			case VK_SHIFT:
+				return state & KMOD_SHIFT;
+			case VK_MENU:
+				return state & KMOD_ALT;
+			case VK_CONTROL:
+				return state & KMOD_CTRL;
+			default:
+				return false;
+		}
+	}
 	const Uint8 *state = SDL_GetKeyboardState(NULL);
 	return state[SDL_GetScancodeFromKey(keycode)];
 }
@@ -619,6 +633,13 @@ namespace TJS {
 tjs_uint32 TVPGetCurrentShiftKeyState()
 {
 	tjs_uint32 f = 0;
+
+	if(TVPGetAsyncKeyState(VK_SHIFT)) f |= TVP_SS_SHIFT;
+	if(TVPGetAsyncKeyState(VK_MENU)) f |= TVP_SS_ALT;
+	if(TVPGetAsyncKeyState(VK_CONTROL)) f |= TVP_SS_CTRL;
+	if(TVPGetAsyncKeyState(VK_LBUTTON)) f |= TVP_SS_LEFT;
+	if(TVPGetAsyncKeyState(VK_RBUTTON)) f |= TVP_SS_RIGHT;
+	if(TVPGetAsyncKeyState(VK_MBUTTON)) f |= TVP_SS_MIDDLE;
 
 	return f;
 }
