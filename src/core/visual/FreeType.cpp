@@ -19,7 +19,6 @@
 #include "uni_cp932.h"
 #include "cp932_uni.h"
 
-#include "FontImpl.h"
 #include "BinaryStream.h"
 #include "MsgIntf.h"
 #include "SysInitIntf.h"
@@ -391,11 +390,7 @@ tGenericFreeTypeFace::tGenericFreeTypeFace(const ttstr &fontname, tjs_uint32 opt
 		} 
 
 		// ファイルを開く
-#if 0
 		File = TVPCreateBinaryStreamForRead(fontname,TJS_W("") );
-#else
-		File = TVPCreateFontStream(fontname);
-#endif
 		if( File == NULL ) {
 			TVPThrowExceptionMessage( TVPCannotOpenFontFile, fontname );
 		}
@@ -664,8 +659,6 @@ tFreeTypeFace::tFreeTypeFace(const std::vector<tjs_string> &fontname, tjs_uint32
 		Faces[i]->FontName = fontname[i];
 
 		// フォントを開く
-		Faces[i]->Face.reset( new tGenericFreeTypeFace( fontname[i], options ) );
-#if 0
 		if( ( options & TVP_FACE_OPTIONS_FILE ) == 0 )
 		{
 			Faces[i]->Face.reset( FreeTypeFaceList->GetFace( fontname[i], options ) );
@@ -693,7 +686,6 @@ tFreeTypeFace::tFreeTypeFace(const std::vector<tjs_string> &fontname, tjs_uint32
 				Faces[i]->Face.reset( new tGenericFreeTypeFace( fontname[i], options ) );
 			}
 		}
-#endif
 #endif
 		Faces[i]->FTFace = Faces[i]->Face->GetFTFace();
 

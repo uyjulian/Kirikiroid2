@@ -406,10 +406,10 @@ public:
 	void SetFullScreenMode(bool) {}
 	tjs_int GetLeft() { return 0; }
 	tjs_int GetTop() { return 0; }
-	tjs_int GetMinWidth() { return 0; }
-	tjs_int GetMaxWidth() { return 1920; }
-	tjs_int GetMinHeight() { return 0; }
-	tjs_int GetMaxHeight() { return 1080; }
+	tjs_int GetMinWidth() { return GetWidth(); }
+	tjs_int GetMaxWidth() { return GetWidth(); }
+	tjs_int GetMinHeight() { return GetHeight(); }
+	tjs_int GetMaxHeight() { return GetHeight(); }
 	tjs_int GetInnerWidth() { return GetWidth(); }
 	tjs_int GetInnerHeight() { return GetHeight(); }
 	bool GetStayOnTop() { return false; }

@@ -9872,16 +9872,7 @@ void tTJSNI_Font::GetFontList(tjs_uint32 flags, std::vector<ttstr> & list)
 	if( Layer ) Layer->GetFontList(flags,list);
 	else
 	{
-#if 0
 		TVPFontSystem->GetFontList( list, flags, Font );
-#endif
-		//XXX: Fix!
-#if 0
-		std::vector<tjs_string> ansilist;
-		TVPGetAllFontList(ansilist);
-		for(std::vector<tjs_string>::iterator i = ansilist.begin(); i != ansilist.end(); i++)
-			list.push_back(i->c_str());
-#endif
 	}
 }
 //---------------------------------------------------------------------------
@@ -10060,8 +10051,6 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/unmapPrerenderedFont)
 }
 TJS_END_NATIVE_METHOD_DECL(/*func. name*/unmapPrerenderedFont)
 //----------------------------------------------------------------------
-//XXX: Fix!
-#if 0
 TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/addFont)
 {
 	if(numparams < 1) return TJS_E_BADPARAMCOUNT;
@@ -10092,7 +10081,6 @@ TJS_BEGIN_NATIVE_METHOD_DECL(/*func. name*/addFont)
 	return TJS_S_OK;
 }
 TJS_END_NATIVE_STATIC_METHOD_DECL(/*func. name*/addFont)
-#endif
 //----------------------------------------------------------------------
 
 //-- properties
