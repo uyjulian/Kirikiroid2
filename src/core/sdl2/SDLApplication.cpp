@@ -68,7 +68,7 @@ public:
 		}
 		
 		window = SDL_CreateWindow("Kirikiroid2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 640, 480);
 		SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
 	}
@@ -190,12 +190,70 @@ public:
 	virtual void SetZoom(tjs_int numer, tjs_int denom) override {
 	}
 	virtual void NotifyBitmapCompleted(iTVPLayerManager * manager,
-		tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bitmapinfo,
+		tjs_int x, tjs_int y, const void * bits, const class BitmapInfomation * bmpinfo,
 		const tTVPRect &cliprect, tTVPLayerType type, tjs_int opacity) override {
-		SDL_UpdateTexture(framebuffer, NULL, bits, bitmapinfo->GetBITMAPINFO()->bmiHeader.biWidth * 4);
+		const TVPBITMAPINFO *bitmapinfo = bmpinfo->GetBITMAPINFO();
+		tjs_int w = 0;
+		tjs_int h = 0;
+		if(!manager) return;
+		if(!manager->GetPrimaryLayerSize(w, h))
+		{
+			w = 0;
+			h = 0;
+		}
+		if( framebuffer &&
+			!(x < 0 || y < 0 ||
+				x + cliprect.get_width() > w ||
+				y + cliprect.get_height() > h) &&
+			!(cliprect.left < 0 || cliprect.top < 0 ||
+				cliprect.right > bitmapinfo->bmiHeader.biWidth ||
+				cliprect.bottom > bitmapinfo->bmiHeader.biHeight))
+		{
+			// bitmapinfo で表された cliprect の領域を x,y にコピーする
+			long src_y       = cliprect.top;
+			long src_y_limit = cliprect.bottom;
+			long src_x       = cliprect.left;
+			long width_bytes   = cliprect.get_width() * 4; // 32bit
+			long dest_y      = 0;
+			long dest_x      = 0;
+			const tjs_uint8 * src_p = (const tjs_uint8 *)bits;
+			long src_pitch;
+
+			if(bitmapinfo->bmiHeader.biHeight < 0)
+			{
+				// bottom-down
+				src_pitch = bitmapinfo->bmiHeader.biWidth * 4;
+				//src_pitch = -bitmapinfo->bmiHeader.biWidth * 4;
+				//src_p += bitmapinfo->bmiHeader.biWidth * 4 * (bitmapinfo->bmiHeader.biHeight - 1);
+			}
+			else
+			{
+				// bottom-up
+				src_pitch = -bitmapinfo->bmiHeader.biWidth * 4;
+				src_p += bitmapinfo->bmiHeader.biWidth * 4 * (bitmapinfo->bmiHeader.biHeight - 1);
+				//src_pitch = bitmapinfo->bmiHeader.biWidth * 4;
+			}
+
+			void* TextureBuffer;
+			int TexturePitch;
+			SDL_Rect dstrect;
+			dstrect.x = x;
+			dstrect.y = y;
+			dstrect.w = cliprect.get_width();
+			dstrect.h = cliprect.get_height();
+
+			SDL_LockTexture(framebuffer, &dstrect, &TextureBuffer, &TexturePitch);
+			for(; src_y < src_y_limit; src_y ++, dest_y ++)
+			{
+				const void *srcp = src_p + src_pitch * src_y + src_x * 4;
+				void *destp = (tjs_uint8*)TextureBuffer + TexturePitch * dest_y + dest_x * 4;
+				memcpy(destp, srcp, width_bytes);
+			}
+			SDL_UnlockTexture(framebuffer);
+		}
 	}
 	virtual void Show() override {
-		SDL_RenderCopyEx(renderer, framebuffer, NULL, NULL, 0, 0, SDL_FLIP_VERTICAL);
+		SDL_RenderCopy(renderer, framebuffer, NULL, NULL);
 		SDL_RenderPresent(renderer);
 		hasDrawn = true;
 	}
@@ -536,18 +594,18 @@ int main(int argc, char **argv) {
     short timePerFrame = 16; // miliseconds
     
 	while (sdlProcessEvents()) {
-		if (!startTime) {
-            startTime = SDL_GetTicks(); 
-        } else {
-            delta = endTime - startTime; // how many ms for a frame
-        }
+		// if (!startTime) {
+  //           startTime = SDL_GetTicks(); 
+  //       } else {
+  //           delta = endTime - startTime; // how many ms for a frame
+  //       }
         
-        if (delta < timePerFrame) {
-            SDL_Delay(timePerFrame - delta);
-        }
+  //       if (delta < timePerFrame) {
+  //           SDL_Delay(timePerFrame - delta);
+  //       }
         
-        startTime = endTime;
-        endTime = SDL_GetTicks();
+  //       startTime = endTime;
+  //       endTime = SDL_GetTicks();
 	}
 	SDL_Quit();
 	return 0;
