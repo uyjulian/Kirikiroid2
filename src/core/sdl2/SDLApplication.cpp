@@ -15,6 +15,28 @@ static TVPWindowLayer *_lastWindowLayer, *_currentWindowLayer;
 
 bool sdlProcessEvents();
 
+#define MK_SHIFT 4
+#define MK_CONTROL 8
+#define MK_ALT (0x20)
+
+static int GetShiftState() {
+	int s = 0;
+	if(TVPGetAsyncKeyState(VK_MENU)) s |= MK_ALT;
+	if(TVPGetAsyncKeyState(VK_SHIFT)) s |= MK_SHIFT;
+	if(TVPGetAsyncKeyState(VK_CONTROL)) s |= MK_CONTROL;
+	return s;
+}
+static int GetMouseButtonState() {
+	int s = 0;
+	if(TVPGetAsyncKeyState(VK_LBUTTON)) s |= ssLeft;
+	if(TVPGetAsyncKeyState(VK_RBUTTON)) s |= ssRight;
+	if(TVPGetAsyncKeyState(VK_MBUTTON)) s |= ssMiddle;
+	if(TVPGetAsyncKeyState(VK_XBUTTON1)) s |= ssX1;
+	if(TVPGetAsyncKeyState(VK_XBUTTON2)) s |= ssX2;
+	return s;
+}
+
+
 class TVPWindowLayer : public TTVPWindowForm {
 protected:
 	SDL_Window *window;
@@ -67,6 +89,11 @@ public:
 	}
 
 	virtual void SetPaintBoxSize(tjs_int w, tjs_int h) override {
+		if (framebuffer) {
+			SDL_DestroyTexture(framebuffer);
+			framebuffer = NULL;
+		}
+		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, w, h);
 	}
 	virtual bool GetFormEnabled() override {
 		return SDL_GetWindowFlags(window) & SDL_WINDOW_SHOWN;
@@ -135,29 +162,14 @@ public:
 		int h;
 		SDL_GetWindowSize(window, NULL, &h);
 		SDL_SetWindowSize(window, w, h);
-		if (framebuffer) {
-			SDL_DestroyTexture(framebuffer);
-			framebuffer = NULL;
-		}
-		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, w, h);
 	}
 	virtual void SetHeight(tjs_int h) override {
 		int w;
 		SDL_GetWindowSize(window, &w, NULL);
 		SDL_SetWindowSize(window, w, h);
-		if (framebuffer) {
-			SDL_DestroyTexture(framebuffer);
-			framebuffer = NULL;
-		}
-		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, w, h);
 	}
 	virtual void SetSize(tjs_int w, tjs_int h) override {
 		SDL_SetWindowSize(window, w, h);
-		if (framebuffer) {
-			SDL_DestroyTexture(framebuffer);
-			framebuffer = NULL;
-		}
-		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, w, h);
 	}
 	virtual void GetSize(tjs_int &w, tjs_int &h) override {
 		SDL_GetWindowSize(window, &w, &h);
@@ -416,10 +428,12 @@ public:
 			}
 		}
 		if (window && hasDrawn) {
+			tjs_uint32 s = TVP_TShiftState_To_uint32(GetShiftState());
+			s |= GetMouseButtonState();
 			if (TJSNativeInstance->CanDeliverEvents()) {
 				switch (event.type) { 
 					case SDL_MOUSEMOTION: {
-						TVPPostInputEvent(new tTVPOnMouseMoveInputEvent(TJSNativeInstance, event.motion.x, event.motion.y, 0));
+						TVPPostInputEvent(new tTVPOnMouseMoveInputEvent(TJSNativeInstance, event.motion.x, event.motion.y, s));
 						break;
 					}
 					case SDL_MOUSEBUTTONDOWN:
@@ -436,6 +450,12 @@ public:
 							case SDL_BUTTON_LEFT:
 								btn = tTVPMouseButton::mbLeft;
 								break;
+							case SDL_BUTTON_X1:
+								btn = tTVPMouseButton::mbX1;
+								break;
+							case SDL_BUTTON_X2:
+								btn = tTVPMouseButton::mbX2;
+								break;
 							default:
 								hasbtn = false;
 								break;
@@ -443,22 +463,23 @@ public:
 						if (hasbtn) {
 							switch (event.type) {
 								case SDL_MOUSEBUTTONDOWN:
-									TVPPostInputEvent(new tTVPOnMouseDownInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+									TVPPostInputEvent(new tTVPOnMouseDownInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, s));
 									break;
 								case SDL_MOUSEBUTTONUP:
 									TVPPostInputEvent(new tTVPOnClickInputEvent(TJSNativeInstance, event.button.x, event.button.y));
-									TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, 0));
+									TVPPostInputEvent(new tTVPOnMouseUpInputEvent(TJSNativeInstance, event.button.x, event.button.y, btn, s));
 									break;
 							}
 						}
 						break;
 					}
 					case SDL_KEYDOWN: {
-						TVPPostInputEvent(new tTVPOnKeyDownInputEvent(TJSNativeInstance, event.key.keysym.sym, 0));
+						if (event.key.repeat) s |= TVP_SS_REPEAT;
+						TVPPostInputEvent(new tTVPOnKeyDownInputEvent(TJSNativeInstance, event.key.keysym.sym, s));
 						break;
 					}
 					case SDL_KEYUP: {
-						TVPPostInputEvent(new tTVPOnKeyUpInputEvent(TJSNativeInstance, event.key.keysym.sym, 0));
+						TVPPostInputEvent(new tTVPOnKeyUpInputEvent(TJSNativeInstance, event.key.keysym.sym, s));
 						break;
 					}
 					case SDL_MOUSEWHEEL: {
@@ -607,9 +628,6 @@ ttstr TVPGetOSName()
 	return TVPGetPlatformName();
 }
 
-#define MK_SHIFT 4
-#define MK_CONTROL 8
-#define MK_ALT (0x20)
 tjs_uint32 TVP_TShiftState_To_uint32(TShiftState state) {
 	tjs_uint32 result = 0;
 	if (state & MK_SHIFT) {
