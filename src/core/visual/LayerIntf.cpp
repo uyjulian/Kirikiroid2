@@ -10308,10 +10308,7 @@ struct tFontClassHolder {
 extern void TVPInializeFontRasterizers();
 tTJSNativeClass * TVPCreateNativeClass_Font()
 {
-	//XXX: Fix!
-#if 0
 	TVPInializeFontRasterizers();
-#endif
 	if( fontclassholder.Obj ) {
 		tTJSNativeClass* fontclass = fontclassholder.Obj;
 		fontclass->AddRef();
