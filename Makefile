@@ -202,6 +202,7 @@ SOURCES += src/plugins/csvParser.cpp
 SOURCES += src/plugins/dirlist.cpp
 SOURCES += src/plugins/fftgraph.cpp
 SOURCES += src/plugins/getSample.cpp
+SOURCES += src/plugins/KAGParser.cpp
 SOURCES += src/plugins/ncbind/ncbind.cpp
 SOURCES += src/plugins/saveStruct.cpp
 SOURCES += src/plugins/varfile.cpp
