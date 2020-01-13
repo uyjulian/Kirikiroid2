@@ -69,8 +69,8 @@ public:
 		
 		window = SDL_CreateWindow("Kirikiroid2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 640, 480);
-		SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
+		framebuffer = NULL;
+		SDL_SetRenderDrawColor( renderer, 0x00, 0x00, 0x00, 0xFF );
 	}
 
 	virtual ~TVPWindowLayer() {
@@ -93,7 +93,7 @@ public:
 			SDL_DestroyTexture(framebuffer);
 			framebuffer = NULL;
 		}
-		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+		framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, w, h);
 	}
 	virtual bool GetFormEnabled() override {
 		return SDL_GetWindowFlags(window) & SDL_WINDOW_SHOWN;
@@ -253,7 +253,11 @@ public:
 		}
 	}
 	virtual void Show() override {
-		SDL_RenderCopy(renderer, framebuffer, NULL, NULL);
+		SDL_RenderFillRect(renderer, NULL);
+		if (framebuffer)
+		{
+			SDL_RenderCopy(renderer, framebuffer, NULL, NULL);
+		}
 		SDL_RenderPresent(renderer);
 		hasDrawn = true;
 	}
